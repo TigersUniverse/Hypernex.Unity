@@ -58,3 +58,6 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Paid Assets
+/[Aa]ssets/Plugins/RootMotion
+/[Aa]ssets/DynamicBone
