@@ -6,13 +6,18 @@ using UnityEngine;
 
 public class ConfigManager : MonoBehaviour
 {
-    public static readonly string ConfigLocation = Path.Combine(Application.persistentDataPath, "config.cfg");
+    private static string persistentAppData;
+    
+    public static string ConfigLocation => Path.Combine(persistentAppData, "config.cfg");
     public static Config LoadedConfig;
+
+    public static Action<Config> OnConfigSaved = config => { };
+    public static Action<Config> OnConfigLoaded = config => { };
 
     public void OnEnable()
     {
-        DontDestroyOnLoad(gameObject);
         LoadConfigFromFile();
+        persistentAppData = Application.persistentDataPath;
     }
 
     public void OnApplicationQuit()
@@ -20,7 +25,7 @@ public class ConfigManager : MonoBehaviour
         SaveConfigToFile(LoadedConfig);
     }
 
-    public void LoadConfigFromFile()
+    public static void LoadConfigFromFile()
     {
         if (File.Exists(ConfigLocation))
         {
@@ -28,6 +33,7 @@ public class ConfigManager : MonoBehaviour
             {
                 string text = File.ReadAllText(ConfigLocation);
                 LoadedConfig = TomletMain.To<Config>(text);
+                OnConfigLoaded.Invoke(LoadedConfig);
                 Logger.CurrentLogger.Log("Loaded Config");
             }
             catch (Exception e)
@@ -37,11 +43,14 @@ public class ConfigManager : MonoBehaviour
         }
     }
 
-    public void SaveConfigToFile(Config config)
+    public static void SaveConfigToFile(Config config = null)
     {
+        if (config == null)
+            config = LoadedConfig;
         TomlDocument document = TomletMain.DocumentFrom(typeof(Config), config);
         string text = document.SerializedValue;
         File.WriteAllText(ConfigLocation, text);
+        OnConfigSaved.Invoke(config);
         Logger.CurrentLogger.Log("Saved Config");
     }
 }
