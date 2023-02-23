@@ -19,6 +19,7 @@ public class TopBarManager : MonoBehaviour
         {
             int i = new System.Random().Next(greetings.Length);
             WelcomeText.text = greetings[i] + ", " + user.Username;
+            LoggedInObject.SetActive(true);
         };
         APIPlayer.OnLogout += () => LoggedInObject.SetActive(false);
         SignoutButton.onClick.AddListener(() =>

@@ -37,19 +37,19 @@ public class APIPlayer : MonoBehaviour
                             APIUser = getUserResult.result.UserData;
                             CurrentToken = loginResult.result.Token;
                             if(loginResult.result.Result != LoginResult.Warned)
-                                OnUser.Invoke(APIUser);
-                            result.Invoke(loginResult.result, getUserResult.result.UserData);
+                                QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
+                            QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, getUserResult.result.UserData);
                         }
                         else
-                            result.Invoke(null, null);
+                            QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, null);
                     });
                 }
                 else
-                    result.Invoke(loginResult.result, null);
+                    QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, null);
             });
         }
         else
-            result.Invoke(null, null);
+            QuickInvoke.InvokeActionOnMainThread(result, null, null);
     }
 
     public static void Register(Action<bool, SignupResult> result)
@@ -62,15 +62,15 @@ public class APIPlayer : MonoBehaviour
                 {
                     APIUser = signupResult.result.UserData;
                     CurrentToken = signupResult.result.UserData.AccountTokens[0];
-                    OnUser.Invoke(APIUser);
-                    result.Invoke(true, signupResult.result);
+                    QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
+                    QuickInvoke.InvokeActionOnMainThread(result, true, signupResult.result);
                 }
                 else
-                    result.Invoke(false, null);
+                    QuickInvoke.InvokeActionOnMainThread(result, false, null);
             });
         }
         else
-            result.Invoke(false, null);
+            QuickInvoke.InvokeActionOnMainThread(result, false, null);
     }
 
     public static void Logout(Action<bool> result = null)
@@ -82,11 +82,15 @@ public class APIPlayer : MonoBehaviour
                 {
                     APIUser = null;
                     CurrentToken = null;
-                    OnLogout.Invoke();
+                    QuickInvoke.InvokeActionOnMainThread(OnLogout);
                 }
-                result?.Invoke(r.success);
+                if(result != null)
+                    QuickInvoke.InvokeActionOnMainThread(result, r.success);
             }, APIUser, CurrentToken);
         else
-            result?.Invoke(false);
+        {
+            if(result != null)
+                QuickInvoke.InvokeActionOnMainThread(result, false);
+        }
     }
 }

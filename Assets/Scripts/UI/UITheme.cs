@@ -20,7 +20,7 @@ public class UITheme : MonoBehaviour
 
     public void ApplyThemeToUI()
     {
-        foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>())
+        foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>(true))
         {
             UIThemeObject.ApplyTheme(this);
         }

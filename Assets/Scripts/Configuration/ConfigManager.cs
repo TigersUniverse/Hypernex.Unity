@@ -14,10 +14,10 @@ public class ConfigManager : MonoBehaviour
     public static Action<Config> OnConfigSaved = config => { };
     public static Action<Config> OnConfigLoaded = config => { };
 
-    public void OnEnable()
+    public void Start()
     {
-        LoadConfigFromFile();
         persistentAppData = Application.persistentDataPath;
+        LoadConfigFromFile();
     }
 
     public void OnApplicationQuit()
@@ -41,13 +41,20 @@ public class ConfigManager : MonoBehaviour
                 Logger.CurrentLogger.Critical(e);
             }
         }
+        else
+        {
+            LoadedConfig = new Config();
+            SaveConfigToFile();
+        }
     }
 
     public static void SaveConfigToFile(Config config = null)
     {
-        if (config == null)
-            config = LoadedConfig;
-        TomlDocument document = TomletMain.DocumentFrom(typeof(Config), config);
+        TomlDocument document;
+        if (config != null)
+            document = TomletMain.DocumentFrom(typeof(Config), config);
+        else
+            document = TomletMain.DocumentFrom(typeof(Config), LoadedConfig);
         string text = document.SerializedValue;
         File.WriteAllText(ConfigLocation, text);
         OnConfigSaved.Invoke(config);

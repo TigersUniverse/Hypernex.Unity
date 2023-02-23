@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Globalization;
 using HypernexSharp;
 using HypernexSharp.API.APIResults;
@@ -23,6 +24,7 @@ public class PreLoginManager : MonoBehaviour
     public TMP_Dropdown UserDropdown;
     public Button UserContinueButton;
     public Button RemoveSelectedUserButton;
+    public Button ReturnUserSelectorButton;
 
     public GameObject SignInObject;
     public TMP_InputField SignInUsernameInput;
@@ -56,6 +58,7 @@ public class PreLoginManager : MonoBehaviour
     public GameObject LoginPageObject;
 
     private string currentURL;
+    private bool useHTTP;
     private bool saveLogin;
 
     public void Start()
@@ -69,16 +72,22 @@ public class PreLoginManager : MonoBehaviour
         {
             if (ServerDropdown.options.Count > 0)
             {
-                ConfigManager.LoadedConfig.SavedServers.Remove(ServerDropdown.options[ServerDropdown.value].text);
+                ConfigManager.LoadedConfig.SavedServers.Remove(ServerDropdown.options[ServerDropdown.value].text
+                    .ToLower());
                 ConfigManager.SaveConfigToFile();
+                RefreshServers(ConfigManager.LoadedConfig);
             }
         });
         JoinInputButton.onClick.AddListener(() => SetServer(ServerInput.text));
         JoinAndSaveInputButton.onClick.AddListener(() =>
         {
             SetServer(ServerInput.text);
-            ConfigManager.LoadedConfig.SavedServers.Add(ServerInput.text);
-            ConfigManager.SaveConfigToFile();
+            if (!ConfigManager.LoadedConfig.SavedServers.Contains(ServerInput.text.ToLower()))
+            {
+                ConfigManager.LoadedConfig.SavedServers.Add(ServerInput.text.ToLower());
+                ConfigManager.SaveConfigToFile();
+                RefreshServers(ConfigManager.LoadedConfig);
+            }
         });
         UserContinueButton.onClick.AddListener(() =>
         {
@@ -92,6 +101,7 @@ public class PreLoginManager : MonoBehaviour
                 ConfigManager.LoadedConfig.SavedAccounts.Remove(
                     ConfigManager.LoadedConfig.SavedAccounts[UserDropdown.value]);
                 ConfigManager.SaveConfigToFile();
+                RefreshUsers(ConfigManager.LoadedConfig);
             }
         });
         SignInButton.onClick.AddListener(() => SetUser(SignInUsernameInput.text, SignInPasswordInput.text));
@@ -101,6 +111,11 @@ public class PreLoginManager : MonoBehaviour
         {
             SignInObject.SetActive(false);
             SignUpObject.SetActive(true);
+        });
+        ReturnUserSelectorButton.onClick.AddListener(() =>
+        {
+            UserSelectorGameObject.SetActive(false);
+            ServerSelectorObject.SetActive(true);
         });
         SignUpButton.onClick.AddListener(() => SetNewUser(SignUpUsernameInput.text, SignUpEmailInput.text,
             SignUpPasswordInput.text, SignUpInviteCodeInput.text));
@@ -125,21 +140,38 @@ public class PreLoginManager : MonoBehaviour
         APIPlayer.OnLogout += () =>
         {
             UserSelectorGameObject.SetActive(false);
+            LoginPageObject.SetActive(false);
             ServerSelectorObject.SetActive(true);
         };
     }
 
-    private void SetServer(string url)
+    private void RefreshServers(Config config)
+    {
+        ServerDropdown.ClearOptions();
+        foreach (string savedServer in config.SavedServers)
+            ServerDropdown.options.Add(new TMP_Dropdown.OptionData(savedServer));
+        ServerDropdown.RefreshShownValue();
+    }
+
+    private void RefreshUsers(Config config)
     {
         UserDropdown.ClearOptions();
-        foreach (ConfigUser configUser in ConfigManager.LoadedConfig.SavedAccounts)
+        foreach (ConfigUser configUser in config.SavedAccounts)
         {
-            if (configUser.Server.Equals(url))
+            if (configUser.Server.Equals(currentURL))
                 UserDropdown.options.Add(new TMP_Dropdown.OptionData(configUser.Username));
         }
-        new HypernexObject(new HypernexSettings {TargetDomain = "https://" + url}).IsInviteCodeRequired(result =>
-            SignUpInviteCodeInput.gameObject.SetActive(result.result?.inviteCodeRequired ?? false));
+        UserDropdown.RefreshShownValue();
+    }
+
+    private void SetServer(string url)
+    {
         currentURL = url;
+        useHTTP = true;
+        RefreshUsers(ConfigManager.LoadedConfig);
+        new HypernexObject(new HypernexSettings {TargetDomain = url, IsHTTP = useHTTP}).IsInviteCodeRequired(result =>
+            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                SignUpInviteCodeInput.gameObject.SetActive(result.result.inviteCodeRequired))));
         ServerSelectorObject.SetActive(false);
         UserSelectorGameObject.SetActive(true);
     }
@@ -151,7 +183,7 @@ public class PreLoginManager : MonoBehaviour
         if (!isSettingUser)
         {
             HypernexSettings settings = new HypernexSettings(configUser.UserId, configUser.TokenContent)
-                {TargetDomain = "https://" + currentURL};
+                {TargetDomain = currentURL, IsHTTP = useHTTP};
             APIPlayer.Create(settings);
             APIPlayer.Login(HandleSetUser);
         }
@@ -163,7 +195,8 @@ public class PreLoginManager : MonoBehaviour
         if (!isSettingUser)
         {
             isSettingUser = true;
-            HypernexSettings settings = new HypernexSettings(username, password) {TargetDomain = "https://" + currentURL};
+            HypernexSettings settings = new HypernexSettings(username: username, password: password)
+                {TargetDomain = currentURL, IsHTTP = useHTTP};
             APIPlayer.Create(settings);
             APIPlayer.Login(HandleSetUser);
         }
@@ -175,7 +208,7 @@ public class PreLoginManager : MonoBehaviour
         {
             isSettingUser = true;
             HypernexSettings settings = new HypernexSettings(username, password, twofacode: twofa)
-                {TargetDomain = "https://" + currentURL};
+                {TargetDomain = currentURL, IsHTTP = useHTTP};
             APIPlayer.Create(settings);
             APIPlayer.Login(HandleSetUser);
         }
@@ -188,7 +221,7 @@ public class PreLoginManager : MonoBehaviour
         {
             isSettingUser = true;
             HypernexSettings settings = new HypernexSettings(username, email, password, inviteCode)
-                {TargetDomain = "https://" + currentURL};
+                {TargetDomain = currentURL, IsHTTP = useHTTP};
             APIPlayer.Create(settings);
             APIPlayer.Register(HandleNewSetUser);
         }
@@ -223,6 +256,11 @@ public class PreLoginManager : MonoBehaviour
             case LoginResult.Correct:
                 if (saveLogin)
                 {
+                    foreach (ConfigUser configUser in ConfigManager.LoadedConfig.SavedAccounts)
+                    {
+                        if (configUser.UserId == user.Id)
+                            ConfigManager.LoadedConfig.SavedAccounts.Remove(configUser);
+                    }
                     ConfigUser c = new ConfigUser
                     {
                         UserId = user.Id,
@@ -253,9 +291,8 @@ public class PreLoginManager : MonoBehaviour
 
     private void OnConfigLoaded(Config config)
     {
-        ServerDropdown.ClearOptions();
-        foreach (string savedServer in config.SavedServers)
-            ServerDropdown.options.Add(new TMP_Dropdown.OptionData(savedServer));
+        RefreshServers(config);
+        RefreshUsers(config);
     }
 
     private void ShowWarning(WarnStatus warnStatus, UnityAction onUnderstand)
