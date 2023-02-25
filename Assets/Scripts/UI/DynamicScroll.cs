@@ -10,33 +10,42 @@ public class DynamicScroll : MonoBehaviour
     public float Spacing = 5f;
 
     private ScrollRect scrollRect;
-    private readonly List<RectTransform> Items = new();
+    public List<RectTransform> Items = new();
 
-    private Func<RectTransform, int> sort;
-
-    private void Refresh()
+    public void Refresh()
     {
+        if (Items.Count <= 0)
+            return;
         float sizes = 0;
-        foreach (RectTransform item in Items)
+        switch (Direction)
         {
-            switch (Direction)
+            case ScrollDirection.Vertical:
             {
-                case ScrollDirection.Vertical:
+                int i = 0;
+                sizes += Items[0].rect.height / 2;
+                foreach (RectTransform item in Items)
                 {
-                    foreach (RectTransform o in Items)
-                        sizes += o.rect.height;
+                    if(i > 0)
+                        sizes += item.rect.height;
                     sizes += Spacing;
-                    item.rect.Set(item.rect.x, sizes, item.rect.width, item.rect.height);
-                    break;
+                    item.anchoredPosition3D = new Vector3(item.rect.width/2, sizes, 0);
+                    i++;
                 }
-                case ScrollDirection.Horizontal:
+                break;
+            }
+            case ScrollDirection.Horizontal:
+            {
+                int i = 0;
+                sizes += Items[0].rect.width / 2;
+                foreach (RectTransform item in Items)
                 {
-                    foreach (RectTransform o in Items)
-                        sizes += o.rect.width;
+                    if(i > 0)
+                        sizes += item.rect.width;
                     sizes += Spacing;
-                    item.rect.Set(sizes, item.rect.y, item.rect.width, item.rect.height);
-                    break;
+                    item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
+                    i++;
                 }
+                break;
             }
         }
     }
@@ -44,7 +53,7 @@ public class DynamicScroll : MonoBehaviour
     public void AddItem(RectTransform item)
     {
         if (item.transform.parent != scrollRect.content.transform)
-            item.transform.parent = scrollRect.content.transform;
+            item.transform.SetParent(scrollRect.content.transform);
         Items.Add(item);
         Refresh();
     }
@@ -61,15 +70,13 @@ public class DynamicScroll : MonoBehaviour
         Refresh();
     }
 
-    private void OnEnable() => scrollRect = gameObject.GetComponent<ScrollRect>();
-
-    private int lastCount;
-    private void Update()
+    public void Clear()
     {
-        if(lastCount != Items.Count)
-            Refresh();
-        lastCount = Items.Count;
+        foreach (RectTransform rectTransform in Items)
+            RemoveItem(rectTransform);
     }
+
+    private void OnEnable() => scrollRect = gameObject.GetComponent<ScrollRect>();
 }
 
 public enum ScrollDirection

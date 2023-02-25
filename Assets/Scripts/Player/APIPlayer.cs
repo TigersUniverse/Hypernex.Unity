@@ -11,9 +11,10 @@ public class APIPlayer : MonoBehaviour
     public static HypernexObject APIObject { get; private set; }
     
     public static User APIUser { get; private set; }
-    private static Token CurrentToken;
+    internal static Token CurrentToken;
     
     public static Action<User> OnUser = user => { };
+    public static Action<User> OnUserRefresh = user => { };
     public static Action OnLogout = () => { };
 
     public static void Create(HypernexSettings settings)
@@ -36,9 +37,10 @@ public class APIPlayer : MonoBehaviour
                         {
                             APIUser = getUserResult.result.UserData;
                             CurrentToken = loginResult.result.Token;
+                            QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, getUserResult.result.UserData);
                             if(loginResult.result.Result != LoginResult.Warned)
                                 QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
-                            QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, getUserResult.result.UserData);
+                            Logger.CurrentLogger.Log("Signed-In as " + getUserResult.result.UserData.Username + "!");
                         }
                         else
                             QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, null);
@@ -71,6 +73,17 @@ public class APIPlayer : MonoBehaviour
         }
         else
             QuickInvoke.InvokeActionOnMainThread(result, false, null);
+    }
+
+    public static void RefreshUser()
+    {
+        if (APISettings != null && APIObject != null)
+            APIObject.GetUser(CurrentToken, getUserResult =>
+            {
+                if (!getUserResult.success) return;
+                APIUser = getUserResult.result.UserData;
+                QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, getUserResult.result.UserData);
+            });
     }
 
     public static void Logout(Action<bool> result = null)

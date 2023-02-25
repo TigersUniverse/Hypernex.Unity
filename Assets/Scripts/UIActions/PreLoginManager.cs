@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Globalization;
 using HypernexSharp;
 using HypernexSharp.API.APIResults;
