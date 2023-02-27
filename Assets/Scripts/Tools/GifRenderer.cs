@@ -11,12 +11,12 @@ using Image = MG.GIF.Image;
 [RequireComponent(typeof(RawImage))]
 public class GifRenderer : MonoBehaviour
 {
+    public List<Texture2D> Frames => new(frames);
     public int CurrentFrame => currentFrame;
     
     private RawImage rawImage;
-    private List<Texture2D> frames = new();
-    private List<float> frameDelay = new();
-    private Decoder decoder;
+    private readonly List<Texture2D> frames = new();
+    private readonly List<float> frameDelay = new();
     private int currentFrame;
     private float time;
 
@@ -26,15 +26,17 @@ public class GifRenderer : MonoBehaviour
     {
         frames.Clear();
         frameDelay.Clear();
-        decoder = new Decoder(data);
-        Image img = decoder.NextImage();
-        while (img != null)
+        using (Decoder decoder = new Decoder(data))
         {
-            frames.Add(img.CreateTexture());
-            frameDelay.Add(img.Delay / 1000.0f);
-            img = decoder.NextImage();
+            Image img = decoder.NextImage();
+            while (img != null)
+            {
+                frames.Add(img.CreateTexture());
+                frameDelay.Add(img.Delay / 1000.0f);
+                img = decoder.NextImage();
+            }
+            rawImage.texture = frames.First() ?? Texture2D.whiteTexture;
         }
-        rawImage.texture = frames.First() ?? Texture2D.whiteTexture;
     }
 
     void OnEnable() => rawImage = GetComponent<RawImage>();

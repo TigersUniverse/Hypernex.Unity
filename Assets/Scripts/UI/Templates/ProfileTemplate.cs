@@ -1,32 +1,31 @@
-using HypernexSharp.APIObjects;
+﻿using HypernexSharp.APIObjects;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class FriendCardTemplate : MonoBehaviour
+public class ProfileTemplate : MonoBehaviour
 {
-    public TMP_Text UsernameText;
-    public TMP_Text StatusText;
-    public RawImage PfpImage;
+    public LoginPageTopBarButton ProfilePage;
+    
+    public RawImage Banner;
+    public RawImage Pfp;
     public Image Status;
-    public RawImage BannerImage;
+    public TMP_Text Username;
+    public TMP_Text StatusText;
+    public TMP_Text DescriptionText;
 
     public Texture2D DefaultPfp;
     public Texture2D DefaultBanner;
-
-    public Button NavigateButton;
-
-    private LoginPageManager loginPageManager;
-    private User lastRenderedUser;
-
-    public void Render(LoginPageManager instance, User user)
+    
+    public void Render(User user, bool skipShow = false)
     {
         if (!string.IsNullOrEmpty(user.Bio.DisplayName))
-            UsernameText.text = user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
+            Username.text = user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
         else
-            UsernameText.text = "@" + user.Username;
+            Username.text = "@" + user.Username;
         StatusText.text = !string.IsNullOrEmpty(user.Bio.StatusText) ? user.Bio.StatusText : user.Bio.Status.ToString();
+        DescriptionText.text = user.Bio.Description;
         switch (user.Bio.Status)
         {
             case HypernexSharp.APIObjects.Status.Online:
@@ -45,41 +44,39 @@ public class FriendCardTemplate : MonoBehaviour
                 Status.color = ColorTools.RGBtoHSV(128, 128, 128);
                 break;
         }
+        if(ComponentTools.HasComponent<GifRenderer>(Pfp.gameObject))
+            Destroy(Pfp.gameObject.GetComponent<GifRenderer>());
+        if(ComponentTools.HasComponent<GifRenderer>(Banner.gameObject))
+            Destroy(Banner.gameObject.GetComponent<GifRenderer>());
         if (!string.IsNullOrEmpty(user.Bio.PfpURL))
             DownloadTools.DownloadBytes(user.Bio.PfpURL,
                 bytes =>
                 {
                     if (GifRenderer.IsGif(bytes))
                     {
-                        GifRenderer gifRenderer = PfpImage.AddComponent<GifRenderer>();
+                        GifRenderer gifRenderer = Pfp.AddComponent<GifRenderer>();
                         gifRenderer.LoadGif(bytes);
                     }
                     else
-                        PfpImage.texture = ImageTools.BytesToTexture2D(bytes);
+                        Pfp.texture = ImageTools.BytesToTexture2D(bytes);
                 });
         else
-            PfpImage.texture = DefaultPfp;
+            Pfp.texture = DefaultPfp;
         if (!string.IsNullOrEmpty(user.Bio.BannerURL))
             DownloadTools.DownloadBytes(user.Bio.BannerURL,
                 bytes =>
                 {
                     if (GifRenderer.IsGif(bytes))
                     {
-                        GifRenderer gifRenderer = BannerImage.AddComponent<GifRenderer>();
+                        GifRenderer gifRenderer = Banner.AddComponent<GifRenderer>();
                         gifRenderer.LoadGif(bytes);
                     }
                     else
-                        BannerImage.texture = ImageTools.BytesToTexture2D(bytes);
+                        Banner.texture = ImageTools.BytesToTexture2D(bytes);
                 });
         else
-            BannerImage.texture = DefaultBanner;
-        loginPageManager = instance;
-        lastRenderedUser = user;
+            Banner.texture = DefaultBanner;
+        if(!skipShow)
+            ProfilePage.Show();
     }
-
-    private void Start() => NavigateButton.onClick.AddListener(() =>
-    {
-        if (lastRenderedUser != null)
-            loginPageManager.ProfileTemplate.Render(lastRenderedUser);
-    });
 }

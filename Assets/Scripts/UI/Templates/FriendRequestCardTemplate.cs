@@ -18,13 +18,19 @@ public class FriendRequestCardTemplate : MonoBehaviour
 
     public Button AcceptButton;
     public Button DeclineButton;
+    public Button NavigateButton;
 
+    private LoginPageManager loginPageManager;
+    private User lastRenderedUser;
     private bool isCompletingAction;
 
-    public void Render(User user, Action<bool> removeFromList)
+    public void Render(LoginPageManager instance, User user, Action<bool> removeFromList)
     {
-        UsernameText.text = user.Username;
-        StatusText.text = user.Bio.StatusText;
+        if (!string.IsNullOrEmpty(user.Bio.DisplayName))
+            UsernameText.text = user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
+        else
+            UsernameText.text = "@" + user.Username;
+        StatusText.text = !string.IsNullOrEmpty(user.Bio.StatusText) ? user.Bio.StatusText : user.Bio.Status.ToString();
         switch (user.Bio.Status)
         {
             case HypernexSharp.APIObjects.Status.Online:
@@ -103,5 +109,13 @@ public class FriendRequestCardTemplate : MonoBehaviour
                 });
         else
             BannerImage.texture = DefaultBanner;
+        loginPageManager = instance;
+        lastRenderedUser = user;
     }
+    
+    private void Start() => NavigateButton.onClick.AddListener(() =>
+    {
+        if (lastRenderedUser != null)
+            loginPageManager.ProfileTemplate.Render(lastRenderedUser);
+    });
 }

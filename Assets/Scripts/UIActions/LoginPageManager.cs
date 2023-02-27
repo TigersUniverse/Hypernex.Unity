@@ -10,6 +10,8 @@ public class LoginPageManager : MonoBehaviour
     public TMP_Text FriendRequestsLabel;
     public DynamicScroll FriendRequestsContainer;
 
+    public ProfileTemplate ProfileTemplate;
+
     private bool hasEnabledOnce;
     
     void OnEnable()
@@ -35,7 +37,7 @@ public class LoginPageManager : MonoBehaviour
         GameObject friendCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
             .Find("FriendCardTemplate").gameObject;
         GameObject newFriendCard = Instantiate(friendCard);
-        newFriendCard.GetComponent<FriendCardTemplate>().Render(user);
+        newFriendCard.GetComponent<FriendCardTemplate>().Render(this, user);
         FriendsContainer.AddItem(newFriendCard.GetComponent<RectTransform>());
     }
 
@@ -45,7 +47,7 @@ public class LoginPageManager : MonoBehaviour
             .Find("FriendRequestCardTemplate").gameObject;
         GameObject newFriendRequestCard = Instantiate(friendRequestCard);
         RectTransform c = newFriendRequestCard.GetComponent<RectTransform>();
-        newFriendRequestCard.GetComponent<FriendRequestCardTemplate>().Render(user,
+        newFriendRequestCard.GetComponent<FriendRequestCardTemplate>().Render(this, user,
             b =>
             {
                 FriendRequestsContainer.RemoveItem(c);

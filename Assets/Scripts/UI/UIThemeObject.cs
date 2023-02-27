@@ -18,6 +18,15 @@ public class UIThemeObject : MonoBehaviour
             if(rawimg != null)
                 rawimg.color = ThemeType == UIThemeObjectType.PrimaryVector ? theme.PrimaryColor : theme.SecondaryColor;
         }
+        else if (ThemeType is UIThemeObjectType.InverseVector)
+        {
+            Image img = GetComponent<Image>();
+            if (img != null)
+                img.color = theme.PrimaryLabelColor;
+            RawImage rawimg = GetComponent<RawImage>();
+            if(rawimg != null)
+                rawimg.color = theme.PrimaryLabelColor;
+        }
         else if (ThemeType is UIThemeObjectType.PrimaryText or UIThemeObjectType.SecondaryText)
         {
             TMP_Text textMeshPro = GetComponent<TMP_Text>();
@@ -57,5 +66,6 @@ public enum UIThemeObjectType
     SecondaryVector,
     PrimaryText,
     SecondaryText,
-    ButtonText
+    ButtonText,
+    InverseVector
 }
