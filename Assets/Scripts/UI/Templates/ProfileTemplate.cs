@@ -11,12 +11,15 @@ public class ProfileTemplate : MonoBehaviour
     public RawImage Banner;
     public RawImage Pfp;
     public Image Status;
+    public GameObject PronounContainer;
     public TMP_Text Username;
     public TMP_Text StatusText;
     public TMP_Text DescriptionText;
 
     public Texture2D DefaultPfp;
     public Texture2D DefaultBanner;
+
+    private TMP_Text pronounText;
     
     public void Render(User user, bool skipShow = false)
     {
@@ -44,6 +47,14 @@ public class ProfileTemplate : MonoBehaviour
                 Status.color = ColorTools.RGBtoHSV(128, 128, 128);
                 break;
         }
+        if (user.Bio.Pronouns != null)
+        {
+            (pronounText ? null : pronounText = PronounContainer.transform.GetChild(0).GetComponent<TMP_Text>())!.text =
+                user.Bio.Pronouns.ToString();
+            PronounContainer.SetActive(true);
+        }
+        else
+            PronounContainer.SetActive(false);
         if(ComponentTools.HasComponent<GifRenderer>(Pfp.gameObject))
             Destroy(Pfp.gameObject.GetComponent<GifRenderer>());
         if(ComponentTools.HasComponent<GifRenderer>(Banner.gameObject))
