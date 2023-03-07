@@ -16,11 +16,15 @@ public static class DownloadTools
 
     public static void DownloadBytes(string url, Action<byte[]> OnDownload, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool skipCache = false)
     {
-        if (Cache.ContainsKey(url) && !skipCache)
+        try
         {
-            QuickInvoke.InvokeActionOnMainThread(OnDownload, Cache[url]);
-            return;
+            if (Cache.ContainsKey(url) && !skipCache)
+            {
+                QuickInvoke.InvokeActionOnMainThread(OnDownload, Cache[url]);
+                return;
+            }
         }
+        catch(Exception){ClearCache();}
         DownloadMeta meta = new DownloadMeta
         {
             url = url,

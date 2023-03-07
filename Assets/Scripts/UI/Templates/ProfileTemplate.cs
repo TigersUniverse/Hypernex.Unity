@@ -49,7 +49,7 @@ public class ProfileTemplate : MonoBehaviour
         }
         if (user.Bio.Pronouns != null)
         {
-            (pronounText ? null : pronounText = PronounContainer.transform.GetChild(0).GetComponent<TMP_Text>())!.text =
+            (pronounText == null ? pronounText = PronounContainer.transform.GetChild(0).GetComponent<TMP_Text>() : pronounText)!.text =
                 user.Bio.Pronouns.ToString();
             PronounContainer.SetActive(true);
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using HypernexSharp;
 using HypernexSharp.API.APIResults;
@@ -255,7 +256,7 @@ public class PreLoginManager : MonoBehaviour
             case LoginResult.Correct:
                 if (saveLogin)
                 {
-                    foreach (ConfigUser configUser in ConfigManager.LoadedConfig.SavedAccounts)
+                    foreach (ConfigUser configUser in new List<ConfigUser>(ConfigManager.LoadedConfig.SavedAccounts))
                     {
                         if (configUser.UserId == user.Id)
                             ConfigManager.LoadedConfig.SavedAccounts.Remove(configUser);
