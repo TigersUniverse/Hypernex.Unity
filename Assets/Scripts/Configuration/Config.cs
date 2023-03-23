@@ -1,11 +1,15 @@
 using System.Collections.Generic;
+using Hypernex.Configuration.ConfigMeta;
 using Tomlet.Attributes;
 
-public class Config
+namespace Hypernex.Configuration
 {
-    [TomlProperty("SavedServers")]
-    public List<string> SavedServers { get; set; } = new();
+    public class Config
+    {
+        [TomlProperty("SavedServers")]
+        public List<string> SavedServers { get; set; } = new();
 
-    [TomlProperty("SavedAccounts")]
-    public List<ConfigUser> SavedAccounts { get; set; } = new();
+        [TomlProperty("SavedAccounts")]
+        public List<ConfigUser> SavedAccounts { get; set; } = new();
+    }
 }

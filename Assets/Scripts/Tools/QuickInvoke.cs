@@ -1,5 +1,8 @@
-public static class QuickInvoke
+namespace Hypernex.Tools
 {
-    public static void InvokeActionOnMainThread(object action, params object[] args) => UnityMainThreadDispatcher
-        .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
+    public static class QuickInvoke
+    {
+        public static void InvokeActionOnMainThread(object action, params object[] args) => UnityMainThreadDispatcher
+            .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
+    }
 }

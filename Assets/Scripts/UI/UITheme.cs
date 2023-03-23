@@ -3,29 +3,32 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 
-public class UITheme : MonoBehaviour
+namespace Hypernex.UI
 {
-    public string ThemeName;
-
-    public Color PrimaryColor;
-    public Color SecondaryColor;
-    
-    public Color PrimaryLabelColor;
-    public TMP_FontAsset PrimaryFont;
-
-    public Color SecondaryLabelColor;
-    public TMP_FontAsset SecondaryFont;
-
-    public List<UIButtonTheme> ButtonThemes;
-
-    public void ApplyThemeToUI()
+    public class UITheme : MonoBehaviour
     {
-        foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>(true))
-        {
-            UIThemeObject.ApplyTheme(this);
-        }
-    }
+        public string ThemeName;
 
-    public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>
-        ButtonThemes.FirstOrDefault(x => x.ButtonType == type);
+        public Color PrimaryColor;
+        public Color SecondaryColor;
+    
+        public Color PrimaryLabelColor;
+        public TMP_FontAsset PrimaryFont;
+
+        public Color SecondaryLabelColor;
+        public TMP_FontAsset SecondaryFont;
+
+        public List<UIButtonTheme> ButtonThemes;
+
+        public void ApplyThemeToUI()
+        {
+            foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>(true))
+            {
+                UIThemeObject.ApplyTheme(this);
+            }
+        }
+
+        public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>
+            ButtonThemes.FirstOrDefault(x => x.ButtonType == type);
+    }
 }

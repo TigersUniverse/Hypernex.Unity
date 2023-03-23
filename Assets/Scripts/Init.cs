@@ -1,3 +1,4 @@
+using Hypernex.UI;
 using UnityEngine;
 
 public class Init : MonoBehaviour

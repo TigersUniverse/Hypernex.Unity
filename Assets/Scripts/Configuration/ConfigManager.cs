@@ -3,61 +3,65 @@ using System.IO;
 using Tomlet;
 using Tomlet.Models;
 using UnityEngine;
+using Logger = Hypernex.Logging.Logger;
 
-public class ConfigManager : MonoBehaviour
+namespace Hypernex.Configuration
 {
-    private static string persistentAppData;
+    public class ConfigManager : MonoBehaviour
+    {
+        private static string persistentAppData;
     
-    public static string ConfigLocation => Path.Combine(persistentAppData, "config.cfg");
-    public static Config LoadedConfig;
+        public static string ConfigLocation => Path.Combine(persistentAppData, "config.cfg");
+        public static Config LoadedConfig;
 
-    public static Action<Config> OnConfigSaved = config => { };
-    public static Action<Config> OnConfigLoaded = config => { };
+        public static Action<Config> OnConfigSaved = config => { };
+        public static Action<Config> OnConfigLoaded = config => { };
 
-    public void Start()
-    {
-        persistentAppData = Application.persistentDataPath;
-        LoadConfigFromFile();
-    }
-
-    public void OnApplicationQuit()
-    {
-        SaveConfigToFile(LoadedConfig);
-    }
-
-    public static void LoadConfigFromFile()
-    {
-        if (File.Exists(ConfigLocation))
+        public void Start()
         {
-            try
+            persistentAppData = Application.persistentDataPath;
+            LoadConfigFromFile();
+        }
+
+        public void OnApplicationQuit()
+        {
+            SaveConfigToFile(LoadedConfig);
+        }
+
+        public static void LoadConfigFromFile()
+        {
+            if (File.Exists(ConfigLocation))
             {
-                string text = File.ReadAllText(ConfigLocation);
-                LoadedConfig = TomletMain.To<Config>(text);
-                OnConfigLoaded.Invoke(LoadedConfig);
-                Logger.CurrentLogger.Log("Loaded Config");
+                try
+                {
+                    string text = File.ReadAllText(ConfigLocation);
+                    LoadedConfig = TomletMain.To<Config>(text);
+                    OnConfigLoaded.Invoke(LoadedConfig);
+                    Logger.CurrentLogger.Log("Loaded Config");
+                }
+                catch (Exception e)
+                {
+                    Logger.CurrentLogger.Critical(e);
+                }
             }
-            catch (Exception e)
+            else
             {
-                Logger.CurrentLogger.Critical(e);
+                LoadedConfig = new Config();
+                SaveConfigToFile();
             }
         }
-        else
-        {
-            LoadedConfig = new Config();
-            SaveConfigToFile();
-        }
-    }
 
-    public static void SaveConfigToFile(Config config = null)
-    {
-        TomlDocument document;
-        if (config != null)
-            document = TomletMain.DocumentFrom(typeof(Config), config);
-        else
-            document = TomletMain.DocumentFrom(typeof(Config), LoadedConfig);
-        string text = document.SerializedValue;
-        File.WriteAllText(ConfigLocation, text);
-        OnConfigSaved.Invoke(config);
-        Logger.CurrentLogger.Log("Saved Config");
+        public static void SaveConfigToFile(Config config = null)
+        {
+            TomlDocument document;
+            if (config != null)
+                document = TomletMain.DocumentFrom(typeof(Config), config);
+            else
+                document = TomletMain.DocumentFrom(typeof(Config), LoadedConfig);
+            string text = document.SerializedValue;
+            File.WriteAllText(ConfigLocation, text);
+            OnConfigSaved.Invoke(config);
+            Logger.CurrentLogger.Log("Saved Config");
+        }
     }
 }

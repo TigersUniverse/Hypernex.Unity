@@ -3,84 +3,87 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(ScrollRect))]
-public class DynamicScroll : MonoBehaviour
+namespace Hypernex.UI
 {
-    public ScrollDirection Direction;
-    public float Spacing = 5f;
-
-    private ScrollRect scrollRect;
-    public List<RectTransform> Items = new();
-
-    public void Refresh()
+    [RequireComponent(typeof(ScrollRect))]
+    public class DynamicScroll : MonoBehaviour
     {
-        if (Items.Count <= 0)
-            return;
-        float sizes = 0;
-        switch (Direction)
+        public ScrollDirection Direction;
+        public float Spacing = 5f;
+
+        private ScrollRect scrollRect;
+        public List<RectTransform> Items = new();
+
+        public void Refresh()
         {
-            case ScrollDirection.Vertical:
+            if (Items.Count <= 0)
+                return;
+            float sizes = 0;
+            switch (Direction)
             {
-                int i = 0;
-                sizes += Items[0].rect.height / 2;
-                foreach (RectTransform item in Items)
+                case ScrollDirection.Vertical:
                 {
-                    if(i > 0)
-                        sizes += item.rect.height;
-                    sizes += Spacing;
-                    item.anchoredPosition3D = new Vector3(item.rect.width/2, sizes, 0);
-                    i++;
+                    int i = 0;
+                    sizes += Items[0].rect.height / 2;
+                    foreach (RectTransform item in Items)
+                    {
+                        if(i > 0)
+                            sizes += item.rect.height;
+                        sizes += Spacing;
+                        item.anchoredPosition3D = new Vector3(item.rect.width/2, sizes, 0);
+                        i++;
+                    }
+                    break;
                 }
-                break;
-            }
-            case ScrollDirection.Horizontal:
-            {
-                int i = 0;
-                sizes += Items[0].rect.width / 2;
-                foreach (RectTransform item in Items)
+                case ScrollDirection.Horizontal:
                 {
-                    if(i > 0)
-                        sizes += item.rect.width;
-                    sizes += Spacing;
-                    item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
-                    i++;
+                    int i = 0;
+                    sizes += Items[0].rect.width / 2;
+                    foreach (RectTransform item in Items)
+                    {
+                        if(i > 0)
+                            sizes += item.rect.width;
+                        sizes += Spacing;
+                        item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
+                        i++;
+                    }
+                    break;
                 }
-                break;
             }
         }
-    }
     
-    public void AddItem(RectTransform item)
-    {
-        if (item.transform.parent != scrollRect.content.transform)
-            item.transform.SetParent(scrollRect.content.transform);
-        Items.Add(item);
-        Refresh();
-    }
-
-    public void RemoveItem(RectTransform item)
-    {
-        if (Items.Contains(item))
+        public void AddItem(RectTransform item)
         {
-            Items.Remove(item);
-            Destroy(item);
+            if (item.transform.parent != scrollRect.content.transform)
+                item.transform.SetParent(scrollRect.content.transform);
+            Items.Add(item);
+            Refresh();
         }
-        else
-            return;
-        Refresh();
+
+        public void RemoveItem(RectTransform item)
+        {
+            if (Items.Contains(item))
+            {
+                Items.Remove(item);
+                Destroy(item);
+            }
+            else
+                return;
+            Refresh();
+        }
+
+        public void Clear()
+        {
+            foreach (RectTransform rectTransform in Items)
+                RemoveItem(rectTransform);
+        }
+
+        private void OnEnable() => scrollRect = gameObject.GetComponent<ScrollRect>();
     }
 
-    public void Clear()
+    public enum ScrollDirection
     {
-        foreach (RectTransform rectTransform in Items)
-            RemoveItem(rectTransform);
+        Vertical,
+        Horizontal
     }
-
-    private void OnEnable() => scrollRect = gameObject.GetComponent<ScrollRect>();
-}
-
-public enum ScrollDirection
-{
-    Vertical,
-    Horizontal
 }

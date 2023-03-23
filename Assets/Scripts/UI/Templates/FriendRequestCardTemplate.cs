@@ -1,9 +1,13 @@
 using System;
 using HypernexSharp.APIObjects;
+using Hypernex.Player;
 using TMPro;
+using Hypernex.UIActions;
+using Hypernex.Tools;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.Logging.Logger;
 
 public class FriendRequestCardTemplate : MonoBehaviour
 {
