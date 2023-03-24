@@ -20,7 +20,7 @@ namespace Hypernex.UIActions
         public ProfileTemplate ProfileTemplate;
 
         private bool hasEnabledOnce;
-    
+        
         void OnEnable()
         {
             if(APIPlayer.APIUser == null)

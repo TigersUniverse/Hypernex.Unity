@@ -8,6 +8,7 @@ namespace Hypernex.UIActions
     public class LoginPageTopBarButton : MonoBehaviour
     {
         private static readonly List<LoginPageTopBarButton> Pages = new();
+        public static Action<LoginPageTopBarButton> OnPageChanged = page => { };
 
         public string PageName;
         public GameObject CorrespondingPage;
@@ -22,6 +23,8 @@ namespace Hypernex.UIActions
                 page.CorrespondingPage.SetActive(match);
                 if(page.ButtonHighlight != null)
                     page.ButtonHighlight.SetActive(match);
+                if(match)
+                    OnPageChanged.Invoke(page);
             }
         }
 
@@ -36,6 +39,7 @@ namespace Hypernex.UIActions
             CorrespondingPage.SetActive(true);
             if(ButtonHighlight != null)
                 ButtonHighlight.SetActive(true);
+            OnPageChanged.Invoke(this);
         }
 
         private void SanityCheck()

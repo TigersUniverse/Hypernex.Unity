@@ -3,6 +3,7 @@ using HypernexSharp;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Hypernex.Tools;
+using HypernexSharp.Socketing;
 using UnityEngine;
 using Logger = Hypernex.Logging.Logger;
 using LoginResult = HypernexSharp.APIObjects.LoginResult;
@@ -16,6 +17,7 @@ namespace Hypernex.Player
     
         public static User APIUser { get; private set; }
         internal static Token CurrentToken;
+        internal static UserSocket UserSocket { get; private set; }
     
         public static Action<User> OnUser = user => { };
         public static Action<User> OnUserRefresh = user => { };
@@ -44,6 +46,8 @@ namespace Hypernex.Player
                                 QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, getUserResult.result.UserData);
                                 if(loginResult.result.Result != LoginResult.Warned)
                                     QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
+                                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                    UserSocket = APIObject.OpenUserSocket()));
                                 Logger.CurrentLogger.Log("Signed-In as " + getUserResult.result.UserData.Username + "!");
                             }
                             else
@@ -93,6 +97,7 @@ namespace Hypernex.Player
         public static void Logout(Action<bool> result = null)
         {
             if (APISettings != null && APIObject != null)
+            {
                 APIObject.Logout(r =>
                 {
                     if (r.success)
@@ -104,6 +109,8 @@ namespace Hypernex.Player
                     if(result != null)
                         QuickInvoke.InvokeActionOnMainThread(result, r.success);
                 }, APIUser, CurrentToken);
+                APIObject.CloseUserSocket();
+            }
             else
             {
                 if(result != null)

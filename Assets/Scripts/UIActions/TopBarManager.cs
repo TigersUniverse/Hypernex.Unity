@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Hypernex.Player;
 using TMPro;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace Hypernex.UIActions
         public TMP_Text WelcomeText;
         public Button SignoutButton;
 
-        private readonly string[] greetings =
+        public readonly List<string> greetings = new()
             {"Howdy", "Hello", "Greetings", "Welcome", "G'day", "Hey", "Howdy-do", "Shalom"};
 
         private bool isLoggingOut;
@@ -20,7 +21,7 @@ namespace Hypernex.UIActions
         {
             APIPlayer.OnUser += user =>
             {
-                int i = new System.Random().Next(greetings.Length);
+                int i = new System.Random().Next(greetings.Count);
                 WelcomeText.text = greetings[i] + ", " + user.Username;
                 LoggedInObject.SetActive(true);
             };
