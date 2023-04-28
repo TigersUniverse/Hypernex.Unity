@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HypernexSharp;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
@@ -18,6 +19,9 @@ namespace Hypernex.Player
         public static User APIUser { get; private set; }
         internal static Token CurrentToken;
         internal static UserSocket UserSocket { get; private set; }
+
+        public static bool IsFullReady =>
+            APIObject != null && APIUser != null && CurrentToken != null && UserSocket.IsOpen;
     
         public static Action<User> OnUser = user => { };
         public static Action<User> OnUserRefresh = user => { };
@@ -92,6 +96,22 @@ namespace Hypernex.Player
                     APIUser = getUserResult.result.UserData;
                     QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, getUserResult.result.UserData);
                 });
+        }
+
+        public static void GetAllSharedInstances(Action<List<SafeInstance>> Instances)
+        {
+            if (!IsFullReady)
+            {
+                Instances.Invoke(new List<SafeInstance>());
+                return;
+            }
+            APIObject.GetInstances(result =>
+            {
+                if (result.success)
+                    QuickInvoke.InvokeActionOnMainThread(Instances, result.result.SafeInstances);
+                else
+                    QuickInvoke.InvokeActionOnMainThread(Instances, new List<SafeInstance>());
+            }, APIUser, CurrentToken);
         }
 
         public static void Logout(Action<bool> result = null)

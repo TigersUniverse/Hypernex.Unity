@@ -16,6 +16,8 @@ namespace Hypernex.UIActions
         public DynamicScroll FriendsContainer;
         public TMP_Text FriendRequestsLabel;
         public DynamicScroll FriendRequestsContainer;
+        public TMP_Text InstancesLabel;
+        public DynamicScroll InstancesContainer;
 
         public ProfileTemplate ProfileTemplate;
 
@@ -64,6 +66,16 @@ namespace Hypernex.UIActions
             FriendRequestsContainer.AddItem(c);
         }
 
+        private void CreateInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host)
+        {
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+                .Find("InstanceCardTemplate").gameObject;
+            GameObject newInstanceCard = Instantiate(instanceCard);
+            RectTransform c = newInstanceCard.GetComponent<RectTransform>();
+            newInstanceCard.GetComponent<InstanceCardTemplate>().Render(this, safeInstance, worldMeta, host);
+            InstancesContainer.AddItem(c);
+        }
+
         void OnLogin(User user)
         {
             FriendsLabel.text = "Friends (" + user.Friends.Count + ")";
@@ -90,6 +102,24 @@ namespace Hypernex.UIActions
                                                    result.message);
                 })), userFriendRequestId, null, true);
             }
+            APIPlayer.GetAllSharedInstances(instances =>
+            {
+                InstancesLabel.text = "Instances (" + instances.Count + ")";
+                foreach (SafeInstance safeInstance in instances)
+                {
+                    APIPlayer.APIObject.GetWorldMeta(result =>
+                    {
+                        if (result.success)
+                            APIPlayer.APIObject.GetUser(userResult =>
+                            {
+                                if (userResult.success)
+                                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                        CreateInstanceCard(safeInstance, result.result.Meta,
+                                            userResult.result.UserData)));
+                            }, safeInstance.InstanceCreatorId, isUserId: true);
+                    }, safeInstance.WorldId);
+                }
+            });
         }
 
         void OnLogout()
