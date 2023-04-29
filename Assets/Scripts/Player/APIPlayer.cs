@@ -20,8 +20,11 @@ namespace Hypernex.Player
         internal static Token CurrentToken;
         internal static UserSocket UserSocket { get; private set; }
 
+        private static List<SafeInstance> _sharedInstances = new List<SafeInstance>();
+        public static List<SafeInstance> SharedInstances => new List<SafeInstance>(_sharedInstances);
+
         public static bool IsFullReady =>
-            APIObject != null && APIUser != null && CurrentToken != null && UserSocket.IsOpen;
+            APIObject != null && APIUser != null && CurrentToken != null && (UserSocket?.IsOpen ?? false);
     
         public static Action<User> OnUser = user => { };
         public static Action<User> OnUserRefresh = user => { };
@@ -52,6 +55,7 @@ namespace Hypernex.Player
                                     QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
                                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                                     UserSocket = APIObject.OpenUserSocket()));
+                                QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, APIUser);
                                 Logger.CurrentLogger.Log("Signed-In as " + getUserResult.result.UserData.Username + "!");
                             }
                             else
@@ -108,9 +112,17 @@ namespace Hypernex.Player
             APIObject.GetInstances(result =>
             {
                 if (result.success)
+                {
                     QuickInvoke.InvokeActionOnMainThread(Instances, result.result.SafeInstances);
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        _sharedInstances = new List<SafeInstance>(result.result.SafeInstances)));
+                }
                 else
+                {
                     QuickInvoke.InvokeActionOnMainThread(Instances, new List<SafeInstance>());
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        _sharedInstances = new List<SafeInstance>()));
+                }
             }, APIUser, CurrentToken);
         }
 

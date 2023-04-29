@@ -2,6 +2,7 @@ using System.IO;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.CCK.Unity;
+using Hypernex.Tools;
 using UnityEngine;
 
 public class Init : MonoBehaviour
@@ -18,13 +19,21 @@ public class Init : MonoBehaviour
     private void Start()
     {
         DefaultTheme.ApplyThemeToUI();
+        DiscordTools.StartDiscord();
+        
         int pluginsLoaded = PluginLoader.LoadAllPlugins(GetPluginLocation());
         Debug.Log($"Loaded {pluginsLoaded} Plugins!");
         gameObject.AddComponent<PluginLoader>();
     }
 
+    private void Update()
+    {
+        DiscordTools.RunCallbacks();
+    }
+
     private void OnApplicationQuit()
     {
+        DiscordTools.Stop();
         if (APIPlayer.UserSocket != null && APIPlayer.UserSocket.IsOpen)
             APIPlayer.UserSocket.Close();
     }

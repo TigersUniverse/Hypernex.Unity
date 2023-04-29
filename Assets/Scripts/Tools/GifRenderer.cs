@@ -27,6 +27,10 @@ namespace Hypernex.Tools
 
         private IEnumerator renderGif(byte[] data)
         {
+            loaded = false;
+            frames.Clear();
+            currentFrame = 0;
+            time = 0f;
             yield return UniGif.GetTextureListCoroutine(data, (textures, loopCount, width, height) =>
             {
                 foreach (UniGif.GifTexture gifTexture in textures)

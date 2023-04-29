@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
@@ -12,6 +13,8 @@ namespace Hypernex.UIActions
 {
     public class LoginPageManager : MonoBehaviour
     {
+        internal static List<SafeInstance> LastInstances = new();
+
         public TMP_Text FriendsLabel;
         public DynamicScroll FriendsContainer;
         public TMP_Text FriendRequestsLabel;
@@ -20,6 +23,7 @@ namespace Hypernex.UIActions
         public DynamicScroll InstancesContainer;
 
         public ProfileTemplate ProfileTemplate;
+        public WorldTemplate WorldTemplate;
 
         private bool hasEnabledOnce;
         
@@ -66,13 +70,14 @@ namespace Hypernex.UIActions
             FriendRequestsContainer.AddItem(c);
         }
 
-        private void CreateInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host)
+        private void CreateInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host = null,
+            User creator = null)
         {
             GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find("InstanceCardTemplate").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<InstanceCardTemplate>().Render(this, safeInstance, worldMeta, host);
+            newInstanceCard.GetComponent<InstanceCardTemplate>().Render(this, safeInstance, worldMeta, host, creator);
             InstancesContainer.AddItem(c);
         }
 
@@ -105,6 +110,7 @@ namespace Hypernex.UIActions
             APIPlayer.GetAllSharedInstances(instances =>
             {
                 InstancesLabel.text = "Instances (" + instances.Count + ")";
+                QuickInvoke.InvokeActionOnMainThread(new Action(() => LastInstances = new List<SafeInstance>(instances)));
                 foreach (SafeInstance safeInstance in instances)
                 {
                     APIPlayer.APIObject.GetWorldMeta(result =>
@@ -113,9 +119,13 @@ namespace Hypernex.UIActions
                             APIPlayer.APIObject.GetUser(userResult =>
                             {
                                 if (userResult.success)
-                                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                                        CreateInstanceCard(safeInstance, result.result.Meta,
-                                            userResult.result.UserData)));
+                                    APIPlayer.APIObject.GetUser(creatorResult =>
+                                    {
+                                        if(creatorResult.success)
+                                            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                                CreateInstanceCard(safeInstance, result.result.Meta,
+                                                    userResult.result.UserData, creatorResult.result.UserData)));
+                                    }, result.result.Meta.OwnerId);
                             }, safeInstance.InstanceCreatorId, isUserId: true);
                     }, safeInstance.WorldId);
                 }

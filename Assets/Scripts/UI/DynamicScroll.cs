@@ -16,6 +16,7 @@ namespace Hypernex.UI
 
         public void Refresh()
         {
+            // TODO: Scale Canvas
             if (Items.Count <= 0)
                 return;
             float sizes = 0;

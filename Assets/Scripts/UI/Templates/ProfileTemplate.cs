@@ -213,7 +213,6 @@ namespace Hypernex.UI.Templates
                 if (page.PageName != "Profile")
                 {
                     DeregisterButtonEvents();
-                    Debug.Log("deregister");
                 }
             };
         }
