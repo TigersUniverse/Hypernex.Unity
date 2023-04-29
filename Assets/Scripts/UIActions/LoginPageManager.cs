@@ -125,7 +125,7 @@ namespace Hypernex.UIActions
                                             QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                                                 CreateInstanceCard(safeInstance, result.result.Meta,
                                                     userResult.result.UserData, creatorResult.result.UserData)));
-                                    }, result.result.Meta.OwnerId);
+                                    }, result.result.Meta.OwnerId, isUserId: true);
                             }, safeInstance.InstanceCreatorId, isUserId: true);
                     }, safeInstance.WorldId);
                 }

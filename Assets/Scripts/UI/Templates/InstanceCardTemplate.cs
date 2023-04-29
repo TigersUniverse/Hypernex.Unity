@@ -14,6 +14,8 @@ namespace Hypernex.UI.Templates
 {
     public class InstanceCardTemplate : MonoBehaviour
     {
+        public JoinInstanceTemplate JoinInstanceTemplate;
+        
         public TMP_Text WorldText;
         public TMP_Text CreatorText;
         public RawImage BannerImage;
@@ -73,7 +75,7 @@ namespace Hypernex.UI.Templates
             {
                 if (result.success)
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        c.Add((sharedInstance, result.result.UserData))));
+                        temp.Add((sharedInstance, result.result.UserData))));
                 instances.Remove(sharedInstance);
                 if(instances.Count > 0)
                     QuickInvoke.InvokeActionOnMainThread(new Action(() => GetAllInstanceHosts(callback, instances, temp)));
@@ -84,10 +86,11 @@ namespace Hypernex.UI.Templates
     
         private void Start() => NavigateButton.onClick.AddListener(() =>
         {
-            // TODO: Make and Display Instance Page
             if (lastHoster != null)
             {
                 // Direct to an Instance Screen
+                JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator);
+                JoinInstanceTemplate.gameObject.SetActive(true);
             }
             else if (lastCreator != null)
             {

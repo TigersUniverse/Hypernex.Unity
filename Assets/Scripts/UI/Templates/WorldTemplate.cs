@@ -41,13 +41,13 @@ namespace Hypernex.UI.Templates
             }
         }
         
-        private void CreateWorldListInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host)
+        private void CreateWorldListInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host, User creator)
         {
             GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find("WorldListInstanceCardTemplate").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<WorldListInstanceCardTemplate>().Render(safeInstance, worldMeta, host);
+            newInstanceCard.GetComponent<WorldListInstanceCardTemplate>().Render(safeInstance, worldMeta, host, creator);
             InstancesList.AddItem(c);
         }
 
@@ -92,7 +92,7 @@ namespace Hypernex.UI.Templates
             WorldCreator.text = $"Created By {creator.Username}";
             DescriptionText.text = worldMeta.Description;
             foreach ((SafeInstance, User) instance in instances)
-                CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2);
+                CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2, creator);
             WorldPage.Show();
         }
 
