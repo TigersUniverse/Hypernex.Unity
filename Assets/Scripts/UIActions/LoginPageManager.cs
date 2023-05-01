@@ -34,7 +34,7 @@ namespace Hypernex.UIActions
             APIPlayer.OnUser += OnLogin;
             APIPlayer.OnUserRefresh += user =>
             {
-                FriendsContainer.Clear();
+                OnLogout();
                 OnLogin(user);
             };
             APIPlayer.OnLogout += OnLogout;
@@ -113,9 +113,9 @@ namespace Hypernex.UIActions
                 QuickInvoke.InvokeActionOnMainThread(new Action(() => LastInstances = new List<SafeInstance>(instances)));
                 foreach (SafeInstance safeInstance in instances)
                 {
-                    APIPlayer.APIObject.GetWorldMeta(result =>
+                    WorldTemplate.GetWorldMeta(safeInstance.WorldId, meta =>
                     {
-                        if (result.success)
+                        if(meta != null)
                             APIPlayer.APIObject.GetUser(userResult =>
                             {
                                 if (userResult.success)
@@ -123,11 +123,11 @@ namespace Hypernex.UIActions
                                     {
                                         if(creatorResult.success)
                                             QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                                                CreateInstanceCard(safeInstance, result.result.Meta,
+                                                CreateInstanceCard(safeInstance, meta,
                                                     userResult.result.UserData, creatorResult.result.UserData)));
-                                    }, result.result.Meta.OwnerId, isUserId: true);
+                                    }, meta.OwnerId, isUserId: true);
                             }, safeInstance.InstanceCreatorId, isUserId: true);
-                    }, safeInstance.WorldId);
+                    });
                 }
             });
         }
@@ -136,6 +136,7 @@ namespace Hypernex.UIActions
         {
             FriendsContainer.Clear();
             FriendRequestsContainer.Clear();
+            InstancesContainer.Clear();
         }
     }
 }

@@ -55,7 +55,7 @@ namespace Hypernex.Player
                                     QuickInvoke.InvokeActionOnMainThread(OnUser, APIUser);
                                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                                     UserSocket = APIObject.OpenUserSocket(() =>
-                                        QuickInvoke.InvokeActionOnMainThread(new Action(InstanceManager.InitSocket)))));
+                                        QuickInvoke.InvokeActionOnMainThread(new Action(SocketManager.InitSocket)))));
                                 QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, APIUser);
                                 Logger.CurrentLogger.Log("Signed-In as " + getUserResult.result.UserData.Username + "!");
                             }

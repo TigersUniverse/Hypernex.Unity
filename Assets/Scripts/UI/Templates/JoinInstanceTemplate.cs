@@ -53,7 +53,7 @@ namespace Hypernex.UI.Templates
         {
             JoinButton.onClick.AddListener(() =>
             {
-                InstanceManager.JoinInstance(Instance, WorldMeta);
+                SocketManager.JoinInstance(Instance);
                 Users.Clear();
                 gameObject.SetActive(false);
             });

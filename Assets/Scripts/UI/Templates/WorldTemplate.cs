@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
@@ -10,7 +13,10 @@ namespace Hypernex.UI.Templates
 {
     public class WorldTemplate : MonoBehaviour
     {
+        private static List<WorldMeta> CachedWorldMeta = new();
+
         public LoginPageTopBarButton WorldPage;
+        public CreateInstanceTemplate CreateInstanceTemplate;
         
         public TMP_Text WorldName;
         public RawImage Banner;
@@ -25,6 +31,8 @@ namespace Hypernex.UI.Templates
 
         private List<(Texture2D, byte[])> Icons = new();
         private int currentIndex;
+        private WorldMeta lastWorldMeta;
+        private User lastCreator;
 
         private void RenderIcon()
         {
@@ -51,6 +59,26 @@ namespace Hypernex.UI.Templates
             InstancesList.AddItem(c);
         }
 
+        public static void GetWorldMeta(string worldId, Action<WorldMeta> callback)
+        {
+            if (CachedWorldMeta.Count(x => x.Id == worldId) > 0)
+            {
+                callback.Invoke(CachedWorldMeta.First(x => x.Id == worldId));
+                return;
+            }
+            APIPlayer.APIObject.GetWorldMeta(result =>
+            {
+                if (result.success)
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                    {
+                        CachedWorldMeta.Add(result.result.Meta);
+                        callback.Invoke(result.result.Meta);
+                    }));
+                else
+                    QuickInvoke.InvokeActionOnMainThread(callback, null);
+            }, worldId);
+        }
+
         public void Render(WorldMeta worldMeta, User creator, List<(SafeInstance, User)> instances)
         {
             InstancesList.Clear();
@@ -60,7 +88,6 @@ namespace Hypernex.UI.Templates
             WorldName.text = worldMeta.Name;
             if (worldMeta.IconURLs.Count > 0)
             {
-                // TODO: Download Icons
                 int x = 0;
                 foreach (string iconURL in worldMeta.IconURLs)
                 {
@@ -93,12 +120,14 @@ namespace Hypernex.UI.Templates
             DescriptionText.text = worldMeta.Description;
             foreach ((SafeInstance, User) instance in instances)
                 CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2, creator);
+            lastWorldMeta = worldMeta;
+            lastCreator = creator;
             WorldPage.Show();
         }
 
         public void Start()
         {
-            // TODO: Register Create buttons
+            APIPlayer.OnUserRefresh += u => CachedWorldMeta.Clear();
             NextIcon.onClick.AddListener(() =>
             {
                 if (currentIndex + 1 > Icons.Count - 1)
@@ -120,6 +149,10 @@ namespace Hypernex.UI.Templates
                 }
                 currentIndex = Icons.Count - 1;
                 RenderIcon();
+            });
+            CreateInstanceButton.onClick.AddListener(() =>
+            {
+                CreateInstanceTemplate.Render(lastWorldMeta, lastCreator);
             });
         }
     }
