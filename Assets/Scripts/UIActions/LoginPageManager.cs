@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
@@ -115,7 +116,7 @@ namespace Hypernex.UIActions
                 {
                     WorldTemplate.GetWorldMeta(safeInstance.WorldId, meta =>
                     {
-                        if(meta != null)
+                        if(meta != null && meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
                             APIPlayer.APIObject.GetUser(userResult =>
                             {
                                 if (userResult.success)

@@ -18,6 +18,7 @@ public class Init : MonoBehaviour
 
     private void Start()
     {
+        DownloadTools.DownloadsPath = Path.Combine(Application.streamingAssetsPath, "Downloads");
         DefaultTheme.ApplyThemeToUI();
         DiscordTools.StartDiscord();
         

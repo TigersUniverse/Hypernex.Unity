@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Hypernex.Game;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
+using HypernexSharp.Socketing.SocketMessages;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
 
@@ -9,6 +13,9 @@ namespace Hypernex.Player
 {
     public class SocketManager
     {
+        private static List<SharedAvatarToken> avatarTokens = new();
+        public static List<SharedAvatarToken> SharedAvatarTokens => new(avatarTokens);
+
         public static Action<InstanceOpened, WorldMeta> OnInstanceOpened { get; set; } =
             (openedInstance, worldMeta) => { };
         public static Action<JoinedInstance, WorldMeta> OnInstanceJoined { get; set; } =
@@ -49,9 +56,26 @@ namespace Hypernex.Player
                         GotInvite gotInvite = (GotInvite) response;
                         QuickInvoke.InvokeActionOnMainThread(OnInvite, gotInvite);
                         break;
+                    case "sharedavatartoken":
+                        SharedAvatarToken sharedAvatarToken = (SharedAvatarToken) response;
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        {
+                            if (SharedAvatarTokens.Count(x =>
+                                    x.avatarId == sharedAvatarToken.avatarId &&
+                                    x.fromUserId == sharedAvatarToken.fromUserId) > 0)
+                            {
+                                foreach (SharedAvatarToken avatarToken in avatarTokens)
+                                    if (avatarToken.avatarId == sharedAvatarToken.avatarId &&
+                                        avatarToken.fromUserId == sharedAvatarToken.fromUserId)
+                                        avatarTokens.Remove(avatarToken);
+                            }
+                            avatarTokens.Add(sharedAvatarToken);
+                        }));
+                        break;
                     // TODO: Implement other messages
                 }
             };
+            GameInstance.Init();
         }
 
         public static void CreateInstance(WorldMeta worldMeta, InstancePublicity instancePublicity = InstancePublicity.Anyone,

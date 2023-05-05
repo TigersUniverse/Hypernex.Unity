@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using Hypernex.Configuration;
 using Hypernex.Logging;
 
 namespace Hypernex.Tools
 {
     public static class DownloadTools
     {
+        internal static string DownloadsPath;
         private static readonly Dictionary<string, byte[]> Cache = new();
-
-        public static int MaxThreads { get; set; } = 50;
-        // MB
-        public static int MaxStorageCache = 5120;
         private static readonly List<DownloadMeta> Queue = new();
         private static readonly Dictionary<DownloadMeta, Thread> RunningThreads = new();
 
@@ -41,15 +40,47 @@ namespace Hypernex.Tools
             Check();
         }
 
+        public static void DownloadFile(string url, string output, Action<string> OnDownload,
+            Action<DownloadProgressChangedEventArgs> DownloadProgress = null)
+        {
+            if (!Directory.Exists(DownloadsPath))
+                Directory.CreateDirectory(DownloadsPath);
+            string fileOutput = Path.Combine(DownloadsPath, output);
+            if(File.Exists(fileOutput))
+                OnDownload.Invoke(fileOutput);
+            else
+            {
+                DownloadMeta meta = new DownloadMeta
+                {
+                    url = url,
+                    done = b =>
+                    {
+                        File.WriteAllBytes(fileOutput, b);
+                        Array.Clear(b, 0, b.Length);
+                        QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
+                    },
+                    progress = p =>
+                    {
+                        if (DownloadProgress != null)
+                            QuickInvoke.InvokeActionOnMainThread(DownloadProgress, p);
+                    },
+                    skipCache = true
+                };
+                Queue.Add(meta);
+                Logger.CurrentLogger.Log("Added " + url + " to download queue!");
+                Check();
+            }
+        }
+
         public static void ClearCache() => Cache.Clear();
 
         private static void Check()
         {
-            if (Queue.Count <= 0 || RunningThreads.Count >= MaxThreads)
+            if (Queue.Count <= 0 || RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
                 return;
             foreach (DownloadMeta downloadMeta in new List<DownloadMeta>(Queue))
             {
-                if(RunningThreads.Count >= MaxThreads)
+                if(RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
                     return;
                 Logger.CurrentLogger.Log("Beginning Download for " + downloadMeta.url);
                 Queue.Remove(downloadMeta);
@@ -80,14 +111,14 @@ namespace Hypernex.Tools
         {
             // Count size (MB)
             double dataSize = data.Length / (1024.0 * 1024.0);
-            if(dataSize > MaxStorageCache)
+            if(dataSize > ConfigManager.LoadedConfig.MaxMemoryStorageCache)
                 return;
             double s = 0.0;
             foreach (byte[] d in Cache.Values)
                 s += d.Length / (1024.0 * 1024.0);
-            if (s >= MaxStorageCache || s + dataSize >= MaxStorageCache)
+            if (s >= ConfigManager.LoadedConfig.MaxMemoryStorageCache || s + dataSize >= ConfigManager.LoadedConfig.MaxMemoryStorageCache)
             {
-                while (s >= MaxStorageCache || s + dataSize >= MaxStorageCache)
+                while (s >= ConfigManager.LoadedConfig.MaxMemoryStorageCache || s + dataSize >= ConfigManager.LoadedConfig.MaxMemoryStorageCache)
                 {
                     if(Cache.Count <= 0)
                         break;

@@ -20,8 +20,8 @@ namespace Hypernex.Player
         internal static Token CurrentToken;
         internal static UserSocket UserSocket { get; private set; }
 
-        private static List<SafeInstance> _sharedInstances = new List<SafeInstance>();
-        public static List<SafeInstance> SharedInstances => new List<SafeInstance>(_sharedInstances);
+        private static List<SafeInstance> _sharedInstances = new();
+        public static List<SafeInstance> SharedInstances => new(_sharedInstances);
 
         public static bool IsFullReady =>
             APIObject != null && APIUser != null && CurrentToken != null && (UserSocket?.IsOpen ?? false);
