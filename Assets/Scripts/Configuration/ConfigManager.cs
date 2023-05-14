@@ -3,7 +3,7 @@ using System.IO;
 using Tomlet;
 using Tomlet.Models;
 using UnityEngine;
-using Logger = Hypernex.Logging.Logger;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Configuration
 {

@@ -6,7 +6,6 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using Hypernex.UIActions;
 using Hypernex.Tools;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -43,7 +42,7 @@ namespace Hypernex.UI.Templates
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            GifRenderer gifRenderer = BannerImage.AddComponent<GifRenderer>();
+                            GifRenderer gifRenderer = BannerImage.gameObject.AddComponent<GifRenderer>();
                             gifRenderer.LoadGif(bytes);
                         }
                         else

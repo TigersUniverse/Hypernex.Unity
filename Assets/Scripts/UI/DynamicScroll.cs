@@ -32,6 +32,7 @@ namespace Hypernex.UI
                             sizes += item.rect.height;
                         sizes += Spacing;
                         item.anchoredPosition3D = new Vector3(item.rect.width/2, sizes, 0);
+                        item.rotation = new Quaternion(0, 0, 0, 0);
                         i++;
                     }
                     break;
@@ -46,6 +47,7 @@ namespace Hypernex.UI
                             sizes += item.rect.width;
                         sizes += Spacing;
                         item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
+                        item.rotation = new Quaternion(0, 0, 0, 0);
                         i++;
                     }
                     break;
@@ -66,7 +68,7 @@ namespace Hypernex.UI
             if (Items.Contains(item))
             {
                 Items.Remove(item);
-                Destroy(item);
+                Destroy(item.gameObject);
             }
             else
                 return;

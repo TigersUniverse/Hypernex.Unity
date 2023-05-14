@@ -84,16 +84,16 @@ namespace Hypernex.Tools
             };
         }
 
-        internal static void FocusInstance(WorldMeta worldMeta, SafeInstance safeInstance, User host)
+        internal static void FocusInstance(WorldMeta worldMeta, string id, User host)
         {
             ignoreUserRefresh = true;
             long time;
-            if (InstanceDateTimes.ContainsKey(safeInstance.InstanceId))
-                time = InstanceDateTimes[safeInstance.InstanceId];
+            if (InstanceDateTimes.ContainsKey(id))
+                time = InstanceDateTimes[id];
             else
             {
                 time = new DateTimeOffset(new()).ToUnixTimeMilliseconds();
-                InstanceDateTimes.Add(safeInstance.InstanceId, time);
+                InstanceDateTimes.Add(id, time);
             }
             string status = APIPlayer.APIUser.Bio.Status.ToString();
             string statusSpaced = GetSpacedStatus(APIPlayer.APIUser.Bio.Status);
@@ -113,12 +113,12 @@ namespace Hypernex.Tools
             }, result => { });
         }
 
-        internal static void UnfocusInstance(SafeInstance instance = null)
+        internal static void UnfocusInstance(string id)
         {
             ignoreUserRefresh = false;
             DefaultActivity(APIPlayer.APIUser);
-            if (instance != null)
-                InstanceDateTimes.Remove(instance.InstanceId);
+            if (InstanceDateTimes.ContainsKey(id))
+                InstanceDateTimes.Remove(id);
         }
 
         internal static void RunCallbacks()

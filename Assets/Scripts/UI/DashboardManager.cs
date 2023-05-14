@@ -12,16 +12,19 @@ namespace Hypernex.UI
 
         public void Start() => IsVisible = Dashboard.activeSelf;
 
+        public void PositionDashboard(LocalPlayer localPlayer)
+        {
+            Transform reference = localPlayer.CameraOffset.transform.GetChild(0).GetChild(0);
+            Dashboard.transform.position = reference.position + reference.forward * 3f;
+            Dashboard.transform.rotation =
+                Quaternion.LookRotation((Dashboard.transform.position - reference.position).normalized);
+        }
+
         public void ToggleDashboard(LocalPlayer localPlayer)
         {
             IsVisible = !IsVisible;
             if (IsVisible)
-            {
-                Transform reference = localPlayer.CameraOffset.transform.GetChild(0).GetChild(0);
-                Dashboard.transform.position = reference.position + reference.forward * 3f;
-                Dashboard.transform.rotation =
-                    Quaternion.LookRotation((Dashboard.transform.position - reference.position).normalized);
-            }
+                PositionDashboard(localPlayer);
             Dashboard.SetActive(IsVisible);
         }
     }

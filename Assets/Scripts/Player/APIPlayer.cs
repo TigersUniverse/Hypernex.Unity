@@ -6,7 +6,7 @@ using HypernexSharp.APIObjects;
 using Hypernex.Tools;
 using HypernexSharp.Socketing;
 using UnityEngine;
-using Logger = Hypernex.Logging.Logger;
+using Logger = Hypernex.CCK.Logger;
 using LoginResult = HypernexSharp.APIObjects.LoginResult;
 
 namespace Hypernex.Player

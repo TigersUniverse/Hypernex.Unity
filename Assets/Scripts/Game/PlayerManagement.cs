@@ -2,7 +2,8 @@
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using UnityEngine;
-using Logger = Hypernex.Logging.Logger;
+using UnityEngine.SceneManagement;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
@@ -32,7 +33,8 @@ namespace Hypernex.Game
                 return netPlayer;
             GameObject gameObject = new GameObject(userid);
             netPlayer = gameObject.AddComponent<NetPlayer>();
-            netPlayer.Init(userid, instance.loadedScene);
+            netPlayer.Init(userid, instance);
+            SceneManager.MoveGameObjectToScene(gameObject, instance.loadedScene);
             return netPlayer;
         }
         

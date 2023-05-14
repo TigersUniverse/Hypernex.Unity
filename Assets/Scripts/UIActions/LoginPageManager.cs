@@ -8,7 +8,7 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using Hypernex.Tools;
 using UnityEngine;
-using Logger = Hypernex.Logging.Logger;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UIActions
 {

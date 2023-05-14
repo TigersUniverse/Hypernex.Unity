@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -14,7 +15,8 @@ namespace Hypernex.Tools
         public List<UniGif.GifTexture> Frames => new(frames);
         public int CurrentFrame => currentFrame;
         public bool LoadedGif => loaded;
-    
+
+        private byte[] d = Array.Empty<byte>();
         private RawImage rawImage;
         private readonly List<UniGif.GifTexture> frames = new();
         private int currentFrame;
@@ -27,6 +29,7 @@ namespace Hypernex.Tools
 
         private IEnumerator renderGif(byte[] data)
         {
+            d = data;
             loaded = false;
             frames.Clear();
             currentFrame = 0;
@@ -38,10 +41,16 @@ namespace Hypernex.Tools
                     frames.Add(gifTexture);
                 }
                 loaded = true;
+                d = Array.Empty<byte>();
             });
         }
 
-        void OnEnable() => rawImage = GetComponent<RawImage>();
+        void OnEnable()
+        {
+            rawImage = GetComponent<RawImage>();
+            if (!loaded && d.Length > 0)
+                LoadGif(d);
+        }
 
         private void Update()
         {

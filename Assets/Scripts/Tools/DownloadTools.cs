@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using Hypernex.Configuration;
-using Hypernex.Logging;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Tools
 {
@@ -40,13 +40,15 @@ namespace Hypernex.Tools
             Check();
         }
 
+        private static List<string> accessedFileOutputs = new ();
+
         public static void DownloadFile(string url, string output, Action<string> OnDownload,
             Action<DownloadProgressChangedEventArgs> DownloadProgress = null)
         {
             if (!Directory.Exists(DownloadsPath))
                 Directory.CreateDirectory(DownloadsPath);
             string fileOutput = Path.Combine(DownloadsPath, output);
-            if(File.Exists(fileOutput))
+            if(File.Exists(fileOutput) && accessedFileOutputs.Contains(fileOutput))
                 OnDownload.Invoke(fileOutput);
             else
             {
@@ -57,6 +59,7 @@ namespace Hypernex.Tools
                     {
                         File.WriteAllBytes(fileOutput, b);
                         Array.Clear(b, 0, b.Length);
+                        accessedFileOutputs.Add(fileOutput);
                         QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
                     },
                     progress = p =>
@@ -70,6 +73,8 @@ namespace Hypernex.Tools
                 Logger.CurrentLogger.Log("Added " + url + " to download queue!");
                 Check();
             }
+            
+            
         }
 
         public static void ClearCache() => Cache.Clear();

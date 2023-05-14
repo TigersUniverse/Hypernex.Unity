@@ -4,10 +4,9 @@ using Hypernex.Tools;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using Logger = Hypernex.Logging.Logger;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Templates
 {
@@ -93,7 +92,7 @@ namespace Hypernex.UI.Templates
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            GifRenderer gifRenderer = PfpImage.AddComponent<GifRenderer>();
+                            GifRenderer gifRenderer = PfpImage.gameObject.AddComponent<GifRenderer>();
                             gifRenderer.LoadGif(bytes);
                         }
                         else
@@ -107,7 +106,7 @@ namespace Hypernex.UI.Templates
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            GifRenderer gifRenderer = BannerImage.AddComponent<GifRenderer>();
+                            GifRenderer gifRenderer = BannerImage.gameObject.AddComponent<GifRenderer>();
                             gifRenderer.LoadGif(bytes);
                         }
                         else

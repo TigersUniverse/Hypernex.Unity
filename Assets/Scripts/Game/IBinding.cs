@@ -27,13 +27,21 @@ namespace Hypernex.Game
         public float Right { get; set; }
         
         /// <summary>
-        /// Button (Like ABXY)
+        /// Button (Like AX)
         /// </summary>
         public bool Button { get; set; }
         /// <summary>
         /// Invoked when the Button is clicked
         /// </summary>
         public Action ButtonClick { get; set; }
+        /// <summary>
+        /// Button (Like BY)
+        /// </summary>
+        public bool Button2 { get; set; }
+        /// <summary>
+        /// Invoked when the Button2 is clicked
+        /// </summary>
+        public Action Button2Click { get; set; }
         /// <summary>
         /// Trigger (Like Right Trigger/Left Click)
         /// </summary>

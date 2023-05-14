@@ -15,6 +15,8 @@ namespace Hypernex.Game.Bindings
         public float Right { get; set; }
         public bool Button { get; set; }
         public Action ButtonClick { get; set; } = () => { };
+        public bool Button2 { get; set; }
+        public Action Button2Click { get; set; } = () => { };
         public float Trigger { get; set; }
         public Action TriggerClick { get; set; } = () => { };
 
@@ -26,36 +28,39 @@ namespace Hypernex.Game.Bindings
             switch (move.x)
             {
                 case > 0:
-                    Up = move.x;
-                    Down = 0;
+                    Right = move.x;
+                    Left = 0;
                     break;
                 case < 0:
-                    Up = 0;
-                    Down = -1 * move.x;
+                    Right = 0;
+                    Left = -1 * move.x;
                     break;
                 default:
-                    Up = 0;
-                    Down = 0;
+                    Right = 0;
+                    Left = 0;
                     break;
             }
             switch (move.y)
             {
                 case > 0:
-                    Right = move.y;
-                    Left = 0;
+                    Up = move.y;
+                    Down = 0;
                     break;
                 case < 0:
-                    Right = 0;
-                    Left = -1 * move.y;
+                    Up = 0;
+                    Down = -1 * move.y;
                     break;
                 default:
-                    Right = 0;
-                    Left = 0;
+                    Up = 0;
+                    Down = 0;
                     break;
             }
-            Button = Input.GetKey(KeyCode.E);
-            if(Input.GetKeyDown(KeyCode.E))
+            Button = Input.GetKey(KeyCode.Space);
+            if(Input.GetKeyDown(KeyCode.Space))
                 ButtonClick.Invoke();
+            Button2 = Input.GetKey(KeyCode.LeftShift);
+            if(Input.GetKeyDown(KeyCode.LeftShift))
+                Button2Click.Invoke();
             if(Input.GetMouseButtonDown(0))
                 TriggerClick.Invoke();
             Trigger = Input.GetMouseButton(0) ? 1.0f : 0;

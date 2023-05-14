@@ -12,7 +12,7 @@ using Hypernex.Tools;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using Logger = Hypernex.Logging.Logger;
+using Logger = Hypernex.CCK.Logger;
 using LoginResult = HypernexSharp.APIObjects.LoginResult;
 
 namespace Hypernex.UIActions

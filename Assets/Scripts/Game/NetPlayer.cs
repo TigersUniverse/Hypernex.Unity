@@ -1,23 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Hypernex.CCK;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
+using Nexbox;
+using Nexbox.Interpreters;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Avatar = Hypernex.CCK.Unity.Avatar;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
     public class NetPlayer : MonoBehaviour
     {
-        public string UserId;
+        [HideInInspector] public string UserId;
+        private GameInstance instance;
         private Scene scene;
         public User User;
         private string AvatarId;
@@ -25,12 +32,25 @@ namespace Hypernex.Game
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
         [HideInInspector] public Avatar Avatar;
-        private Animator mainAnimator;
+        private List<IInterpreter> Interpreters = new();
+        internal Animator mainAnimator;
+        private NameplateTemplate nameplateTemplate;
         
         private Vector3 headOffset;
         
         public float volume = 1f;
         private AudioClip voice;
+
+        private void CreateNameplate()
+        {
+            GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("Nameplate"));
+            SceneManager.MoveGameObjectToScene(np, instance.loadedScene);
+            // ReSharper disable once Unity.InstantiateWithoutParent
+            np.transform.SetParent(transform);
+            np.gameObject.SetActive(true);
+            nameplateTemplate = np.GetComponent<NameplateTemplate>();
+            nameplateTemplate.Render(User);
+        }
 
         private void OnUser(CallbackResult<GetUserResult> result)
         {
@@ -39,7 +59,11 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetUser(OnUser, UserId, isUserId: true);
                 return;
             }
-            QuickInvoke.InvokeActionOnMainThread(new Action(() => User = result.result.UserData));
+            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+            {
+                User = result.result.UserData;
+                CreateNameplate();
+            }));
         }
 
         private void OnAvatarDownload(Stream stream)
@@ -107,10 +131,33 @@ namespace Hypernex.Game
             g.transform.SetParent(transform, false);
         }
 
-        public void Init(string userid, Scene s)
+        public void Update()
+        {
+            if (instance != null && User == null)
+            {
+                foreach (User instanceConnectedUser in instance.ConnectedUsers)
+                {
+                    if (instanceConnectedUser.Id == UserId)
+                        User = instanceConnectedUser;
+                }
+            }
+            if (nameplateTemplate != null && mainAnimator != null)
+            {
+                Transform bone = mainAnimator.GetBoneTransform(HumanBodyBones.Head);
+                if (bone != null)
+                {
+                    Vector3 newPos = bone.position;
+                    newPos.y += 1.5f;
+                    nameplateTemplate.transform.position = newPos;
+                }
+            }
+        }
+
+        public void Init(string userid, GameInstance gameInstance)
         {
             UserId = userid;
-            scene = s;
+            scene = gameInstance.loadedScene;
+            instance = gameInstance;
             APIPlayer.APIObject.GetUser(OnUser, UserId, isUserId: true);
         }
         
@@ -162,7 +209,9 @@ namespace Hypernex.Game
                     {
                         Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
                         Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
+                        Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
                         target.SetPositionAndRotation(position, rotation);
+                        target.localScale = localSize;
                     }
                 }
             }
@@ -178,6 +227,31 @@ namespace Hypernex.Game
             SceneManager.MoveGameObjectToScene(newAvatarObject, scene);
             // ReSharper disable once Unity.InstantiateWithoutParent
             newAvatarObject.transform.SetParent(transform, false);
+            // TODO: special handling for LocalAvatarScripts
+            foreach (IInterpreter interpreter in new List<IInterpreter>(Interpreters))
+            {
+                interpreter.Stop();
+                Interpreters.Remove(interpreter);
+            }
+            foreach (NexboxScript localAvatarScript in Avatar.LocalAvatarScripts)
+            {
+                IInterpreter interpreter = null;
+                switch (localAvatarScript.Language)
+                {
+                    case NexboxLanguage.Lua:
+                        interpreter = new LuaInterpreter();
+                        break;
+                    case NexboxLanguage.JavaScript:
+                        interpreter = new JavaScriptInterpreter();
+                        break;
+                }
+                if(interpreter == null)
+                    continue;
+                interpreter.RunScript(localAvatarScript.Script);
+                Interpreters.Add(interpreter);
+                Logger.CurrentLogger.Log(
+                    $"Executed LocalAvatarScript {localAvatarScript.Name}.{localAvatarScript.GetExtensionFromLanguage()} from Avatar {avatarMeta.Name}");
+            }
         }
     }
 }

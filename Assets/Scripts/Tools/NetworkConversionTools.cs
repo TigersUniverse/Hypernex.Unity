@@ -7,7 +7,7 @@ namespace Hypernex.Tools
     {
         public static float2 Vector2Tofloat2(Vector2 vector2) => new float2(vector2.x, vector2.y);
         public static float3 Vector3Tofloat3(Vector3 vector3) => new float3(vector3.x, vector3.y, vector3.z);
-        public static float4 Vector3Tofloat4(Vector4 vector4) => new float4(vector4.x, vector4.y, vector4.z, vector4.w);
+        public static float4 Vector4Tofloat4(Vector4 vector4) => new float4(vector4.x, vector4.y, vector4.z, vector4.w);
         public static float4 QuaternionTofloat4(Quaternion quaternion) =>
             new float4(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
         public static Vector2 float2ToVector2(float2 float2) => new Vector2(float2.x, float2.y);
