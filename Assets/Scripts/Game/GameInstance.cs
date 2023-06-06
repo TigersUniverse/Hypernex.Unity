@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Networking;
+using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.API;
@@ -10,11 +12,10 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
-using Microsoft.MixedReality.Toolkit;
-using Microsoft.MixedReality.Toolkit.SceneSystem;
 using Nexport;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace Hypernex.Game
 {
@@ -31,6 +32,11 @@ namespace Hypernex.Game
             SocketManager.OnInstanceJoined += (instance, meta) =>
             {
                 GameInstance gameInstance = new GameInstance(instance, meta);
+                gameInstance.Load();
+            };
+            SocketManager.OnInstanceOpened += (opened, meta) =>
+            {
+                GameInstance gameInstance = new GameInstance(opened, meta);
                 gameInstance.Load();
             };
         }
@@ -53,6 +59,7 @@ namespace Hypernex.Game
 
         private HypernexInstanceClient client;
         internal Scene loadedScene;
+        internal bool authed;
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
@@ -72,6 +79,37 @@ namespace Hypernex.Game
                 QuickInvoke.InvokeActionOnMainThread(OnConnect);
                 APIPlayer.APIObject.GetUser(r => OnUser(r, joinInstance.instanceCreatorId),
                     joinInstance.instanceCreatorId, isUserId: true);
+            };
+            client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
+            client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
+            client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
+            client.OnDisconnect += () =>
+            {
+                // Verify they actually leave the socket instance too
+                SocketManager.LeaveInstance(gameServerId, instanceId);
+                QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
+            };
+            gameInstances.Add(this);
+            OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
+            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user.Id);
+        }
+
+        private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
+        {
+            gameServerId = instanceOpened.gameServerId;
+            instanceId = instanceOpened.instanceId;
+            userIdToken = instanceOpened.tempUserToken;
+            this.worldMeta = worldMeta;
+            string[] s = instanceOpened.Uri.Split(':');
+            string ip = s[0];
+            int port = Convert.ToInt32(s[1]);
+            InstanceProtocol instanceProtocol = instanceOpened.InstanceProtocol;
+            ClientSettings clientSettings = new ClientSettings(ip, port, true);
+            client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
+                clientSettings);
+            client.OnConnect += () =>
+            {
+                QuickInvoke.InvokeActionOnMainThread(OnConnect);
             };
             client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
             client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
@@ -110,43 +148,47 @@ namespace Hypernex.Game
         }
         public void Close()
         {
-            client.Close();
+            client?.Close();
             gameInstances.Remove(this);
             SceneManager.LoadScene(0);
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
         }
+
         /// <summary>
         /// Sends a message over the client. If this is multithreaded, DO NOT PASS UNITY OBJECTS.
         /// </summary>
         /// <param name="message">message to send</param>
         /// <param name="messageChannel">channel to send message over</param>
-        public void SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable) =>
+        public void SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
+        {
+            if(authed)
+                client.SendMessage(message, messageChannel);
+        }
+        
+        internal void __SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable) =>
             client.SendMessage(message, messageChannel);
 
-        private async void LoadScene(bool open, Scene s)
+        private IEnumerator LoadScene(bool open, string s)
         {
-            IMixedRealitySceneSystem sceneSystem =
-                MixedRealityToolkit.Instance.GetService<IMixedRealitySceneSystem>();
-            await sceneSystem.LoadContent(s.name, LoadSceneMode.Single);
-            //SceneManager.LoadScene(s.Value.buildIndex);
-            foreach (GameObject rootGameObject in s.GetRootGameObjects())
-            {
-                World[] t = rootGameObject.GetComponentsInChildren<World>(true);
-                if (t.Length > 0)
-                {
-                    World = t[0];
-                    break;
-                }
-            }
+            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s);
+            while (!asyncOperation.isDone)
+                yield return null;
+            Scene currentScene = SceneManager.GetSceneByPath(s);
+            World = Object.FindObjectOfType<World>(true);
             if (World == null)
-            {
                 Dispose();
-                return;
+            else
+            {
+                loadedScene = currentScene;
+                AudioListener[] al = Object.FindObjectsOfType<AudioListener>();
+                foreach (AudioListener audioListener in al)
+                {
+                    Object.Destroy(audioListener);
+                }
+                FocusedInstance = this;
+                if(open)
+                    Open();
             }
-            loadedScene = s;
-            FocusedInstance = this;
-            if(open)
-                Open();
         }
 
         private void Load(bool open = true)
@@ -168,10 +210,10 @@ namespace Hypernex.Game
             string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{fileId}";
             DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
             {
-                Scene? s = AssetBundleTools.LoadSceneFromFile(o);
-                if (s != null)
+                string s = AssetBundleTools.LoadSceneFromFile(o);
+                if (!string.IsNullOrEmpty(s))
                 {
-                    LoadScene(open, s.Value);
+                    CoroutineRunner.Instance.Run(LoadScene(open, s));
                 }
                 else
                     Dispose();

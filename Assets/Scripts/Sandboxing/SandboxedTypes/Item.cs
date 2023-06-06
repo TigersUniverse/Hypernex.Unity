@@ -28,6 +28,18 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             set => t.rotation = NetworkConversionTools.float4ToQuaternion(value);
         }
 
+        public float3 LocalPosition
+        {
+            get => NetworkConversionTools.Vector3Tofloat3(t.localPosition);
+            set => t.localPosition = NetworkConversionTools.float3ToVector3(value);
+        }
+        
+        public float4 LocalRotation
+        {
+            get => NetworkConversionTools.QuaternionTofloat4(t.localRotation);
+            set => t.localRotation = NetworkConversionTools.float4ToQuaternion(value);
+        }
+
         public float3 LocalSize
         {
             get => NetworkConversionTools.Vector3Tofloat3(t.localScale);

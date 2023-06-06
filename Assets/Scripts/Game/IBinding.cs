@@ -50,6 +50,10 @@ namespace Hypernex.Game
         /// Invoked when the Trigger is clicked
         /// </summary>
         public Action TriggerClick { get; set; }
+        /// <summary>
+        /// If the specified Grab binding is being held
+        /// </summary>
+        public bool Grab { get; set; }
 
         public void Update();
     }

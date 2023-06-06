@@ -1,5 +1,5 @@
 {
-    "name": "New Controls",
+    "name": "VRBindings",
     "maps": [
         {
             "name": "Oculus",
@@ -73,6 +73,24 @@
                     "type": "Value",
                     "id": "3fc279dd-d76e-4958-931f-7b62db13aa31",
                     "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "LeftGrab",
+                    "type": "Value",
+                    "id": "32174d01-273c-4778-9ab3-89e0aca4f605",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "RightGrab",
+                    "type": "Value",
+                    "id": "e98f3955-d132-4640-817d-007a561a095d",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -166,6 +184,28 @@
                     "action": "SecondaryClick",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0f0f2f35-cd17-4da5-9d09-daa5231d9649",
+                    "path": "<OculusTouchController>{LeftHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LeftGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "751f7724-9bee-4c6a-9683-dabd8bccfb51",
+                    "path": "<OculusTouchController>{RightHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RightGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -241,6 +281,24 @@
                     "type": "Value",
                     "id": "4325ac42-f1f9-463a-b9ec-4f689132bf00",
                     "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "LeftGrab",
+                    "type": "Value",
+                    "id": "a660a13e-a878-4c6b-a473-952cbb123bb4",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "RightGrab",
+                    "type": "Value",
+                    "id": "a3b323be-a702-4b11-a3b3-23c13df099fa",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -334,6 +392,28 @@
                     "action": "SecondaryClick",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "57ae6e7a-3bf7-4658-8128-127308c3b0dd",
+                    "path": "<ValveIndexController>{LeftHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LeftGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c9eb3414-8068-4e27-823d-e5731849a2e0",
+                    "path": "<ValveIndexController>{RightHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RightGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -409,6 +489,24 @@
                     "type": "Value",
                     "id": "2a39fff3-0e26-48b9-92ad-22947bf49e06",
                     "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "LeftGrab",
+                    "type": "Value",
+                    "id": "4ae8f904-aa25-4905-9a5c-1e0342a187ef",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "RightGrab",
+                    "type": "Value",
+                    "id": "a71637d6-d236-407b-92d7-cff58ef37ac0",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -502,6 +600,28 @@
                     "action": "SecondaryClick",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "aa5a0ecc-fc4b-4026-8440-855427266380",
+                    "path": "<ViveController>{LeftHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LeftGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "4b331eda-b550-43d2-8c4d-5aa181a3a352",
+                    "path": "<ViveController>{RightHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RightGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -577,6 +697,24 @@
                     "type": "Value",
                     "id": "bf7ed347-ffdc-425e-8d63-fcd5a849127a",
                     "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "LeftGrab",
+                    "type": "Value",
+                    "id": "7e28af1b-40f1-4769-83bb-b19254343982",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "RightGrab",
+                    "type": "Value",
+                    "id": "16cf87d9-7c15-4f7b-a163-3e751b79c6d8",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -668,6 +806,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "SecondaryClick",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "45bb07b4-9a90-4547-b20f-3dbdd0276bb4",
+                    "path": "<XRController>{LeftHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LeftGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "42dcd403-05ae-4a7e-b854-9139ab650db8",
+                    "path": "<XRController>{RightHand}/grip",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RightGrab",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

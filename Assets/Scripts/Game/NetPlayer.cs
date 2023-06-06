@@ -196,7 +196,7 @@ namespace Hypernex.Game
                 AvatarId = playerUpdate.AvatarId;
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
             }
-            if (Avatar.transform.parent == transform)
+            if (Avatar != null && Avatar.transform.parent == transform)
             {
                 foreach (NetworkedObject networkedObject in playerUpdate.TrackedObjects)
                 {
@@ -227,7 +227,10 @@ namespace Hypernex.Game
             SceneManager.MoveGameObjectToScene(newAvatarObject, scene);
             // ReSharper disable once Unity.InstantiateWithoutParent
             newAvatarObject.transform.SetParent(transform, false);
-            // TODO: special handling for LocalAvatarScripts
+            // TODO: Resize based on avatar size
+            if(nameplateTemplate != null)
+                nameplateTemplate.transform.SetLocalPositionAndRotation(new Vector3(0, transform.localScale.y + 1f, 0),
+                    Quaternion.identity);
             foreach (IInterpreter interpreter in new List<IInterpreter>(Interpreters))
             {
                 interpreter.Stop();

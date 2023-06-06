@@ -22,6 +22,17 @@ namespace Hypernex.Game
                     PlayerManagement.HandlePlayerVoice(gameInstance, playerVoice);
                     break;
                 }
+                case "Hypernex.Networking.Messages.RespondAuth":
+                {
+                    RespondAuth respondAuth = (RespondAuth) Convert.ChangeType(msgMeta.Data, typeof(RespondAuth));
+                    foreach (GameInstance instance in GameInstance.GameInstances)
+                    {
+                        if (instance.gameServerId == respondAuth.GameServerId &&
+                            instance.instanceId == respondAuth.InstanceId)
+                            instance.authed = true;
+                    }
+                    break;
+                }
                 case "Hypernex.Networking.Messages.PlayerMessage":
                 {
                     // TODO: Implement chatbox system (this will go in NetPlayer)

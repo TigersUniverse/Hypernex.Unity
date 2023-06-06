@@ -15,19 +15,22 @@ using Hypernex.UI;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
-using Microsoft.MixedReality.Toolkit.Utilities;
 using Nexport;
 using OpusDotNet;
 using RootMotion.FinalIK;
 using UnityEditor;
 using UnityEditor.XR.LegacyInputHelpers;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 using UnityEngine.SpatialTracking;
 using UnityEngine.XR;
 using Application = OpusDotNet.Application;
 using Avatar = Hypernex.CCK.Unity.Avatar;
+using CommonUsages = UnityEngine.XR.CommonUsages;
+using InputDevice = UnityEngine.XR.InputDevice;
+using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
+using Mouse = Hypernex.Game.Bindings.Mouse;
 
 namespace Hypernex.Game
 {
@@ -92,6 +95,7 @@ namespace Hypernex.Game
         public CharacterController CharacterController;
         public Transform LeftHandReference;
         public Transform RightHandReference;
+        public PlayerInput vrPlayerInput;
 
         public Transform GetBoneFromHumanoid(HumanBodyBones humanBodyBones)
         {
@@ -112,6 +116,7 @@ namespace Hypernex.Game
         private bool isCalibrating;
         private bool calibrated;
         private VRIKCalibrator.CalibrationData calibrationData = new();
+        private List<Transform> SavedTransforms = new();
 
         private void SetMicrophone()
         {
@@ -151,10 +156,11 @@ namespace Hypernex.Game
                         Rotation = NetworkConversionTools.QuaternionTofloat4(transform.rotation),
                         Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
                     }
-                }
+                },
+                ExtraneousData = new Dictionary<string, object>(),
+                WeightedObjects = new Dictionary<string, float>()
             };
-            // TODO: please cache!
-            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+            foreach (Transform child in new List<Transform>(SavedTransforms))
                 playerUpdate.TrackedObjects.Add(new NetworkedObject
                 {
                     ObjectLocation = AnimationUtility.CalculateTransformPath(child, transform),
@@ -162,6 +168,28 @@ namespace Hypernex.Game
                     Rotation = NetworkConversionTools.QuaternionTofloat4(transform.rotation),
                     Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
                 });
+            if (playerUpdate.IsPlayerVR)
+            {
+                XRBinding left = null;
+                XRBinding right = null;
+                foreach (IBinding binding in Bindings)
+                    switch (binding.Id)
+                    {
+                        case "Left VRController":
+                            left = (XRBinding) binding;
+                            break;
+                        case "Right VRController":
+                            right = (XRBinding) binding;
+                            break;
+                    }
+
+                if (left != null && right != null)
+                {
+                    List<(string, float)> fingerTrackingWeights = XRBinding.GetFingerTrackingWeights(left, right);
+                    foreach ((string, float) fingerTrackingWeight in fingerTrackingWeights)
+                        playerUpdate.WeightedObjects.Add(fingerTrackingWeight.Item1, fingerTrackingWeight.Item2);
+                }
+            }
             return playerUpdate;
         }
         
@@ -176,7 +204,7 @@ namespace Hypernex.Game
             return stream.ToArray();
         }
 
-        private PlayerVoice GetPlayerVoice(GameInstance gameInstance, byte[] inData, int l)
+        private PlayerVoice GetPlayerVoice(GameInstance gameInstance, byte[] inData)
         {
             if (!APIPlayer.IsFullReady || !MicrophoneEnabled)
                 return null;
@@ -198,7 +226,7 @@ namespace Hypernex.Game
                 Bitrate = 128000,
                 VBR = true
             };
-            byte[] data = opusEncoder.Encode(inData, l, out playerVoice.EncodeLength);
+            byte[] data = opusEncoder.Encode(inData, 5, out playerVoice.EncodeLength);
             playerVoice.Bytes = data;
             return playerVoice;
         }
@@ -228,6 +256,9 @@ namespace Hypernex.Game
             DontDestroyOnLoad(avatar.gameObject);
             mainAnimator = avatar.GetComponent<Animator>();
             avatar.transform.SetParent(transform);
+            SavedTransforms.Clear();
+            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+                SavedTransforms.Add(child);
             avatar.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
             if(IsVR)
                 vrik = avatar.gameObject.AddComponent<VRIK>();
@@ -274,6 +305,7 @@ namespace Hypernex.Game
                 return;
             }
             Instance = this;
+            ConfigManager.OnConfigLoaded += config => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
@@ -288,21 +320,22 @@ namespace Hypernex.Game
                 if (GameInstance.FocusedInstance == null)
                     return;
                 byte[] d = ConvertAudioClip(floats);
-                PlayerVoice playerVoice = GetPlayerVoice(GameInstance.FocusedInstance, d, i);
+                PlayerVoice playerVoice = GetPlayerVoice(GameInstance.FocusedInstance, d);
                 if(playerVoice != null)
                     GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
             };
             if (IsVR)
             {
+                Bindings.Clear();
                 // Create Bindings
+                vrPlayerInput.ActivateInput();
                 vrBindings = new VRBindings();
-                MRTKBinding leftBinding = new MRTKBinding(Handedness.Left, vrBindings);
-                MRTKBinding rightBinding = new MRTKBinding(Handedness.Right, vrBindings);
+                XRBinding leftBinding = new XRBinding(vrBindings, true);
+                XRBinding rightBinding = new XRBinding(vrBindings, false);
                 Bindings.Add(leftBinding);
                 Bindings.Add(rightBinding);
                 Logger.CurrentLogger.Log("Added VR Bindings");
             }
-            LoadAvatar();
         }
 
         private float rotx;
@@ -474,6 +507,12 @@ namespace Hypernex.Game
                     }
                 }
             }
+            if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
+                GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = GameInstance.FocusedInstance.userIdToken
+                }));
         }
     }
 }

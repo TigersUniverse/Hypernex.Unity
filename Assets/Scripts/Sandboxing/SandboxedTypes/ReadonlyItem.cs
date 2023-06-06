@@ -17,6 +17,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public float3 Position => item.Position;
         public float4 Rotation => item.Rotation;
+
+        public float3 LocalPosition => item.LocalPosition;
+        public float4 LocalRotation => item.LocalRotation;
         public float3 LocalSize => item.LocalSize;
     }
 }

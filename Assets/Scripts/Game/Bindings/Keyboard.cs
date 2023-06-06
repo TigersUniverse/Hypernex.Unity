@@ -19,6 +19,8 @@ namespace Hypernex.Game.Bindings
         public Action Button2Click { get; set; } = () => { };
         public float Trigger { get; set; }
         public Action TriggerClick { get; set; } = () => { };
+        // This grab will never be used
+        public bool Grab { get; set; }
 
         private static Dictionary<KeyCode, Action> customEvents = new();
 

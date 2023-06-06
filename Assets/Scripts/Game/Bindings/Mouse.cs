@@ -18,6 +18,7 @@ namespace Hypernex.Game.Bindings
         public Action Button2Click { get; set; } = () => { };
         public float Trigger { get; set; }
         public Action TriggerClick { get; set; } = () => { };
+        public bool Grab { get; set; }
 
         public float Sensitivity = 1;
 
@@ -63,6 +64,7 @@ namespace Hypernex.Game.Bindings
             if(Input.GetMouseButtonDown(1))
                 TriggerClick.Invoke();
             Trigger = Input.GetMouseButton(1) ? 1.0f : 0;
+            Grab = Input.GetMouseButton(0);
         }
     }
 }

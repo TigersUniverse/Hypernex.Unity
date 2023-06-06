@@ -98,6 +98,24 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LeftGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""32174d01-273c-4778-9ab3-89e0aca4f605"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RightGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""e98f3955-d132-4640-817d-007a561a095d"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -188,6 +206,28 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""action"": ""SecondaryClick"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0f0f2f35-cd17-4da5-9d09-daa5231d9649"",
+                    ""path"": ""<OculusTouchController>{LeftHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeftGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""751f7724-9bee-4c6a-9683-dabd8bccfb51"",
+                    ""path"": ""<OculusTouchController>{RightHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RightGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -263,6 +303,24 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""type"": ""Value"",
                     ""id"": ""4325ac42-f1f9-463a-b9ec-4f689132bf00"",
                     ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LeftGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""a660a13e-a878-4c6b-a473-952cbb123bb4"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RightGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""a3b323be-a702-4b11-a3b3-23c13df099fa"",
+                    ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
@@ -356,6 +414,28 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""action"": ""SecondaryClick"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""57ae6e7a-3bf7-4658-8128-127308c3b0dd"",
+                    ""path"": ""<ValveIndexController>{LeftHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeftGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c9eb3414-8068-4e27-823d-e5731849a2e0"",
+                    ""path"": ""<ValveIndexController>{RightHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RightGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -431,6 +511,24 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""type"": ""Value"",
                     ""id"": ""2a39fff3-0e26-48b9-92ad-22947bf49e06"",
                     ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LeftGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""4ae8f904-aa25-4905-9a5c-1e0342a187ef"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RightGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""a71637d6-d236-407b-92d7-cff58ef37ac0"",
+                    ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
@@ -524,6 +622,28 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""action"": ""SecondaryClick"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""aa5a0ecc-fc4b-4026-8440-855427266380"",
+                    ""path"": ""<ViveController>{LeftHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeftGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""4b331eda-b550-43d2-8c4d-5aa181a3a352"",
+                    ""path"": ""<ViveController>{RightHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RightGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -599,6 +719,24 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""type"": ""Value"",
                     ""id"": ""bf7ed347-ffdc-425e-8d63-fcd5a849127a"",
                     ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LeftGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""7e28af1b-40f1-4769-83bb-b19254343982"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RightGrab"",
+                    ""type"": ""Value"",
+                    ""id"": ""16cf87d9-7c15-4f7b-a163-3e751b79c6d8"",
+                    ""expectedControlType"": ""Axis"",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
@@ -692,6 +830,28 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                     ""action"": ""SecondaryClick"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""45bb07b4-9a90-4547-b20f-3dbdd0276bb4"",
+                    ""path"": ""<XRController>{LeftHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LeftGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""42dcd403-05ae-4a7e-b854-9139ab650db8"",
+                    ""path"": ""<XRController>{RightHand}/grip"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RightGrab"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -708,6 +868,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         m_Oculus_ToggleMicrophone = m_Oculus.FindAction("ToggleMicrophone", throwIfNotFound: true);
         m_Oculus_PrimaryClick = m_Oculus.FindAction("PrimaryClick", throwIfNotFound: true);
         m_Oculus_SecondaryClick = m_Oculus.FindAction("SecondaryClick", throwIfNotFound: true);
+        m_Oculus_LeftGrab = m_Oculus.FindAction("LeftGrab", throwIfNotFound: true);
+        m_Oculus_RightGrab = m_Oculus.FindAction("RightGrab", throwIfNotFound: true);
         // Index
         m_Index = asset.FindActionMap("Index", throwIfNotFound: true);
         m_Index_Move = m_Index.FindAction("Move", throwIfNotFound: true);
@@ -718,6 +880,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         m_Index_ToggleMicrophone = m_Index.FindAction("ToggleMicrophone", throwIfNotFound: true);
         m_Index_PrimaryClick = m_Index.FindAction("PrimaryClick", throwIfNotFound: true);
         m_Index_SecondaryClick = m_Index.FindAction("SecondaryClick", throwIfNotFound: true);
+        m_Index_LeftGrab = m_Index.FindAction("LeftGrab", throwIfNotFound: true);
+        m_Index_RightGrab = m_Index.FindAction("RightGrab", throwIfNotFound: true);
         // Vive
         m_Vive = asset.FindActionMap("Vive", throwIfNotFound: true);
         m_Vive_Move = m_Vive.FindAction("Move", throwIfNotFound: true);
@@ -728,6 +892,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         m_Vive_ToggleMicrophone = m_Vive.FindAction("ToggleMicrophone", throwIfNotFound: true);
         m_Vive_PrimaryClick = m_Vive.FindAction("PrimaryClick", throwIfNotFound: true);
         m_Vive_SecondaryClick = m_Vive.FindAction("SecondaryClick", throwIfNotFound: true);
+        m_Vive_LeftGrab = m_Vive.FindAction("LeftGrab", throwIfNotFound: true);
+        m_Vive_RightGrab = m_Vive.FindAction("RightGrab", throwIfNotFound: true);
         // Unknown
         m_Unknown = asset.FindActionMap("Unknown", throwIfNotFound: true);
         m_Unknown_Move = m_Unknown.FindAction("Move", throwIfNotFound: true);
@@ -738,6 +904,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         m_Unknown_ToggleMicrophone = m_Unknown.FindAction("ToggleMicrophone", throwIfNotFound: true);
         m_Unknown_PrimaryClick = m_Unknown.FindAction("PrimaryClick", throwIfNotFound: true);
         m_Unknown_SecondaryClick = m_Unknown.FindAction("SecondaryClick", throwIfNotFound: true);
+        m_Unknown_LeftGrab = m_Unknown.FindAction("LeftGrab", throwIfNotFound: true);
+        m_Unknown_RightGrab = m_Unknown.FindAction("RightGrab", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -805,6 +973,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
     private readonly InputAction m_Oculus_ToggleMicrophone;
     private readonly InputAction m_Oculus_PrimaryClick;
     private readonly InputAction m_Oculus_SecondaryClick;
+    private readonly InputAction m_Oculus_LeftGrab;
+    private readonly InputAction m_Oculus_RightGrab;
     public struct OculusActions
     {
         private @VRBindings m_Wrapper;
@@ -817,6 +987,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         public InputAction @ToggleMicrophone => m_Wrapper.m_Oculus_ToggleMicrophone;
         public InputAction @PrimaryClick => m_Wrapper.m_Oculus_PrimaryClick;
         public InputAction @SecondaryClick => m_Wrapper.m_Oculus_SecondaryClick;
+        public InputAction @LeftGrab => m_Wrapper.m_Oculus_LeftGrab;
+        public InputAction @RightGrab => m_Wrapper.m_Oculus_RightGrab;
         public InputActionMap Get() { return m_Wrapper.m_Oculus; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -850,6 +1022,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started -= m_Wrapper.m_OculusActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.performed -= m_Wrapper.m_OculusActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.canceled -= m_Wrapper.m_OculusActionsCallbackInterface.OnSecondaryClick;
+                @LeftGrab.started -= m_Wrapper.m_OculusActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.performed -= m_Wrapper.m_OculusActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.canceled -= m_Wrapper.m_OculusActionsCallbackInterface.OnLeftGrab;
+                @RightGrab.started -= m_Wrapper.m_OculusActionsCallbackInterface.OnRightGrab;
+                @RightGrab.performed -= m_Wrapper.m_OculusActionsCallbackInterface.OnRightGrab;
+                @RightGrab.canceled -= m_Wrapper.m_OculusActionsCallbackInterface.OnRightGrab;
             }
             m_Wrapper.m_OculusActionsCallbackInterface = instance;
             if (instance != null)
@@ -878,6 +1056,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started += instance.OnSecondaryClick;
                 @SecondaryClick.performed += instance.OnSecondaryClick;
                 @SecondaryClick.canceled += instance.OnSecondaryClick;
+                @LeftGrab.started += instance.OnLeftGrab;
+                @LeftGrab.performed += instance.OnLeftGrab;
+                @LeftGrab.canceled += instance.OnLeftGrab;
+                @RightGrab.started += instance.OnRightGrab;
+                @RightGrab.performed += instance.OnRightGrab;
+                @RightGrab.canceled += instance.OnRightGrab;
             }
         }
     }
@@ -894,6 +1078,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
     private readonly InputAction m_Index_ToggleMicrophone;
     private readonly InputAction m_Index_PrimaryClick;
     private readonly InputAction m_Index_SecondaryClick;
+    private readonly InputAction m_Index_LeftGrab;
+    private readonly InputAction m_Index_RightGrab;
     public struct IndexActions
     {
         private @VRBindings m_Wrapper;
@@ -906,6 +1092,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         public InputAction @ToggleMicrophone => m_Wrapper.m_Index_ToggleMicrophone;
         public InputAction @PrimaryClick => m_Wrapper.m_Index_PrimaryClick;
         public InputAction @SecondaryClick => m_Wrapper.m_Index_SecondaryClick;
+        public InputAction @LeftGrab => m_Wrapper.m_Index_LeftGrab;
+        public InputAction @RightGrab => m_Wrapper.m_Index_RightGrab;
         public InputActionMap Get() { return m_Wrapper.m_Index; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -939,6 +1127,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started -= m_Wrapper.m_IndexActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.performed -= m_Wrapper.m_IndexActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.canceled -= m_Wrapper.m_IndexActionsCallbackInterface.OnSecondaryClick;
+                @LeftGrab.started -= m_Wrapper.m_IndexActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.performed -= m_Wrapper.m_IndexActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.canceled -= m_Wrapper.m_IndexActionsCallbackInterface.OnLeftGrab;
+                @RightGrab.started -= m_Wrapper.m_IndexActionsCallbackInterface.OnRightGrab;
+                @RightGrab.performed -= m_Wrapper.m_IndexActionsCallbackInterface.OnRightGrab;
+                @RightGrab.canceled -= m_Wrapper.m_IndexActionsCallbackInterface.OnRightGrab;
             }
             m_Wrapper.m_IndexActionsCallbackInterface = instance;
             if (instance != null)
@@ -967,6 +1161,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started += instance.OnSecondaryClick;
                 @SecondaryClick.performed += instance.OnSecondaryClick;
                 @SecondaryClick.canceled += instance.OnSecondaryClick;
+                @LeftGrab.started += instance.OnLeftGrab;
+                @LeftGrab.performed += instance.OnLeftGrab;
+                @LeftGrab.canceled += instance.OnLeftGrab;
+                @RightGrab.started += instance.OnRightGrab;
+                @RightGrab.performed += instance.OnRightGrab;
+                @RightGrab.canceled += instance.OnRightGrab;
             }
         }
     }
@@ -983,6 +1183,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
     private readonly InputAction m_Vive_ToggleMicrophone;
     private readonly InputAction m_Vive_PrimaryClick;
     private readonly InputAction m_Vive_SecondaryClick;
+    private readonly InputAction m_Vive_LeftGrab;
+    private readonly InputAction m_Vive_RightGrab;
     public struct ViveActions
     {
         private @VRBindings m_Wrapper;
@@ -995,6 +1197,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         public InputAction @ToggleMicrophone => m_Wrapper.m_Vive_ToggleMicrophone;
         public InputAction @PrimaryClick => m_Wrapper.m_Vive_PrimaryClick;
         public InputAction @SecondaryClick => m_Wrapper.m_Vive_SecondaryClick;
+        public InputAction @LeftGrab => m_Wrapper.m_Vive_LeftGrab;
+        public InputAction @RightGrab => m_Wrapper.m_Vive_RightGrab;
         public InputActionMap Get() { return m_Wrapper.m_Vive; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1028,6 +1232,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started -= m_Wrapper.m_ViveActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.performed -= m_Wrapper.m_ViveActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.canceled -= m_Wrapper.m_ViveActionsCallbackInterface.OnSecondaryClick;
+                @LeftGrab.started -= m_Wrapper.m_ViveActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.performed -= m_Wrapper.m_ViveActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.canceled -= m_Wrapper.m_ViveActionsCallbackInterface.OnLeftGrab;
+                @RightGrab.started -= m_Wrapper.m_ViveActionsCallbackInterface.OnRightGrab;
+                @RightGrab.performed -= m_Wrapper.m_ViveActionsCallbackInterface.OnRightGrab;
+                @RightGrab.canceled -= m_Wrapper.m_ViveActionsCallbackInterface.OnRightGrab;
             }
             m_Wrapper.m_ViveActionsCallbackInterface = instance;
             if (instance != null)
@@ -1056,6 +1266,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started += instance.OnSecondaryClick;
                 @SecondaryClick.performed += instance.OnSecondaryClick;
                 @SecondaryClick.canceled += instance.OnSecondaryClick;
+                @LeftGrab.started += instance.OnLeftGrab;
+                @LeftGrab.performed += instance.OnLeftGrab;
+                @LeftGrab.canceled += instance.OnLeftGrab;
+                @RightGrab.started += instance.OnRightGrab;
+                @RightGrab.performed += instance.OnRightGrab;
+                @RightGrab.canceled += instance.OnRightGrab;
             }
         }
     }
@@ -1072,6 +1288,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
     private readonly InputAction m_Unknown_ToggleMicrophone;
     private readonly InputAction m_Unknown_PrimaryClick;
     private readonly InputAction m_Unknown_SecondaryClick;
+    private readonly InputAction m_Unknown_LeftGrab;
+    private readonly InputAction m_Unknown_RightGrab;
     public struct UnknownActions
     {
         private @VRBindings m_Wrapper;
@@ -1084,6 +1302,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         public InputAction @ToggleMicrophone => m_Wrapper.m_Unknown_ToggleMicrophone;
         public InputAction @PrimaryClick => m_Wrapper.m_Unknown_PrimaryClick;
         public InputAction @SecondaryClick => m_Wrapper.m_Unknown_SecondaryClick;
+        public InputAction @LeftGrab => m_Wrapper.m_Unknown_LeftGrab;
+        public InputAction @RightGrab => m_Wrapper.m_Unknown_RightGrab;
         public InputActionMap Get() { return m_Wrapper.m_Unknown; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1117,6 +1337,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started -= m_Wrapper.m_UnknownActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.performed -= m_Wrapper.m_UnknownActionsCallbackInterface.OnSecondaryClick;
                 @SecondaryClick.canceled -= m_Wrapper.m_UnknownActionsCallbackInterface.OnSecondaryClick;
+                @LeftGrab.started -= m_Wrapper.m_UnknownActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.performed -= m_Wrapper.m_UnknownActionsCallbackInterface.OnLeftGrab;
+                @LeftGrab.canceled -= m_Wrapper.m_UnknownActionsCallbackInterface.OnLeftGrab;
+                @RightGrab.started -= m_Wrapper.m_UnknownActionsCallbackInterface.OnRightGrab;
+                @RightGrab.performed -= m_Wrapper.m_UnknownActionsCallbackInterface.OnRightGrab;
+                @RightGrab.canceled -= m_Wrapper.m_UnknownActionsCallbackInterface.OnRightGrab;
             }
             m_Wrapper.m_UnknownActionsCallbackInterface = instance;
             if (instance != null)
@@ -1145,6 +1371,12 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
                 @SecondaryClick.started += instance.OnSecondaryClick;
                 @SecondaryClick.performed += instance.OnSecondaryClick;
                 @SecondaryClick.canceled += instance.OnSecondaryClick;
+                @LeftGrab.started += instance.OnLeftGrab;
+                @LeftGrab.performed += instance.OnLeftGrab;
+                @LeftGrab.canceled += instance.OnLeftGrab;
+                @RightGrab.started += instance.OnRightGrab;
+                @RightGrab.performed += instance.OnRightGrab;
+                @RightGrab.canceled += instance.OnRightGrab;
             }
         }
     }
@@ -1159,6 +1391,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         void OnToggleMicrophone(InputAction.CallbackContext context);
         void OnPrimaryClick(InputAction.CallbackContext context);
         void OnSecondaryClick(InputAction.CallbackContext context);
+        void OnLeftGrab(InputAction.CallbackContext context);
+        void OnRightGrab(InputAction.CallbackContext context);
     }
     public interface IIndexActions
     {
@@ -1170,6 +1404,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         void OnToggleMicrophone(InputAction.CallbackContext context);
         void OnPrimaryClick(InputAction.CallbackContext context);
         void OnSecondaryClick(InputAction.CallbackContext context);
+        void OnLeftGrab(InputAction.CallbackContext context);
+        void OnRightGrab(InputAction.CallbackContext context);
     }
     public interface IViveActions
     {
@@ -1181,6 +1417,8 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         void OnToggleMicrophone(InputAction.CallbackContext context);
         void OnPrimaryClick(InputAction.CallbackContext context);
         void OnSecondaryClick(InputAction.CallbackContext context);
+        void OnLeftGrab(InputAction.CallbackContext context);
+        void OnRightGrab(InputAction.CallbackContext context);
     }
     public interface IUnknownActions
     {
@@ -1192,5 +1430,7 @@ public partial class @VRBindings : IInputActionCollection2, IDisposable
         void OnToggleMicrophone(InputAction.CallbackContext context);
         void OnPrimaryClick(InputAction.CallbackContext context);
         void OnSecondaryClick(InputAction.CallbackContext context);
+        void OnLeftGrab(InputAction.CallbackContext context);
+        void OnRightGrab(InputAction.CallbackContext context);
     }
 }

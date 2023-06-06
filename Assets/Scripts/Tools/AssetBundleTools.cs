@@ -21,14 +21,14 @@ namespace Hypernex.Tools
             }
         }
         
-        public static Scene? LoadSceneFromFile(string file)
+        public static string LoadSceneFromFile(string file)
         {
             AssetBundle loadedAssetBundle = AssetBundle.LoadFromFile(file);
             if (loadedAssetBundle != null)
             {
                 string scenePath = loadedAssetBundle.GetAllScenePaths()[0];
                 loadedAssetBundle.UnloadAsync(false);
-                return SceneManager.GetSceneByPath(scenePath);
+                return scenePath;
             }
             return null;
         }

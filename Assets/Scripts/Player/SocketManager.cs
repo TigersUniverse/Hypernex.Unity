@@ -75,6 +75,7 @@ namespace Hypernex.Player
                     // TODO: Implement other messages
                 }
             };
+            APIPlayer.UserSocket.Open();
             GameInstance.Init();
         }
 

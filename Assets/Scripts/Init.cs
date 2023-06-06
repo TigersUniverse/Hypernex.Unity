@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.CCK.Unity;
+using Hypernex.Game;
 using Hypernex.Tools;
+using HypernexSharp.SocketObjects;
+using Nexport;
 using UnityEngine;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
@@ -52,6 +57,24 @@ public class Init : MonoBehaviour
     private void Update()
     {
         DiscordTools.RunCallbacks();
+    }
+
+    private string worldId;
+
+    private void OnGUI()
+    {
+        worldId = GUILayout.TextField(worldId);
+        if (GUILayout.Button("Create Instance From WorldId"))
+        {
+            if (!APIPlayer.IsFullReady)
+                return;
+            APIPlayer.APIObject.GetWorldMeta(result =>
+            {
+                if (!result.success)
+                    return;
+                APIPlayer.UserSocket.RequestNewInstance(result.result.Meta, InstancePublicity.Anyone, InstanceProtocol.KCP);
+            }, worldId);
+        }
     }
 
     private void OnApplicationQuit()
