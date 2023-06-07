@@ -23,8 +23,9 @@ namespace Hypernex.Sandboxing
                 default:
                     throw new Exception("Unknown NexboxScript language");
             }
+            interpreter.StartSandbox(o => Logger.CurrentLogger.Log($"[{script.Name}{script.GetExtensionFromLanguage()}] {o}"));
             SandboxForwarding.Forward(interpreter, sandboxRestriction, gameInstance);
-            interpreter.RunScript(script.Script);
+            interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
 
         public void Dispose() => interpreter.Stop();

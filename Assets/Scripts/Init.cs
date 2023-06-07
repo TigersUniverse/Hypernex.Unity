@@ -1,15 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.CCK.Unity;
-using Hypernex.Game;
+using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using HypernexSharp.SocketObjects;
-using Nexport;
 using UnityEngine;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
@@ -57,6 +54,15 @@ public class Init : MonoBehaviour
     private void Update()
     {
         DiscordTools.RunCallbacks();
+        foreach (SandboxAction sandboxAction in Runtime.OnUpdates)
+            try
+            {
+                sandboxAction.a.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
     }
 
     private string worldId;
@@ -82,6 +88,7 @@ public class Init : MonoBehaviour
         DiscordTools.Stop();
         if (APIPlayer.UserSocket != null && APIPlayer.UserSocket.IsOpen)
             APIPlayer.UserSocket.Close();
+        AssetBundleTools.UnloadAllAssetBundles();
         StopVR();
     }
 }

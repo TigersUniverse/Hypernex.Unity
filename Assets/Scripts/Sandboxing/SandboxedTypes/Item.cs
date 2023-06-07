@@ -45,5 +45,21 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             get => NetworkConversionTools.Vector3Tofloat3(t.localScale);
             set => t.localScale = NetworkConversionTools.float3ToVector3(value);
         }
+
+        public Item GetChildByIndex(int i)
+        {
+            Transform tr = t.GetChild(i);
+            if (tr != null)
+                return new Item(tr);
+            return null;
+        }
+
+        public Item GetChildByName(string name)
+        {
+            Transform tr = t.Find(name);
+            if (tr != null)
+                return new Item(tr);
+            return null;
+        }
     }
 }

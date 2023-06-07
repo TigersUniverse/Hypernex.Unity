@@ -2,10 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Networking;
-using Hypernex.Networking.Messages;
 using Hypernex.Player;
+using Hypernex.Sandboxing;
+using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
@@ -14,6 +16,7 @@ using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
 using Nexport;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -60,6 +63,7 @@ namespace Hypernex.Game
         private HypernexInstanceClient client;
         internal Scene loadedScene;
         internal bool authed;
+        private List<Sandbox> sandboxes = new ();
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
@@ -170,24 +174,61 @@ namespace Hypernex.Game
 
         private IEnumerator LoadScene(bool open, string s)
         {
-            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s);
-            while (!asyncOperation.isDone)
-                yield return null;
+            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s, new LoadSceneParameters(LoadSceneMode.Single, LocalPhysicsMode.Physics3D));
+            /*while (!asyncOperation.isDone)
+                yield return null;*/
+            yield return new WaitUntil(() => asyncOperation.isDone);
             Scene currentScene = SceneManager.GetSceneByPath(s);
-            World = Object.FindObjectOfType<World>(true);
+            //SceneManager.MoveGameObjectToScene(
+                //DontDestroyMe.GetNotDestroyedObject("Physics").GetComponent<DontDestroyMe>().Clone(), currentScene);
+            foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
+            {
+                Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>();
+                foreach (Transform transform in ts)
+                {
+                    World w1 = transform.gameObject.GetComponent<World>();
+                    if (w1 != null)
+                        World = w1;
+                    Camera c1 = transform.gameObject.GetComponent<Camera>();
+                    if (c1 != null && c1.transform.parent != null && c1.transform.parent.gameObject.GetComponent<Mirror>() == null)
+                    {
+                        c1.gameObject.tag = "Untagged";
+                        c1.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
+                    }
+                    AudioListener a1 = transform.gameObject.GetComponent<AudioListener>();
+                    if(a1 != null)
+                        Object.Destroy(a1);
+                    Canvas c2 = transform.gameObject.GetComponent<Canvas>();
+                    if (c2 != null)
+                        c2.worldCamera = LocalPlayer.Instance.Camera;
+                }
+            }
+            LocalPlayer.Instance.DontDestroyMe.MoveToScene(currentScene);
             if (World == null)
                 Dispose();
             else
             {
                 loadedScene = currentScene;
-                AudioListener[] al = Object.FindObjectsOfType<AudioListener>();
-                foreach (AudioListener audioListener in al)
-                {
-                    Object.Destroy(audioListener);
-                }
                 FocusedInstance = this;
                 if(open)
                     Open();
+                foreach (NexboxScript worldLocalScript in World.LocalScripts)
+                    sandboxes.Add(new Sandbox(worldLocalScript, SandboxRestriction.Local, this));
+                if (LocalPlayer.Instance.Dashboard.IsVisible)
+                {
+                    LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
+                    LocalPlayer.Instance.LockCamera = false;
+                    LocalPlayer.Instance.LockMovement = false;
+                }
+                yield return new WaitUntil(() => currentScene.isLoaded);
+                Vector3 spawnPosition = Vector3.zero;
+                if (World.SpawnPoints.Count > 0)
+                {
+                    Transform spT = World.SpawnPoints[new System.Random().Next(0, World.SpawnPoints.Count - 1)]
+                        .transform;
+                    spawnPosition = spT.position;
+                }
+                LocalPlayer.Instance.transform.position = spawnPosition;
             }
         }
 
@@ -225,6 +266,11 @@ namespace Hypernex.Game
             Close();
             if (GameInstances.Contains(this))
                 gameInstances.Remove(this);
+            LocalPlayer.Instance.DontDestroyMe.Register();
+            foreach (SandboxAction sandboxAction in Runtime.OnUpdates)
+                Runtime.RemoveOnUpdate(sandboxAction);
+            foreach (Sandbox sandbox in sandboxes)
+                sandbox.Dispose();
         }
     }
 }

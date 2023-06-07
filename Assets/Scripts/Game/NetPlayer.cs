@@ -86,7 +86,11 @@ namespace Hypernex.Game
                            FileShare.ReadWrite | FileShare.Delete))
                 {
                     stream.CopyTo(fs);
-                    Avatar = AssetBundleTools.LoadAvatarFromFile(path);
+                    Avatar a = AssetBundleTools.LoadAvatarFromFile(path);
+                    if (a == null)
+                        return;
+                    Destroy(Avatar.gameObject);
+                    Avatar = a;
                     HandleNewAvatar();
                 }
             }));

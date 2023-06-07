@@ -70,6 +70,8 @@ namespace Hypernex.Game
                 mic = value;
             }
         }
+        
+        public DontDestroyMe DontDestroyMe { get; private set; }
 
         private Dictionary<InputDevice, GameObject> WorldTrackers = new();
         private List<InputDevice> trackers = new();
@@ -305,6 +307,7 @@ namespace Hypernex.Game
                 return;
             }
             Instance = this;
+            DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
             ConfigManager.OnConfigLoaded += config => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;

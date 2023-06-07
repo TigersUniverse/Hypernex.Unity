@@ -6,6 +6,7 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Nexbox;
 using UnityEngine;
+using Time = Hypernex.Sandboxing.SandboxedTypes.Time;
 
 namespace Hypernex.Sandboxing
 {
@@ -21,7 +22,9 @@ namespace Hypernex.Sandboxing
                 ["Item"] = typeof(Item),
                 ["ReadonlyItem"] = typeof(ReadonlyItem),
                 ["LocalAvatar"] = typeof(LocalAvatarLocalAvatar),
-                ["Players"] = typeof(LocalAvatarNetAvatar)
+                ["Players"] = typeof(LocalAvatarNetAvatar),
+                ["Time"] = typeof(Time),
+                ["UtcTime"] = typeof(UtcTime)
             });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
@@ -33,7 +36,13 @@ namespace Hypernex.Sandboxing
             ["ReadonlyItem"] = typeof(ReadonlyItem),
             ["LocalAvatar"] = typeof(LocalLocalAvatar),
             ["NetAvatar"] = typeof(LocalNetAvatar),
-            ["ClientNetworkEvent"] = typeof(ClientNetworkEvent)
+            ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
+            ["SandboxAction"] = typeof(SandboxAction),
+            ["Runtime"] = typeof(Runtime),
+            ["UI"] = typeof(LocalUI),
+            ["World"] = typeof(LocalWorld),
+            ["Time"] = typeof(Time),
+            ["UtcTime"] = typeof(UtcTime)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, GameInstance gameInstance)
