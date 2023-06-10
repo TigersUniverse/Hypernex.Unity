@@ -22,7 +22,7 @@ namespace Hypernex.Game.Bindings
         // This grab will never be used
         public bool Grab { get; set; }
 
-        private static Dictionary<KeyCode, Action> customEvents = new();
+        private static Dictionary<KeyCode, List<Action>> customEvents = new();
 
         public void Update()
         {
@@ -66,18 +66,19 @@ namespace Hypernex.Game.Bindings
             if(Input.GetMouseButtonDown(0))
                 TriggerClick.Invoke();
             Trigger = Input.GetMouseButton(0) ? 1.0f : 0;
-            foreach (KeyValuePair<KeyCode, Action> keyValuePair in new Dictionary<KeyCode, Action>(customEvents))
+            foreach (KeyValuePair<KeyCode, List<Action>> keyValuePair in new Dictionary<KeyCode, List<Action>>(customEvents))
             {
                 if(Input.GetKeyDown(keyValuePair.Key))
-                    keyValuePair.Value.Invoke();
+                    foreach (Action action in new List<Action>(keyValuePair.Value))
+                        action.Invoke();
             }
         }
 
         public Keyboard RegisterCustomKeyDownEvent(KeyCode keyCode, Action a)
         {
-            if (customEvents.ContainsKey(keyCode))
-                customEvents.Remove(keyCode);
-            customEvents.Add(keyCode, a);
+            if (!customEvents.ContainsKey(keyCode))
+                customEvents.Add(keyCode, new List<Action>());
+            customEvents[keyCode].Add(a);
             return this;
         }
     }

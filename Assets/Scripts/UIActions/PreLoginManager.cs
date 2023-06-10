@@ -192,7 +192,7 @@ namespace Hypernex.UIActions
                 HypernexSettings settings = new HypernexSettings(configUser.UserId, configUser.TokenContent)
                     {TargetDomain = currentURL, IsHTTP = useHTTP};
                 APIPlayer.Create(settings);
-                APIPlayer.Login(HandleSetUser);
+                APIPlayer.Login((lr, u) => HandleSetUser(lr, u, configUser));
             }
         }
 
@@ -205,7 +205,7 @@ namespace Hypernex.UIActions
                 HypernexSettings settings = new HypernexSettings(username: username, password: password)
                     {TargetDomain = currentURL, IsHTTP = useHTTP};
                 APIPlayer.Create(settings);
-                APIPlayer.Login(HandleSetUser);
+                APIPlayer.Login((lr, u) => HandleSetUser(lr, u));
             }
         }
     
@@ -217,7 +217,7 @@ namespace Hypernex.UIActions
                 HypernexSettings settings = new HypernexSettings(username, password, twofacode: twofa)
                     {TargetDomain = currentURL, IsHTTP = useHTTP};
                 APIPlayer.Create(settings);
-                APIPlayer.Login(HandleSetUser);
+                APIPlayer.Login((lr, u) => HandleSetUser(lr, u));
             }
         }
 
@@ -234,7 +234,7 @@ namespace Hypernex.UIActions
             }
         }
 
-        private void HandleSetUser(HypernexSharp.API.APIResults.LoginResult loginResult, User user)
+        private void HandleSetUser(HypernexSharp.API.APIResults.LoginResult loginResult, User user, ConfigUser c = null)
         {
             switch (loginResult?.Result ?? LoginResult.Incorrect)
             {
@@ -268,15 +268,32 @@ namespace Hypernex.UIActions
                             if (configUser.UserId == user.Id)
                                 ConfigManager.LoadedConfig.SavedAccounts.Remove(configUser);
                         }
-                        ConfigUser c = new ConfigUser
+                        if (c == null)
                         {
-                            UserId = user.Id,
-                            Username = user.Username,
-                            TokenContent = loginResult!.Token.content,
-                            Server = currentURL
-                        };
-                        ConfigManager.LoadedConfig.SavedAccounts.Add(c);
+                            c = new ConfigUser
+                            {
+                                UserId = user.Id,
+                                Username = user.Username,
+                                TokenContent = loginResult!.Token.content,
+                                Server = currentURL
+                            };
+                            ConfigManager.LoadedConfig.SavedAccounts.Add(c);
+                        }
+                        ConfigManager.SelectedConfigUser = c;
                         ConfigManager.SaveConfigToFile();
+                    }
+                    else
+                    {
+                        if (c == null)
+                            ConfigManager.SelectedConfigUser = new ConfigUser
+                            {
+                                UserId = user.Id,
+                                Username = user.Username,
+                                TokenContent = loginResult!.Token.content,
+                                Server = currentURL
+                            };
+                        else
+                            ConfigManager.SelectedConfigUser = c;
                     }
                     break;
             }
@@ -292,6 +309,7 @@ namespace Hypernex.UIActions
                 TokenContent = signupResult.UserData.AccountTokens[0].content,
                 Server = currentURL
             };
+            ConfigManager.SelectedConfigUser = c;
             ConfigManager.LoadedConfig.SavedAccounts.Add(c);
             ConfigManager.SaveConfigToFile();
         }

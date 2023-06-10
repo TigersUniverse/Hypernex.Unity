@@ -6,18 +6,6 @@ namespace Hypernex.Configuration
 {
     public class Config
     {
-        [TomlProperty("CurrentAvatarId")]
-        public string CurrentAvatarId { get; set; }
-
-        [TomlProperty("FavoriteAvatarIds")] 
-        public List<string> FavoriteAvatarIds { get; set; } = new();
-        
-        [TomlProperty("HomeWorldId")]
-        public string HomeWorldId { get; set; }
-
-        [TomlProperty("FavoriteWorldIds")]
-        public List<string> FavoriteWorldIds { get; set; } = new ();
-        
         [TomlProperty("SelectedMicrophone")]
         public string SelectedMicrophone { get; set; }
 
@@ -32,5 +20,13 @@ namespace Hypernex.Configuration
 
         [TomlProperty("SavedAccounts")]
         public List<ConfigUser> SavedAccounts { get; set; } = new();
+
+        public ConfigUser GetConfigUserFromUserId(string userid)
+        {
+            foreach (ConfigUser savedAccount in SavedAccounts)
+                if (savedAccount.UserId == userid)
+                    return savedAccount;
+            return null;
+        }
     }
 }

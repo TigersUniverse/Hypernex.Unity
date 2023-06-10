@@ -14,6 +14,7 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
+using Nexbox;
 using Nexport;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
@@ -24,8 +25,6 @@ namespace Hypernex.Game
 {
     public class GameInstance : IDisposable
     {
-        private static readonly List<GameInstance> gameInstances = new();
-        public static List<GameInstance> GameInstances => new(gameInstances);
         public static GameInstance FocusedInstance { get; internal set; }
         public static Action<GameInstance, WorldMeta> OnGameInstanceLoaded { get; set; } = (instance, meta) => { };
 
@@ -93,7 +92,6 @@ namespace Hypernex.Game
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
-            gameInstances.Add(this);
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
             OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user.Id);
         }
@@ -124,14 +122,13 @@ namespace Hypernex.Game
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
-            gameInstances.Add(this);
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
             OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user.Id);
         }
 
         private void OnUser(CallbackResult<GetUserResult> r, string hostId)
         {
-            if (!GameInstances.Contains(this))
+            if (GameInstance.FocusedInstance != this)
                 return;
             if (!r.success)
             {
@@ -147,15 +144,14 @@ namespace Hypernex.Game
 
         public void Open()
         {
-            if(GameInstances.Contains(this) && !client.IsOpen)
+            if(!client.IsOpen)
                 client.Open();
         }
         public void Close()
         {
-            client?.Close();
-            gameInstances.Remove(this);
             SceneManager.LoadScene(0);
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
+            client?.Close();
         }
 
         /// <summary>
@@ -264,10 +260,8 @@ namespace Hypernex.Game
         public void Dispose()
         {
             Close();
-            if (GameInstances.Contains(this))
-                gameInstances.Remove(this);
             LocalPlayer.Instance.DontDestroyMe.Register();
-            foreach (SandboxAction sandboxAction in Runtime.OnUpdates)
+            foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
                 Runtime.RemoveOnUpdate(sandboxAction);
             foreach (Sandbox sandbox in sandboxes)
                 sandbox.Dispose();

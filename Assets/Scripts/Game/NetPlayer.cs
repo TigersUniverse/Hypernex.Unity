@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Hypernex.CCK;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
@@ -12,12 +11,9 @@ using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
-using Nexbox;
-using Nexbox.Interpreters;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Avatar = Hypernex.CCK.Unity.Avatar;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
@@ -31,15 +27,16 @@ namespace Hypernex.Game
         private SharedAvatarToken avatarFileToken;
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
-        [HideInInspector] public Avatar Avatar;
-        private List<IInterpreter> Interpreters = new();
-        internal Animator mainAnimator;
+        public AvatarCreator Avatar;
         private NameplateTemplate nameplateTemplate;
         
         private Vector3 headOffset;
         
         public float volume = 1f;
         private AudioClip voice;
+
+        [HideInInspector] public List<string> LastPlayerTags = new();
+        public Dictionary<string, object> LastExtraneousObjects = new();
 
         private void CreateNameplate()
         {
@@ -89,9 +86,13 @@ namespace Hypernex.Game
                     Avatar a = AssetBundleTools.LoadAvatarFromFile(path);
                     if (a == null)
                         return;
-                    Destroy(Avatar.gameObject);
-                    Avatar = a;
-                    HandleNewAvatar();
+                    Avatar.Dispose();
+                    Avatar = new AvatarCreator(this, a);
+                    headOffset = Avatar.Avatar.SpeechPosition - Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position;
+                    // TODO: Resize based on avatar size
+                    if(nameplateTemplate != null)
+                        nameplateTemplate.transform.SetLocalPositionAndRotation(new Vector3(0, transform.localScale.y + 1f, 0),
+                            Quaternion.identity);
                 }
             }));
         }
@@ -145,9 +146,9 @@ namespace Hypernex.Game
                         User = instanceConnectedUser;
                 }
             }
-            if (nameplateTemplate != null && mainAnimator != null)
+            if (nameplateTemplate != null && Avatar != null)
             {
-                Transform bone = mainAnimator.GetBoneTransform(HumanBodyBones.Head);
+                Transform bone = Avatar.GetBoneFromHumanoid(HumanBodyBones.Head);
                 if (bone != null)
                 {
                     Vector3 newPos = bone.position;
@@ -181,14 +182,14 @@ namespace Hypernex.Game
 
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
-            if (Avatar != null && Avatar.gameObject.scene == scene)
+            if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
             {
                 float[] data = ConvertByteToFloat(playerVoice.Bytes);
                 AudioClip clip = AudioClip.Create(UserId + "_voice", data.Length, playerVoice.Channels,
                     playerVoice.SampleRate, false);
                 clip.SetData(data, 0);
                 AudioSource.PlayClipAtPoint(clip,
-                    headOffset - mainAnimator.GetBoneTransform(HumanBodyBones.Head).position, volume);
+                    headOffset - Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position, volume);
             }
         }
 
@@ -200,7 +201,7 @@ namespace Hypernex.Game
                 AvatarId = playerUpdate.AvatarId;
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
             }
-            if (Avatar != null && Avatar.transform.parent == transform)
+            if (Avatar != null && Avatar.Avatar.transform.parent == transform)
             {
                 foreach (NetworkedObject networkedObject in playerUpdate.TrackedObjects)
                 {
@@ -218,46 +219,10 @@ namespace Hypernex.Game
                         target.localScale = localSize;
                     }
                 }
-            }
-        }
-
-        private void HandleNewAvatar()
-        {
-            // This is invoked after an Avatar AssetBundle is downloaded and loaded
-            GameObject newAvatarObject = Instantiate(Avatar.gameObject);
-            Avatar = newAvatarObject.GetComponent<Avatar>();
-            mainAnimator = newAvatarObject.GetComponent<Animator>();
-            headOffset = Avatar.SpeechPosition - mainAnimator.GetBoneTransform(HumanBodyBones.Head).position;
-            SceneManager.MoveGameObjectToScene(newAvatarObject, scene);
-            // ReSharper disable once Unity.InstantiateWithoutParent
-            newAvatarObject.transform.SetParent(transform, false);
-            // TODO: Resize based on avatar size
-            if(nameplateTemplate != null)
-                nameplateTemplate.transform.SetLocalPositionAndRotation(new Vector3(0, transform.localScale.y + 1f, 0),
-                    Quaternion.identity);
-            foreach (IInterpreter interpreter in new List<IInterpreter>(Interpreters))
-            {
-                interpreter.Stop();
-                Interpreters.Remove(interpreter);
-            }
-            foreach (NexboxScript localAvatarScript in Avatar.LocalAvatarScripts)
-            {
-                IInterpreter interpreter = null;
-                switch (localAvatarScript.Language)
-                {
-                    case NexboxLanguage.Lua:
-                        interpreter = new LuaInterpreter();
-                        break;
-                    case NexboxLanguage.JavaScript:
-                        interpreter = new JavaScriptInterpreter();
-                        break;
-                }
-                if(interpreter == null)
-                    continue;
-                interpreter.RunScript(localAvatarScript.Script);
-                Interpreters.Add(interpreter);
-                Logger.CurrentLogger.Log(
-                    $"Executed LocalAvatarScript {localAvatarScript.Name}.{localAvatarScript.GetExtensionFromLanguage()} from Avatar {avatarMeta.Name}");
+                foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
+                    Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);
+                LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
+                LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
             }
         }
     }

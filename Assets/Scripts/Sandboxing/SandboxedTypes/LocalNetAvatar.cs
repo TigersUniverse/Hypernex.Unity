@@ -27,9 +27,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
-            if (netPlayer.Avatar == null || netPlayer.mainAnimator == null)
+            if (netPlayer.Avatar == null || netPlayer.Avatar == null)
                 return null;
-            Transform bone = netPlayer.mainAnimator.GetBoneTransform(humanBodyBones);
+            Transform bone = netPlayer.Avatar.GetBoneFromHumanoid(humanBodyBones);
             if (bone == null)
                 return null;
             return new ReadonlyItem(bone);
@@ -42,7 +42,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             if (netPlayer.Avatar == null)
                 return null;
-            Transform bone = netPlayer.Avatar.transform.Find(path);
+            Transform bone = netPlayer.Avatar.Avatar.transform.Find(path);
             if (bone == null)
                 return null;
             return new ReadonlyItem(bone);
@@ -56,9 +56,37 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (netPlayer.Avatar == null)
                 return null;
             List<ReadonlyItem> items = new List<ReadonlyItem>();
-            foreach (Transform transform in netPlayer.Avatar.GetComponentsInChildren<Transform>())
+            foreach (Transform transform in netPlayer.Avatar.Avatar.GetComponentsInChildren<Transform>())
                 items.Add(new ReadonlyItem(transform));
             return items.ToArray();
+        }
+        
+        public string[] GetSelfAssignedTags(string userid)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return null;
+            return netPlayer.LastPlayerTags.ToArray();
+        }
+
+        public object GetExtraneousObject(string userid, string key)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return null;
+            if (netPlayer.LastExtraneousObjects.ContainsKey(key))
+                return netPlayer.LastExtraneousObjects[key];
+            return null;
+        }
+
+        public object GetParameterValue(string userid, string parameterName)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return null;
+            if (netPlayer.Avatar == null)
+                return null;
+            return netPlayer.Avatar.GetParameter(parameterName);
         }
     }
 }

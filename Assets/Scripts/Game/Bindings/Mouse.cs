@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hypernex.Game.Bindings
@@ -21,6 +22,8 @@ namespace Hypernex.Game.Bindings
         public bool Grab { get; set; }
 
         public float Sensitivity = 1;
+        
+        private static Dictionary<int, List<Action>> customEvents = new();
 
         public void Update()
         {
@@ -65,6 +68,20 @@ namespace Hypernex.Game.Bindings
                 TriggerClick.Invoke();
             Trigger = Input.GetMouseButton(1) ? 1.0f : 0;
             Grab = Input.GetMouseButton(0);
+            foreach (KeyValuePair<int, List<Action>> keyValuePair in new Dictionary<int, List<Action>>(customEvents))
+            {
+                if(Input.GetMouseButton(keyValuePair.Key))
+                    foreach (Action action in new List<Action>(keyValuePair.Value))
+                        action.Invoke();
+            }
+        }
+        
+        public Mouse RegisterCustomMouseButtonDownEvent(int mouseAction, Action a)
+        {
+            if (!customEvents.ContainsKey(mouseAction))
+                customEvents.Add(mouseAction, new List<Action>());
+            customEvents[mouseAction].Add(a);
+            return this;
         }
     }
 }

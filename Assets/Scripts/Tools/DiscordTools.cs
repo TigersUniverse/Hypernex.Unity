@@ -100,7 +100,7 @@ namespace Hypernex.Tools
             discord.GetActivityManager().UpdateActivity(new Activity
             {
                 Name = "Hypernex",
-                Details = $"Playing as {APIPlayer.APIUser.Username}",
+                Details = $"Playing on {worldMeta.Name} as {APIPlayer.APIUser.Username}",
                 Timestamps = new ActivityTimestamps {Start = time},
                 State = worldMeta.Name,
                 Assets = new ActivityAssets

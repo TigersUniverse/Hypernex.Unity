@@ -24,7 +24,8 @@ namespace Hypernex.Sandboxing
                 ["LocalAvatar"] = typeof(LocalAvatarLocalAvatar),
                 ["Players"] = typeof(LocalAvatarNetAvatar),
                 ["Time"] = typeof(Time),
-                ["UtcTime"] = typeof(UtcTime)
+                ["UtcTime"] = typeof(UtcTime),
+                ["Bindings"] = typeof(Bindings)
             });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
@@ -37,12 +38,12 @@ namespace Hypernex.Sandboxing
             ["LocalAvatar"] = typeof(LocalLocalAvatar),
             ["NetAvatar"] = typeof(LocalNetAvatar),
             ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
-            ["SandboxAction"] = typeof(SandboxAction),
             ["Runtime"] = typeof(Runtime),
             ["UI"] = typeof(LocalUI),
             ["World"] = typeof(LocalWorld),
             ["Time"] = typeof(Time),
-            ["UtcTime"] = typeof(UtcTime)
+            ["UtcTime"] = typeof(UtcTime),
+            ["Bindings"] = typeof(Bindings)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, GameInstance gameInstance)

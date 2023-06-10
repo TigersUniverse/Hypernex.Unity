@@ -25,12 +25,12 @@ namespace Hypernex.Game
                 case "Hypernex.Networking.Messages.RespondAuth":
                 {
                     RespondAuth respondAuth = (RespondAuth) Convert.ChangeType(msgMeta.Data, typeof(RespondAuth));
-                    foreach (GameInstance instance in GameInstance.GameInstances)
-                    {
-                        if (instance.gameServerId == respondAuth.GameServerId &&
-                            instance.instanceId == respondAuth.InstanceId)
-                            instance.authed = true;
-                    }
+                    GameInstance instance = GameInstance.FocusedInstance;
+                    if (instance == null)
+                        break;
+                    if (instance.gameServerId == respondAuth.GameServerId &&
+                        instance.instanceId == respondAuth.InstanceId)
+                        instance.authed = true;
                     break;
                 }
                 case "Hypernex.Networking.Messages.PlayerMessage":

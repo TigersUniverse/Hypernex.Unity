@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Hypernex.Configuration.ConfigMeta;
 using Tomlet;
 using Tomlet.Models;
 using UnityEngine;
@@ -13,6 +14,7 @@ namespace Hypernex.Configuration
     
         public static string ConfigLocation => Path.Combine(persistentAppData, "config.cfg");
         public static Config LoadedConfig;
+        public static ConfigUser SelectedConfigUser;
 
         public static Action<Config> OnConfigSaved = config => { };
         public static Action<Config> OnConfigLoaded = config => { };
@@ -53,11 +55,18 @@ namespace Hypernex.Configuration
 
         public static void SaveConfigToFile(Config config = null)
         {
-            TomlDocument document;
-            if (config != null)
-                document = TomletMain.DocumentFrom(typeof(Config), config);
-            else
-                document = TomletMain.DocumentFrom(typeof(Config), LoadedConfig);
+            if (config == null)
+                config = LoadedConfig;
+            if (config == null)
+                return;
+            // Clone the SelectedConfigUser
+            if (SelectedConfigUser != null)
+            {
+                ConfigUser docConfigUser = config.GetConfigUserFromUserId(SelectedConfigUser.UserId);
+                if(docConfigUser != null)
+                    docConfigUser.Clone(SelectedConfigUser);
+            }
+            TomlDocument document = TomletMain.DocumentFrom(typeof(Config), config);
             string text = document.SerializedValue;
             File.WriteAllText(ConfigLocation, text);
             OnConfigSaved.Invoke(config);

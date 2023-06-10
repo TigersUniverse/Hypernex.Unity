@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Adrenak.UniMic;
-using Hypernex.CCK;
 using Hypernex.Configuration;
+using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
-using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI;
 using HypernexSharp.API;
@@ -17,7 +16,6 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Nexport;
 using OpusDotNet;
-using RootMotion.FinalIK;
 using UnityEditor;
 using UnityEditor.XR.LegacyInputHelpers;
 using UnityEngine;
@@ -38,7 +36,9 @@ namespace Hypernex.Game
     public class LocalPlayer : MonoBehaviour
     {
         public static LocalPlayer Instance;
-        
+        public static readonly List<string> MorePlayerAssignedTags = new();
+        public static readonly Dictionary<string, object> MoreExtraneousObjects = new();
+
         public bool IsVR
         {
             get
@@ -98,27 +98,17 @@ namespace Hypernex.Game
         public Transform LeftHandReference;
         public Transform RightHandReference;
         public PlayerInput vrPlayerInput;
-
-        public Transform GetBoneFromHumanoid(HumanBodyBones humanBodyBones)
-        {
-            if (mainAnimator == null)
-                return null;
-            return mainAnimator.GetBoneTransform(humanBodyBones);
-        }
+        public List<string> LastPlayerAssignedTags = new();
+        public Dictionary<string, object> LastExtraneousObjects = new();
 
         private VRBindings vrBindings;
         private float verticalVelocity;
         private float groundedTimer;
         internal AvatarMeta avatarMeta;
-        internal Avatar avatar;
-        private string lastAvatarFile;
-        internal Animator mainAnimator;
-        private VRIK vrik;
-        private List<Sandbox> localAvatarSandboxes = new();
-        private bool isCalibrating;
-        private bool calibrated;
-        private VRIKCalibrator.CalibrationData calibrationData = new();
+        internal AvatarCreator avatar;
+        private string avatarFile;
         private List<Transform> SavedTransforms = new();
+        internal Dictionary<string, string> AvatarIdTokens = new();
 
         private void SetMicrophone()
         {
@@ -147,7 +137,7 @@ namespace Hypernex.Game
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = gameInstance.userIdToken
                 },
-                AvatarId = ConfigManager.LoadedConfig.CurrentAvatarId,
+                AvatarId = ConfigManager.SelectedConfigUser.CurrentAvatar,
                 IsPlayerVR = IsVR,
                 TrackedObjects = new List<NetworkedObject>
                 {
@@ -159,6 +149,7 @@ namespace Hypernex.Game
                         Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
                     }
                 },
+                PlayerAssignedTags = new List<string>(),
                 ExtraneousData = new Dictionary<string, object>(),
                 WeightedObjects = new Dictionary<string, float>()
             };
@@ -170,6 +161,10 @@ namespace Hypernex.Game
                     Rotation = NetworkConversionTools.QuaternionTofloat4(transform.rotation),
                     Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
                 });
+            if(avatar != null)
+                foreach (var animatorWeight in avatar.GetAnimatorWeights().Where(animatorWeight =>
+                             !playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key)))
+                    playerUpdate.WeightedObjects.Add(animatorWeight.Key, animatorWeight.Value);
             if (playerUpdate.IsPlayerVR)
             {
                 XRBinding left = null;
@@ -192,6 +187,14 @@ namespace Hypernex.Game
                         playerUpdate.WeightedObjects.Add(fingerTrackingWeight.Item1, fingerTrackingWeight.Item2);
                 }
             }
+            foreach (string s in new List<string>(MorePlayerAssignedTags))
+                if(!playerUpdate.PlayerAssignedTags.Contains(s))
+                    playerUpdate.PlayerAssignedTags.Add(s);
+            foreach (KeyValuePair<string,object> extraneousObject in new Dictionary<string, object>(MoreExtraneousObjects))
+                if(!playerUpdate.ExtraneousData.ContainsKey(extraneousObject.Key))
+                    playerUpdate.ExtraneousData.Add(extraneousObject.Key, extraneousObject.Value);
+            LastPlayerAssignedTags = new List<string>(playerUpdate.PlayerAssignedTags);
+            LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
             return playerUpdate;
         }
         
@@ -233,69 +236,74 @@ namespace Hypernex.Game
             return playerVoice;
         }
 
-        private void OnAvatarDownload(string file)
+        private void OnAvatarDownload(string file, AvatarMeta am)
         {
             if (!File.Exists(file))
-            {
-                avatarMeta = null;
                 return;
-            }
-            Avatar lastAvatar = avatar;
-            avatar = AssetBundleTools.LoadAvatarFromFile(file);
-            if (avatar == null)
+            AvatarCreator lastAvatar = avatar;
+            Avatar a = AssetBundleTools.LoadAvatarFromFile(file);
+            if (a == null)
             {
-                avatarMeta = null;
                 avatar = lastAvatar;
                 return;
             }
-            foreach (Sandbox localAvatarSandbox in new List<Sandbox>(localAvatarSandboxes))
-            {
-                localAvatarSandboxes.Remove(localAvatarSandbox);
-                localAvatarSandbox.Dispose();
-            }
-            Destroy(lastAvatar.gameObject);
-            lastAvatarFile = file;
-            DontDestroyOnLoad(avatar.gameObject);
-            mainAnimator = avatar.GetComponent<Animator>();
-            avatar.transform.SetParent(transform);
+            avatarMeta = am;
+            lastAvatar?.Dispose();
+            avatar = new AvatarCreator(this, a, IsVR);
+            avatarFile = file;
             SavedTransforms.Clear();
             foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+            {
+                child.gameObject.layer = 7;
                 SavedTransforms.Add(child);
-            avatar.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
-            if(IsVR)
-                vrik = avatar.gameObject.AddComponent<VRIK>();
-            isCalibrating = false;
-            calibrated = false;
-            foreach (NexboxScript localAvatarScript in avatar.LocalAvatarScripts)
-                localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
+            }
+        }
+
+        private void GetTokenForOwnerAvatar(string avatarId, Action<string> result)
+        {
+            APIPlayer.APIObject.AddAssetToken(r =>
+            {
+                if (!r.success)
+                {
+                    GetTokenForOwnerAvatar(avatarId, result);
+                    return;
+                }
+                QuickInvoke.InvokeActionOnMainThread(result, r.result.token.content);
+            }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarId);
         }
 
         private void OnAvatarMeta(CallbackResult<MetaCallback<AvatarMeta>> r)
         {
             if (!r.success)
             {
-                APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.LoadedConfig.CurrentAvatarId);
+                APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
                 return;
             }
-            avatarMeta = r.result.Meta;
-            string file;
-            try
+            Builds build = r.result.Meta.Builds.FirstOrDefault(x => x.BuildPlatform == AssetBundleTools.Platform);
+            if (build == null)
+                return;
+            string file = $"{APIPlayer.APIObject.Settings.APIURL}file/{r.result.Meta.OwnerId}/{build.FileId}";
+            if (r.result.Meta.Publicity != AvatarPublicity.Anyone)
             {
-                Builds build = avatarMeta.Builds.First(x => x.BuildPlatform == AssetBundleTools.Platform);
-                file = $"{APIPlayer.APIObject.Settings.APIURL}{avatarMeta.OwnerId}/{build.FileId}";
-            }
-            catch (InvalidOperationException)
-            {
+                if(r.result.Meta.OwnerId != APIPlayer.APIUser.Id)
+                    return;
+                // TODO: Share token in instance, excluding blocked users
+                GetTokenForOwnerAvatar(r.result.Meta.Id, t =>
+                {
+                    AvatarIdTokens.Add(r.result.Meta.Id, t);
+                    file = $"{APIPlayer.APIObject.Settings.APIURL}file/{r.result.Meta.OwnerId}/{build.FileId}/{t}";
+                    DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta));
+                });
                 return;
             }
-            DownloadTools.DownloadFile(file, $"{avatarMeta.Id}.hna", OnAvatarDownload);
+            DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta));
         }
 
-        private void LoadAvatar()
+        public void LoadAvatar()
         {
-            if (string.IsNullOrEmpty(ConfigManager.LoadedConfig.CurrentAvatarId))
+            if (string.IsNullOrEmpty(ConfigManager.SelectedConfigUser.CurrentAvatar))
                 return;
-            APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.LoadedConfig.CurrentAvatarId);
+            APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
         }
 
         private void Start()
@@ -308,7 +316,7 @@ namespace Hypernex.Game
             }
             Instance = this;
             DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
-            ConfigManager.OnConfigLoaded += config => LoadAvatar();
+            APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
@@ -342,8 +350,9 @@ namespace Hypernex.Game
         }
 
         private float rotx;
+        private float s_;
 
-        private (Vector3, bool)? HandleBinding(IBinding binding)
+        private (Vector3, bool, bool)? HandleBinding(IBinding binding)
         {
             if (!LockCamera && binding.Id == "Mouse")
             {
@@ -363,12 +372,12 @@ namespace Hypernex.Game
                 return null;
             // Left-Hand
             Vector3 move = transform.forward * (binding.Up + binding.Down * -1) + transform.right * (binding.Left * -1 + binding.Right);
-            float speed = binding.Button2 ? RunSpeed : WalkSpeed;
+            s_ = binding.Button2 ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
                     if (!GameInstance.FocusedInstance.World.AllowRunning)
-                        speed = WalkSpeed;
-            return (move * speed, binding.Button);
+                        s_ = WalkSpeed;
+            return (move * s_, binding.Button, binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f);
         }
 
         private bool areTwoTriggersClicked()
@@ -385,33 +394,8 @@ namespace Hypernex.Game
             return left && right;
         }
 
-        /// <summary>
-        /// Sorts Trackers from 0 by how close they are to the Body, LeftFoot, and RightFoot
-        /// </summary>
-        /// <returns>Sorted Tracker Transforms</returns>
-        private Transform[] FindClosestTrackers(Transform body, Transform leftFoot, Transform rightFoot, GameObject[] ts)
-        {
-            List<Transform> newTs = new();
-            foreach (GameObject o in ts)
-            {
-                float bodyDist = Vector3.Distance(body.position, o.transform.position);
-                float leftFootDist = Vector3.Distance(leftFoot.position, o.transform.position);
-                float rightFootDist = Vector3.Distance(rightFoot.position, o.transform.position);
-                Transform target;
-                if (leftFootDist < bodyDist)
-                    target = leftFoot;
-                else if (rightFootDist < bodyDist)
-                    target = rightFoot;
-                else
-                    target = body;
-                if(!newTs.Contains(target))
-                    newTs.Add(target);
-            }
-            return newTs.ToArray();
-        }
-
         // TODO: maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
-        public void RefreshAvatar() => OnAvatarDownload(lastAvatarFile);
+        public void RefreshAvatar() => OnAvatarDownload(avatarFile, avatarMeta);
 
         private void Update()
         {
@@ -452,11 +436,11 @@ namespace Hypernex.Game
                     verticalVelocity = 0f;
                 verticalVelocity += Gravity * Time.deltaTime;
             }
-            (Vector3, bool)? m = null;
+            (Vector3, bool, bool)? m = null;
             foreach (IBinding binding in new List<IBinding>(Bindings))
             {
                 binding.Update();
-                (Vector3, bool)? r = HandleBinding(binding);
+                (Vector3, bool, bool)? r = HandleBinding(binding);
                 if (r != null)
                     m = r.Value;
             }
@@ -477,38 +461,15 @@ namespace Hypernex.Game
                 PlayerUpdate playerUpdate = GetPlayerUpdate(GameInstance.FocusedInstance);
                 GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
             }
-            if (!calibrated && WorldTrackers.Count == 3 && vrik != null)
-                isCalibrating = true;
-            else if (WorldTrackers.Count != 3 && vrik != null)
+            avatar?.SetSpeed(m?.Item3 ?? false ? s_ : 0.0f);
+            avatar?.SetIsGrounded(groundedPlayer);
+            avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
+                Camera.transform, LeftHandReference, RightHandReference);
+            if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
+                FaceTrackingManager.HasInitialized)
             {
-                VRIKCalibrator.Calibrate(vrik, calibrationData, Camera.transform, null, LeftHandReference.transform,
-                    RightHandReference.transform);
-                isCalibrating = false;
-                calibrated = true;
-            }
-            if (isCalibrating && areTwoTriggersClicked() && vrik != null)
-            {
-                GameObject[] ts = new GameObject[3];
-                int i = 0;
-                foreach (KeyValuePair<InputDevice, GameObject> keyValuePair in
-                         new Dictionary<InputDevice, GameObject>(WorldTrackers))
-                {
-                    ts[i] = keyValuePair.Value;
-                }
-                if (ts[0] != null && ts[1] != null && ts[2] != null)
-                {
-                    Transform body = GetBoneFromHumanoid(HumanBodyBones.Hips);
-                    Transform leftFoot = GetBoneFromHumanoid(HumanBodyBones.LeftFoot);
-                    Transform rightFoot = GetBoneFromHumanoid(HumanBodyBones.RightFoot);
-                    if (body != null && leftFoot != null && rightFoot != null)
-                    {
-                        Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
-                        VRIKCalibrator.Calibrate(vrik, calibrationData, Camera.transform, newTs[0].transform,
-                            LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
-                        calibrated = true;
-                        isCalibrating = false;
-                    }
-                }
+                // TODO: Universal Eyes
+                avatar?.UpdateFace(FaceTrackingManager.GetFaceWeights());
             }
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
                 GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
