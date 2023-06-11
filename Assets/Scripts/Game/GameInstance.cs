@@ -151,7 +151,7 @@ namespace Hypernex.Game
         {
             SceneManager.LoadScene(0);
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
-            client?.Close();
+            client?.Stop();
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Adrenak.UniMic;
+using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
@@ -162,9 +163,9 @@ namespace Hypernex.Game
                     Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
                 });
             if(avatar != null)
-                foreach (var animatorWeight in avatar.GetAnimatorWeights().Where(animatorWeight =>
-                             !playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key)))
-                    playerUpdate.WeightedObjects.Add(animatorWeight.Key, animatorWeight.Value);
+                foreach (var animatorWeight in avatar.GetAnimatorWeights())
+                    if(!playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key))
+                        playerUpdate.WeightedObjects.Add(animatorWeight.Key, animatorWeight.Value);
             if (playerUpdate.IsPlayerVR)
             {
                 XRBinding left = null;
@@ -469,7 +470,10 @@ namespace Hypernex.Game
                 FaceTrackingManager.HasInitialized)
             {
                 // TODO: Universal Eyes
-                avatar?.UpdateFace(FaceTrackingManager.GetFaceWeights());
+                Dictionary<FaceExpressions, float> faceWeights = FaceTrackingManager.GetFaceWeights();
+                avatar?.UpdateFace(faceWeights);
+                foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
+                    avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
             }
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
                 GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
@@ -477,6 +481,11 @@ namespace Hypernex.Game
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = GameInstance.FocusedInstance.userIdToken
                 }));
+        }
+
+        private void LateUpdate()
+        {
+            avatar?.LateUpdate(IsVR, Camera.transform);
         }
     }
 }

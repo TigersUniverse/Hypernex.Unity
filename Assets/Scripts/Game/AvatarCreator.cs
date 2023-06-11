@@ -368,8 +368,6 @@ namespace Hypernex.Game
         internal void Update(bool areTwoTriggersClicked, Dictionary<InputDevice, GameObject> WorldTrackers,
             Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
         {
-            if (headAlign != null)
-                cameraTransform.position = headAlign.transform.position;
             if(MainAnimator != null)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
             if (!calibrated && WorldTrackers.Count == 3 && vrik != null)
@@ -400,6 +398,20 @@ namespace Hypernex.Game
                         calibrated = true;
                         isCalibrating = false;
                     }
+                }
+            }
+        }
+
+        internal void LateUpdate(bool isVR, Transform cameraTransform)
+        {
+            if (headAlign != null)
+            {
+                cameraTransform.position = headAlign.transform.position;
+                if (!isVR)
+                {
+                    Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
+                    if(headBone != null)
+                        headBone.rotation = cameraTransform.rotation;
                 }
             }
         }

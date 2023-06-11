@@ -48,7 +48,7 @@ namespace Hypernex.Tools
             if (!Directory.Exists(DownloadsPath))
                 Directory.CreateDirectory(DownloadsPath);
             string fileOutput = Path.Combine(DownloadsPath, output);
-            if(File.Exists(fileOutput) && accessedFileOutputs.Contains(fileOutput))
+            if(File.Exists(fileOutput)/* && accessedFileOutputs.Contains(fileOutput)*/)
                 OnDownload.Invoke(fileOutput);
             else
             {
