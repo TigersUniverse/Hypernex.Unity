@@ -44,7 +44,8 @@ namespace Hypernex.Game
         }
 
         public Action OnConnect { get; set; } = () => { };
-        public Action<User> OnClientConnect { get; set; } = identifier => { };
+        public Action<User> OnUserLoaded { get; set; } = user => { };
+        public Action<User> OnClientConnect { get; set; } = user => { };
         public Action<MsgMeta, MessageChannel> OnMessage { get; set; } = (meta, channel) => { };
         public Action<User> OnClientDisconnect { get; set; } = identifier => { };
         public Action OnDisconnect { get; set; } = () => { };
@@ -83,6 +84,7 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetUser(r => OnUser(r, joinInstance.instanceCreatorId),
                     joinInstance.instanceCreatorId, isUserId: true);
             };
+            client.OnUserLoaded += user => QuickInvoke.InvokeActionOnMainThread(OnUserLoaded, user);
             client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
             client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
             client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
@@ -93,7 +95,8 @@ namespace Hypernex.Game
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user.Id);
+            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
+            PlayerManagement.CreateGameInstance(this);
         }
 
         private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
@@ -109,10 +112,8 @@ namespace Hypernex.Game
             ClientSettings clientSettings = new ClientSettings(ip, port, true);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
-            client.OnConnect += () =>
-            {
-                QuickInvoke.InvokeActionOnMainThread(OnConnect);
-            };
+            client.OnConnect += () => QuickInvoke.InvokeActionOnMainThread(OnConnect);
+            client.OnUserLoaded += user => QuickInvoke.InvokeActionOnMainThread(OnUserLoaded, user);
             client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
             client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
             client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
@@ -123,7 +124,8 @@ namespace Hypernex.Game
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user.Id);
+            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
+            PlayerManagement.CreateGameInstance(this);
         }
 
         private void OnUser(CallbackResult<GetUserResult> r, string hostId)
@@ -151,6 +153,7 @@ namespace Hypernex.Game
         {
             SceneManager.LoadScene(0);
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
+            PlayerManagement.DestroyGameInstance(this);
             client?.Stop();
         }
 
@@ -225,6 +228,7 @@ namespace Hypernex.Game
                     spawnPosition = spT.position;
                 }
                 LocalPlayer.Instance.transform.position = spawnPosition;
+                OnGameInstanceLoaded.Invoke(this, worldMeta);
             }
         }
 
@@ -245,16 +249,22 @@ namespace Hypernex.Game
                 return;
             }
             string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{fileId}";
-            DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
+            APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
             {
-                string s = AssetBundleTools.LoadSceneFromFile(o);
-                if (!string.IsNullOrEmpty(s))
+                string knownHash = String.Empty;
+                if (fileMetaResult.success)
+                    knownHash = fileMetaResult.result.FileMeta.Hash;
+                DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                 {
-                    CoroutineRunner.Instance.Run(LoadScene(open, s));
-                }
-                else
-                    Dispose();
-            });
+                    string s = AssetBundleTools.LoadSceneFromFile(o);
+                    if (!string.IsNullOrEmpty(s))
+                    {
+                        CoroutineRunner.Instance.Run(LoadScene(open, s));
+                    }
+                    else
+                        Dispose();
+                }, knownHash);
+            }, worldMeta.OwnerId, fileId);
         }
 
         public void Dispose()

@@ -53,9 +53,9 @@ namespace Hypernex.UI.Templates
         {
             JoinButton.onClick.AddListener(() =>
             {
+                gameObject.SetActive(false);
                 SocketManager.JoinInstance(Instance);
                 Users.Clear();
-                gameObject.SetActive(false);
             });
             ReturnButton.onClick.AddListener(() => gameObject.SetActive(false));
         }

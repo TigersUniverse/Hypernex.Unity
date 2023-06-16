@@ -27,6 +27,7 @@ namespace Hypernex.Player
             APIObject != null && APIUser != null && CurrentToken != null && (UserSocket?.IsOpen ?? false);
     
         public static Action<User> OnUser = user => { };
+        public static Action OnSocketConnect = () => { };
         public static Action<User> OnUserRefresh = user => { };
         public static Action OnLogout = () => { };
 

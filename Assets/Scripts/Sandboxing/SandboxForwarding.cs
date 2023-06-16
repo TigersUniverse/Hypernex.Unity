@@ -6,6 +6,12 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Nexbox;
 using UnityEngine;
+using Bounds = Hypernex.Sandboxing.SandboxedTypes.Bounds;
+using Collider = Hypernex.Sandboxing.SandboxedTypes.Collider;
+using Collision = Hypernex.Sandboxing.SandboxedTypes.Collision;
+using Physics = Hypernex.Sandboxing.SandboxedTypes.Physics;
+using Ray = Hypernex.Sandboxing.SandboxedTypes.Ray;
+using RaycastHit = Hypernex.Sandboxing.SandboxedTypes.RaycastHit;
 using Time = Hypernex.Sandboxing.SandboxedTypes.Time;
 
 namespace Hypernex.Sandboxing
@@ -25,7 +31,14 @@ namespace Hypernex.Sandboxing
                 ["Players"] = typeof(LocalAvatarNetAvatar),
                 ["Time"] = typeof(Time),
                 ["UtcTime"] = typeof(UtcTime),
-                ["Bindings"] = typeof(Bindings)
+                ["Bindings"] = typeof(Bindings),
+                ["Ray"] = typeof(Ray),
+                ["RaycastHit"] = typeof(RaycastHit),
+                ["Bounds"] = typeof(Bounds),
+                ["Collision"] = typeof(Collision),
+                ["Collider"] = typeof(Collider),
+                ["Colliders"] = typeof(Colliders),
+                ["PenetrationResult"] = typeof(PenetrationResult)
             });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
@@ -43,7 +56,14 @@ namespace Hypernex.Sandboxing
             ["World"] = typeof(LocalWorld),
             ["Time"] = typeof(Time),
             ["UtcTime"] = typeof(UtcTime),
-            ["Bindings"] = typeof(Bindings)
+            ["Bindings"] = typeof(Bindings),
+            ["Ray"] = typeof(Ray),
+            ["RaycastHit"] = typeof(RaycastHit),
+            ["Bounds"] = typeof(Bounds),
+            ["Collision"] = typeof(Collision),
+            ["Collider"] = typeof(Collider),
+            ["Colliders"] = typeof(Colliders),
+            ["PenetrationResult"] = typeof(PenetrationResult)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, GameInstance gameInstance)
@@ -62,6 +82,7 @@ namespace Hypernex.Sandboxing
                     interpreter.CreateGlobal("Players", new LocalNetAvatar(gameInstance));
                     break;
             }
+            interpreter.CreateGlobal("Physics", new Physics(restriction));
         }
     }
 }

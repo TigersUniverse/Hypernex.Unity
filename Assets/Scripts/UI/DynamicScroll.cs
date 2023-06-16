@@ -77,7 +77,7 @@ namespace Hypernex.UI
 
         public void Clear()
         {
-            foreach (RectTransform rectTransform in Items)
+            foreach (RectTransform rectTransform in new List<RectTransform>(Items))
                 RemoveItem(rectTransform);
         }
 

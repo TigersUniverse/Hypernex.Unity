@@ -23,11 +23,12 @@ namespace Hypernex.Game
         private GameInstance instance;
         private Scene scene;
         public User User;
+        public AvatarCreator Avatar;
+        
         private string AvatarId;
         private SharedAvatarToken avatarFileToken;
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
-        public AvatarCreator Avatar;
         private NameplateTemplate nameplateTemplate;
         
         private Vector3 headOffset;
@@ -40,7 +41,8 @@ namespace Hypernex.Game
 
         private void CreateNameplate()
         {
-            GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("Nameplate"));
+            GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform.Find("Nameplate")
+                .gameObject);
             SceneManager.MoveGameObjectToScene(np, instance.loadedScene);
             // ReSharper disable once Unity.InstantiateWithoutParent
             np.transform.SetParent(transform);
@@ -65,6 +67,7 @@ namespace Hypernex.Game
 
         private void OnAvatarDownload(Stream stream)
         {
+            waitingForAvatarToken = false;
             if (stream == Stream.Null)
             {
                 if (avatarFileToken == null)
@@ -86,7 +89,8 @@ namespace Hypernex.Game
                     Avatar a = AssetBundleTools.LoadAvatarFromFile(path);
                     if (a == null)
                         return;
-                    Avatar.Dispose();
+                    Avatar?.Dispose();
+                    avatarUpdates.Clear();
                     Avatar = new AvatarCreator(this, a);
                     headOffset = Avatar.Avatar.SpeechPosition - Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position;
                     // TODO: Resize based on avatar size
@@ -108,13 +112,6 @@ namespace Hypernex.Game
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
                     avatarMeta = result.result.Meta;
-                    if (SocketManager.SharedAvatarTokens.Count(x =>
-                            x.avatarId == AvatarId && x.fromUserId == UserId) > 0)
-                    {
-                        SharedAvatarToken sharedAvatarToken = SocketManager.SharedAvatarTokens.First(x =>
-                            x.avatarId == AvatarId && x.fromUserId == UserId);
-                        avatarFileToken = sharedAvatarToken;
-                    }
                     Builds b = null;
                     foreach (Builds metaBuild in result.result.Meta.Builds)
                         if (metaBuild.BuildPlatform == AssetBundleTools.Platform)
@@ -122,6 +119,22 @@ namespace Hypernex.Game
                     if (b == null)
                         return;
                     avatarBuild = b;
+                    if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
+                    {
+                        // TODO: Wait for token
+                        if (SocketManager.SharedAvatarTokens.Count(x =>
+                                x.avatarId == AvatarId && x.fromUserId == UserId) > 0)
+                        {
+                            SharedAvatarToken sharedAvatarToken = SocketManager.SharedAvatarTokens.First(x =>
+                                x.avatarId == AvatarId && x.fromUserId == UserId);
+                            avatarFileToken = sharedAvatarToken;
+                        }
+                        else
+                        {
+                            waitingForAvatarToken = true;
+                            return;
+                        }
+                    }
                     if (avatarFileToken == null)
                         APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId);
                     else
@@ -130,14 +143,27 @@ namespace Hypernex.Game
                 }));
         }
 
+        private bool waitingForAvatarToken;
+
         public void Start()
         {
             GameObject g = new GameObject("VoicePosition");
             g.transform.SetParent(transform, false);
+            SocketManager.OnAvatarToken += token =>
+            {
+                if (waitingForAvatarToken && token.fromUserId == UserId && token.avatarId == AvatarId)
+                {
+                    waitingForAvatarToken = false;
+                    avatarFileToken = token;
+                    APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId,
+                        avatarFileToken.avatarToken);
+                }
+            };
         }
 
         public void Update()
         {
+            //float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
             if (instance != null && User == null)
             {
                 foreach (User instanceConnectedUser in instance.ConnectedUsers)
@@ -152,8 +178,48 @@ namespace Hypernex.Game
                 if (bone != null)
                 {
                     Vector3 newPos = bone.position;
-                    newPos.y += 1.5f;
+                    newPos.y += 1f;
                     nameplateTemplate.transform.position = newPos;
+                }
+            }
+        }
+
+        private Dictionary<string, PlayerObjectUpdate> avatarUpdates = new();
+
+        private void LateUpdate()
+        {
+            float interpolationRatio = Time.frameCount / Time.time;
+            foreach (KeyValuePair<string,PlayerObjectUpdate> playerObjectUpdate in avatarUpdates)
+            {
+                Transform target = transform.Find(playerObjectUpdate.Key);
+                NetworkedObject networkedObject = playerObjectUpdate.Value.Object;
+                if (target != null)
+                {
+                    Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
+                    //Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
+                    //Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
+                    if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
+                    {
+                        /*target.position = position;
+                        target.rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z));*/
+                        target.position = Vector3.Lerp(target.position, position, interpolationRatio);
+                        target.rotation = Quaternion.Lerp(target.rotation, Quaternion.Euler(new Vector3(
+                            networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z)), interpolationRatio);
+                    }
+                    else
+                    {
+                        /*target.localPosition = position;
+                        target.localRotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z));*/
+                        target.localPosition = Vector3.Lerp(target.localPosition, position, interpolationRatio);
+                        target.localRotation = Quaternion.Lerp(target.localRotation, Quaternion.Euler(new Vector3(
+                            networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z)), interpolationRatio);
+
+                    }
+                    //target.localScale = localSize;
                 }
             }
         }
@@ -165,32 +231,11 @@ namespace Hypernex.Game
             instance = gameInstance;
             APIPlayer.APIObject.GetUser(OnUser, UserId, isUserId: true);
         }
-        
-        // https://stackoverflow.com/q/16078254/12968919
-        // https://stackoverflow.com/a/16180762/12968919
-        private float[] ConvertByteToFloat(byte[] array) 
-        {
-            float[] floatArr = new float[array.Length / 4];
-            for (int i = 0; i < floatArr.Length; i++) 
-            {
-                if (BitConverter.IsLittleEndian) 
-                    Array.Reverse(array, i * 4, 4);
-                floatArr[i] = BitConverter.ToSingle(array, i*4) / 0x80000000;
-            }
-            return floatArr;
-        }
 
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
-            {
-                float[] data = ConvertByteToFloat(playerVoice.Bytes);
-                AudioClip clip = AudioClip.Create(UserId + "_voice", data.Length, playerVoice.Channels,
-                    playerVoice.SampleRate, false);
-                clip.SetData(data, 0);
-                AudioSource.PlayClipAtPoint(clip,
-                    headOffset - Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position, volume);
-            }
+                Avatar.opusHandler.DecodeFromVoice(playerVoice);
         }
 
         public void NetworkUpdate(PlayerUpdate playerUpdate)
@@ -203,27 +248,64 @@ namespace Hypernex.Game
             }
             if (Avatar != null && Avatar.Avatar.transform.parent == transform)
             {
-                foreach (NetworkedObject networkedObject in playerUpdate.TrackedObjects)
-                {
-                    Transform target;
-                    if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
-                        target = transform;
-                    else
-                        target = transform.Find(networkedObject.ObjectLocation);
-                    if (target != null)
-                    {
-                        Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
-                        Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
-                        Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
-                        target.SetPositionAndRotation(position, rotation);
-                        target.localScale = localSize;
-                    }
-                }
                 foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
                     Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);
                 LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
                 LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
+                Avatar.audioSource.volume = playerUpdate.IsSpeaking ? volume : 0f;
             }
+        }
+
+        /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
+        {
+            float interpolationRatio = interpolationFramesCount * Time.deltaTime;
+            if (Avatar != null && Avatar.Avatar.transform.parent == transform)
+            {
+                NetworkedObject networkedObject = playerObjectUpdate.Object;
+                Transform target;
+                if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
+                    target = transform;
+                else
+                    target = transform.Find(networkedObject.ObjectLocation);
+                if (target != null)
+                {
+                    Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
+                    Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
+                    Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
+                    if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
+                    {
+                        /*target.position = position;
+                        target.rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z));#1#
+                        target.position = Vector3.Lerp(target.position, position, interpolationRatio);
+                        target.rotation = Quaternion.Lerp(target.rotation, Quaternion.Euler(new Vector3(
+                            networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z)), interpolationRatio);
+                    }
+                    else
+                    {
+                        /*target.localPosition = position;
+                        target.localRotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z));#1#
+                        target.localPosition = Vector3.Lerp(target.localPosition, position, interpolationRatio);
+                        target.localRotation = Quaternion.Lerp(target.localRotation, Quaternion.Euler(new Vector3(
+                            networkedObject.Rotation.x, networkedObject.Rotation.y,
+                            networkedObject.Rotation.z)), interpolationRatio);
+
+                    }
+                    //target.localScale = localSize;
+                }
+            }
+        }*/
+
+        public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
+        {
+            if (string.IsNullOrEmpty(playerObjectUpdate.Object.ObjectLocation))
+                playerObjectUpdate.Object.ObjectLocation = "";
+            if (!avatarUpdates.ContainsKey(playerObjectUpdate.Object.ObjectLocation))
+                avatarUpdates.Add(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate);
+            else
+                avatarUpdates[playerObjectUpdate.Object.ObjectLocation] = playerObjectUpdate;
         }
     }
 }

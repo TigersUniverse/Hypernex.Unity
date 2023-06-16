@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Adrenak.UniMic;
+using System.Threading;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
@@ -16,24 +17,23 @@ using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Nexport;
-using OpusDotNet;
-using UnityEditor;
 using UnityEditor.XR.LegacyInputHelpers;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SpatialTracking;
 using UnityEngine.XR;
-using Application = OpusDotNet.Application;
 using Avatar = Hypernex.CCK.Unity.Avatar;
 using CommonUsages = UnityEngine.XR.CommonUsages;
 using InputDevice = UnityEngine.XR.InputDevice;
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
+using Mic = Hypernex.Tools.Mic;
 using Mouse = Hypernex.Game.Bindings.Mouse;
 
 namespace Hypernex.Game
 {
     [RequireComponent(typeof(DontDestroyMe))]
+    [RequireComponent(typeof(OpusHandler))]
     public class LocalPlayer : MonoBehaviour
     {
         public static LocalPlayer Instance;
@@ -62,7 +62,7 @@ namespace Hypernex.Game
                 if (value)
                 {
                     SetMicrophone();
-                    Mic.Instance.StartRecording(48000, 5);
+                    Mic.Instance.StartRecording();
                 }
                 else
                 {
@@ -84,12 +84,7 @@ namespace Hypernex.Game
         public bool LockMovement { get; set; }
         public bool LockCamera { get; set; }
 
-        public List<IBinding> Bindings = new()
-        {
-            new Keyboard()
-                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled),
-            new Mouse()
-        };
+        public List<IBinding> Bindings = new();
 
         public DashboardManager Dashboard;
         public CameraOffset CameraOffset;
@@ -106,10 +101,11 @@ namespace Hypernex.Game
         private float verticalVelocity;
         private float groundedTimer;
         internal AvatarMeta avatarMeta;
-        internal AvatarCreator avatar;
+        public AvatarCreator avatar;
         private string avatarFile;
-        private List<Transform> SavedTransforms = new();
-        internal Dictionary<string, string> AvatarIdTokens = new();
+        private List<PathDescriptor> SavedTransforms = new();
+        internal Dictionary<string, string> OwnedAvatarIdTokens = new();
+        private OpusHandler opusHandler;
 
         private void SetMicrophone()
         {
@@ -124,7 +120,8 @@ namespace Hypernex.Game
                 device = ConfigManager.LoadedConfig.SelectedMicrophone;
             else
                 return;
-            Mic.Instance.SetDeviceIndex(Mic.Instance.Devices.IndexOf(device));
+            Mic.Instance.SetDevice(device);
+            opusHandler.OnMicStart();
         }
 
         private PlayerUpdate GetPlayerUpdate(GameInstance gameInstance)
@@ -140,28 +137,11 @@ namespace Hypernex.Game
                 },
                 AvatarId = ConfigManager.SelectedConfigUser.CurrentAvatar,
                 IsPlayerVR = IsVR,
-                TrackedObjects = new List<NetworkedObject>
-                {
-                    new()
-                    {
-                        ObjectLocation = String.Empty,
-                        Position = NetworkConversionTools.Vector3Tofloat3(transform.position),
-                        Rotation = NetworkConversionTools.QuaternionTofloat4(transform.rotation),
-                        Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
-                    }
-                },
+                IsSpeaking = MicrophoneEnabled,
                 PlayerAssignedTags = new List<string>(),
                 ExtraneousData = new Dictionary<string, object>(),
                 WeightedObjects = new Dictionary<string, float>()
             };
-            foreach (Transform child in new List<Transform>(SavedTransforms))
-                playerUpdate.TrackedObjects.Add(new NetworkedObject
-                {
-                    ObjectLocation = AnimationUtility.CalculateTransformPath(child, transform),
-                    Position = NetworkConversionTools.Vector3Tofloat3(child.position),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(transform.rotation),
-                    Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale)
-                });
             if(avatar != null)
                 foreach (var animatorWeight in avatar.GetAnimatorWeights())
                     if(!playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key))
@@ -198,43 +178,103 @@ namespace Hypernex.Game
             LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
             return playerUpdate;
         }
-        
-        private static byte[] ConvertAudioClip(IReadOnlyCollection<float> samples)
+
+        private List<NetworkedObject> GetNetworkObjects()
         {
-            using MemoryStream stream = new MemoryStream();
-            using BinaryWriter writer = new BinaryWriter(stream);
-            int length = samples.Count;
-            writer.Write(length);
-            foreach (float sample in samples)
-                writer.Write(sample);
-            return stream.ToArray();
+            Transform r = transform;
+            Vector3 rea = transform.eulerAngles;
+            List<NetworkedObject> networkedObjects = new()
+            {
+                new NetworkedObject
+                {
+                    ObjectLocation = String.Empty,
+                    Position = NetworkConversionTools.Vector3Tofloat3(r.position),
+                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(rea.x, rea.y, rea.z, 0)),
+                    Size = NetworkConversionTools.Vector3Tofloat3(r.localScale)
+                }
+            };
+            foreach (PathDescriptor child in new List<PathDescriptor>(SavedTransforms))
+            {
+                Transform t = child.transform;
+                Vector3 lea = t.localEulerAngles;
+                networkedObjects.Add(new NetworkedObject
+                {
+                    ObjectLocation = child.path,
+                    Position = NetworkConversionTools.Vector3Tofloat3(t.localPosition),
+                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(lea.x, lea.y, lea.z, 0)),
+                    Size = NetworkConversionTools.Vector3Tofloat3(t.localScale)
+                });
+            }
+            return networkedObjects;
         }
 
-        private PlayerVoice GetPlayerVoice(GameInstance gameInstance, byte[] inData)
+        private List<PlayerObjectUpdate> GetPlayerObjectUpdates()
         {
-            if (!APIPlayer.IsFullReady || !MicrophoneEnabled)
-                return null;
+            List<PlayerObjectUpdate> p = new List<PlayerObjectUpdate>();
+            foreach (NetworkedObject networkedObject in GetNetworkObjects())
+            {
+                p.Add(new PlayerObjectUpdate
+                {
+                    Auth = new JoinAuth
+                    {
+                        UserId = APIPlayer.APIUser.Id,
+                        TempToken = GameInstance.FocusedInstance.userIdToken
+                    },
+                    Object = networkedObject
+                });
+            }
+            return p;
+        }
+
+        private void OnOpusEncoded(byte[] pcmBytes, int pcmLength)
+        {
             PlayerVoice playerVoice = new PlayerVoice
             {
                 Auth = new JoinAuth
                 {
                     UserId = APIPlayer.APIUser.Id,
-                    TempToken = gameInstance.userIdToken
+                    TempToken = GameInstance.FocusedInstance.userIdToken
                 },
-                SampleRate = 48000,
-                Channels = 1,
-                FrameSize = 5,
-                Encoder = "opus"
+                Bitrate = OpusHandler.BITRATE,
+                SampleRate = (int) Mic.Frequency,
+                Channels = (int) Mic.NumChannels,
+                Encoder = "opus",
+                Bytes = pcmBytes,
+                EncodeLength = pcmLength
             };
-            // If you don't want me to use obsolete, then update your README please!!
-            using OpusEncoder opusEncoder = new OpusEncoder(Application.VoIP, 48000, 1)
+            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+        }
+
+        private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
+        {
+            // Share AvatarToken with unblocked users
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen && APIPlayer.IsFullReady)
             {
-                Bitrate = 128000,
-                VBR = true
-            };
-            byte[] data = opusEncoder.Encode(inData, 5, out playerVoice.EncodeLength);
-            playerVoice.Bytes = data;
-            return playerVoice;
+                foreach (User connectedUser in GameInstance.FocusedInstance.ConnectedUsers)
+                {
+                    if (!APIPlayer.APIUser.BlockedUsers.Contains(connectedUser.Id))
+                    {
+                        APIPlayer.APIObject.AddAssetToken(rr =>
+                        {
+                            APIPlayer.UserSocket.ShareAvatarToken(connectedUser, am.Id, rr.result.token.content);
+                        }, APIPlayer.APIUser, APIPlayer.CurrentToken, am.Id);
+                    }
+                }
+            }
+        }
+
+        private void ShareAvatarTokenToUserId(User connectedUser, AvatarMeta am)
+        {
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen && APIPlayer.IsFullReady)
+            {
+                if (!APIPlayer.APIUser.BlockedUsers.Contains(connectedUser.Id))
+                {
+                    APIPlayer.APIObject.AddAssetToken(rr =>
+                    {
+                        APIPlayer.UserSocket.ShareAvatarToken(connectedUser, am.Id, rr.result.token.content);
+                    }, APIPlayer.APIUser, APIPlayer.CurrentToken, am.Id);
+                }
+            }
         }
 
         private void OnAvatarDownload(string file, AvatarMeta am)
@@ -256,8 +296,14 @@ namespace Hypernex.Game
             foreach (Transform child in transform.GetComponentsInChildren<Transform>())
             {
                 child.gameObject.layer = 7;
-                SavedTransforms.Add(child);
+                PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
+                if (pathDescriptor == null)
+                    pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
+                pathDescriptor.root = transform;
+                SavedTransforms.Add(pathDescriptor);
             }
+            if (am.Publicity == AvatarPublicity.OwnerOnly)
+                ShareAvatarTokenToConnectedUsersInInstance(am);
         }
 
         private void GetTokenForOwnerAvatar(string avatarId, Action<string> result)
@@ -291,13 +337,27 @@ namespace Hypernex.Game
                 // TODO: Share token in instance, excluding blocked users
                 GetTokenForOwnerAvatar(r.result.Meta.Id, t =>
                 {
-                    AvatarIdTokens.Add(r.result.Meta.Id, t);
+                    OwnedAvatarIdTokens.Add(r.result.Meta.Id, t);
                     file = $"{APIPlayer.APIObject.Settings.APIURL}file/{r.result.Meta.OwnerId}/{build.FileId}/{t}";
-                    DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta));
+                    APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
+                    {
+                        string knownHash = String.Empty;
+                        if (fileMetaResult.success)
+                            knownHash = fileMetaResult.result.FileMeta.Hash;
+                        DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna",
+                            f => OnAvatarDownload(f, r.result.Meta), knownHash);
+                    }, r.result.Meta.OwnerId, build.FileId);
                 });
                 return;
             }
-            DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta));
+            APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
+            {
+                string knownHash = String.Empty;
+                if (fileMetaResult.success)
+                    knownHash = fileMetaResult.result.FileMeta.Hash;
+                DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna",
+                    f => OnAvatarDownload(f, r.result.Meta), knownHash);
+            }, r.result.Meta.OwnerId, build.FileId);
         }
 
         public void LoadAvatar()
@@ -305,6 +365,35 @@ namespace Hypernex.Game
             if (string.IsNullOrEmpty(ConfigManager.SelectedConfigUser.CurrentAvatar))
                 return;
             APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
+        }
+
+        private Coroutine lastCoroutine;
+        private Queue<PlayerObjectUpdate> msgs = new();
+        private CancellationTokenSource cts;
+        private Mutex mutex = new();
+
+        private IEnumerator UpdatePlayer(GameInstance gameInstance)
+        {
+            while (true)
+            {
+                if (gameInstance.IsOpen)
+                {
+                    PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
+                    gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
+                    // TODO: Message Queues are slow, fix underlying issue in Nexport
+                    if (mutex.WaitOne(1))
+                    {
+                        foreach (PlayerObjectUpdate playerObjectUpdate in GetPlayerObjectUpdates())
+                        {
+                            msgs.Enqueue(playerObjectUpdate);
+                            //byte[] g = Msg.Serialize(playerObjectUpdate);
+                            //gameInstance.SendMessage(g, MessageChannel.Unreliable);
+                        }
+                        mutex.ReleaseMutex();
+                    }
+                }
+                yield return new WaitForSeconds(0.05f);
+            }
         }
 
         private void Start()
@@ -317,24 +406,25 @@ namespace Hypernex.Game
             }
             Instance = this;
             DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
+            opusHandler = GetComponent<OpusHandler>();
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
+            Bindings.Add(new Keyboard()
+                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
+            Bindings.Add(new Mouse());
             Bindings[1].Button2Click += () =>
             {
                 Dashboard.ToggleDashboard(this);
                 LockCamera = Dashboard.IsVisible;
                 LockMovement = Dashboard.IsVisible;
             };
-            Mic.Instance.OnSampleReady += (i, floats) =>
+            Mic.OnClipReady += samples =>
             {
-                if (GameInstance.FocusedInstance == null)
+                if (GameInstance.FocusedInstance == null || opusHandler == null)
                     return;
-                byte[] d = ConvertAudioClip(floats);
-                PlayerVoice playerVoice = GetPlayerVoice(GameInstance.FocusedInstance, d);
-                if(playerVoice != null)
-                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+                opusHandler.EncodeMicrophone(samples);
             };
             if (IsVR)
             {
@@ -348,6 +438,52 @@ namespace Hypernex.Game
                 Bindings.Add(rightBinding);
                 Logger.CurrentLogger.Log("Added VR Bindings");
             }
+            GameInstance.OnGameInstanceLoaded += (instance, meta) =>
+            {
+                lastCoroutine = StartCoroutine(UpdatePlayer(instance));
+                instance.OnUserLoaded += user =>
+                {
+                    if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
+                        ShareAvatarTokenToUserId(user, avatarMeta);
+                };
+                instance.OnClientConnect += user =>
+                {
+                    if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
+                        ShareAvatarTokenToUserId(user, avatarMeta);
+                };
+                instance.OnDisconnect += () =>
+                {
+                    if (lastCoroutine != null)
+                    {
+                        StopCoroutine(lastCoroutine);
+                        lastCoroutine = null;
+                    }
+                };
+                if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
+                    ShareAvatarTokenToConnectedUsersInInstance(avatarMeta);
+            };
+            opusHandler.OnEncoded += OnOpusEncoded;
+            cts = new();
+            new Thread(() =>
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    if (mutex.WaitOne())
+                    {
+                        if (msgs.Count > 0)
+                        {
+                            for (int i = 0; i < msgs.Count; i++)
+                            {
+                                PlayerObjectUpdate p = msgs.Dequeue();
+                                byte[] msg = Msg.Serialize(p);
+                                GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
+                            }
+                        }
+                        mutex.ReleaseMutex();
+                    }
+                    Thread.Sleep(10);
+                }
+            }).Start();
         }
 
         private float rotx;
@@ -457,11 +593,6 @@ namespace Hypernex.Game
                 move.y = verticalVelocity;
                 CharacterController.Move(move * Time.deltaTime);
             }
-            if (GameInstance.FocusedInstance != null)
-            {
-                PlayerUpdate playerUpdate = GetPlayerUpdate(GameInstance.FocusedInstance);
-                GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-            }
             avatar?.SetSpeed(m?.Item3 ?? false ? s_ : 0.0f);
             avatar?.SetIsGrounded(groundedPlayer);
             avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
@@ -486,6 +617,24 @@ namespace Hypernex.Game
         private void LateUpdate()
         {
             avatar?.LateUpdate(IsVR, Camera.transform);
+        }
+
+        private void OnDestroy()
+        {
+            foreach (IBinding binding in Bindings)
+            {
+                if(binding.GetType() == typeof(Keyboard))
+                    ((Keyboard)binding).Dispose();
+                if(binding.GetType() == typeof(Mouse))
+                    ((Mouse)binding).Dispose();
+            }
+            if (lastCoroutine != null)
+            {
+                StopCoroutine(lastCoroutine);
+                lastCoroutine = null;
+            }
+            opusHandler.OnEncoded -= OnOpusEncoded;
+            cts?.Cancel();
         }
     }
 }

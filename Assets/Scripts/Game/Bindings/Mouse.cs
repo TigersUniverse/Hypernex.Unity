@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Hypernex.Game.Bindings
 {
-    public class Mouse : IBinding
+    public class Mouse : IBinding, IDisposable
     {
         public string Id => "Mouse";
         public bool IsLook => true;
@@ -80,8 +80,11 @@ namespace Hypernex.Game.Bindings
         {
             if (!customEvents.ContainsKey(mouseAction))
                 customEvents.Add(mouseAction, new List<Action>());
-            customEvents[mouseAction].Add(a);
+            else
+                customEvents[mouseAction].Add(a);
             return this;
         }
+
+        public void Dispose() => customEvents.Clear();
     }
 }

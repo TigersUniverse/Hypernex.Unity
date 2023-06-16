@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Hypernex.Game.Bindings
 {
-    public class Keyboard : IBinding
+    public class Keyboard : IBinding, IDisposable
     {
         public string Id => "Keyboard";
         public bool IsLook => false;
@@ -77,9 +77,12 @@ namespace Hypernex.Game.Bindings
         public Keyboard RegisterCustomKeyDownEvent(KeyCode keyCode, Action a)
         {
             if (!customEvents.ContainsKey(keyCode))
-                customEvents.Add(keyCode, new List<Action>());
-            customEvents[keyCode].Add(a);
+                customEvents.Add(keyCode, new List<Action>{a});
+            else
+                customEvents[keyCode].Add(a);
             return this;
         }
+
+        public void Dispose() => customEvents.Clear();
     }
 }

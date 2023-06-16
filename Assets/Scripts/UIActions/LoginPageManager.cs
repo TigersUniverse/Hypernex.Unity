@@ -38,6 +38,7 @@ namespace Hypernex.UIActions
                 OnLogout();
                 OnLogin(user);
             };
+            APIPlayer.OnSocketConnect += OnSocket;
             APIPlayer.OnLogout += OnLogout;
             if (!hasEnabledOnce)
             {
@@ -108,6 +109,11 @@ namespace Hypernex.UIActions
                                                    result.message);
                 })), userFriendRequestId, null, true);
             }
+        }
+
+        void OnSocket()
+        {
+            InstancesContainer.Clear();
             APIPlayer.GetAllSharedInstances(instances =>
             {
                 InstancesLabel.text = "Instances (" + instances.Count + ")";

@@ -13,12 +13,8 @@ using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using HypernexSharp.SocketObjects;
 using Nexbox;
-using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.XR.Management;
-using VRCFaceTracking;
-using VRCFaceTracking.Core.Params.Data;
-using VRCFaceTracking.Core.Params.Expressions;
 using Logger = Hypernex.CCK.Logger;
 
 public class Init : MonoBehaviour
@@ -27,7 +23,8 @@ public class Init : MonoBehaviour
     
     public UITheme DefaultTheme;
     public bool ForceVR;
-    public AnimatorController DefaultAvatarAnimatorController;
+    public RuntimeAnimatorController DefaultAvatarAnimatorController;
+    public InstanceProtocol InstanceProtocol = InstanceProtocol.KCP;
 
     private string GetPluginLocation() =>
 #if UNITY_EDITOR
@@ -90,7 +87,7 @@ public class Init : MonoBehaviour
             }
     }
 
-    private string worldId;
+    /*private string worldId;
 
     private void OnGUI()
     {
@@ -103,7 +100,7 @@ public class Init : MonoBehaviour
             {
                 if (!result.success)
                     return;
-                APIPlayer.UserSocket.RequestNewInstance(result.result.Meta, InstancePublicity.Anyone, InstanceProtocol.KCP);
+                APIPlayer.UserSocket.RequestNewInstance(result.result.Meta, InstancePublicity.Anyone, InstanceProtocol.UDP);
             }, worldId);
         }
         if (FaceTrackingManager.HasInitialized)
@@ -129,11 +126,11 @@ public class Init : MonoBehaviour
                 i++;
             }
         }
-    }
+    }*/
 
     private void OnApplicationQuit()
     {
-        foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.Instance.AvatarIdTokens)
+        foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.Instance.OwnedAvatarIdTokens)
             APIPlayer.APIObject.RemoveAssetToken(_ => { }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarIdToken.Key,
                 avatarIdToken.Value);
         LocalPlayer.Instance.avatar?.Dispose();

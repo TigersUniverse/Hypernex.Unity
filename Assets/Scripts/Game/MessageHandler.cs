@@ -22,6 +22,12 @@ namespace Hypernex.Game
                     PlayerManagement.HandlePlayerVoice(gameInstance, playerVoice);
                     break;
                 }
+                case "Hypernex.Networking.Messages.PlayerObjectUpdate":
+                {
+                    PlayerObjectUpdate playerObjectUpdate = (PlayerObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(PlayerObjectUpdate));
+                    PlayerManagement.HandlePlayerObjectUpdate(gameInstance, playerObjectUpdate);
+                    break;
+                }
                 case "Hypernex.Networking.Messages.RespondAuth":
                 {
                     RespondAuth respondAuth = (RespondAuth) Convert.ChangeType(msgMeta.Data, typeof(RespondAuth));

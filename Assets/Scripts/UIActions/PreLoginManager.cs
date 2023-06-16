@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.Configuration;
 using Hypernex.Player;
@@ -112,8 +113,7 @@ namespace Hypernex.UIActions
                 }
             });
             SignInButton.onClick.AddListener(() => SetUser(SignInUsernameInput.text, SignInPasswordInput.text));
-            SignInAndSaveButton.onClick.AddListener(() =>
-                SetUser(SignInUsernameInput.text, SignInPasswordInput.text, true));
+            SignInAndSaveButton.onClick.AddListener(() => SetUser(SignInUsernameInput.text, SignInPasswordInput.text, true));
             SignUpInsteadButton.onClick.AddListener(() =>
             {
                 SignInObject.SetActive(false);
@@ -189,6 +189,7 @@ namespace Hypernex.UIActions
         {
             if (!isSettingUser)
             {
+                isSettingUser = true;
                 HypernexSettings settings = new HypernexSettings(configUser.UserId, configUser.TokenContent)
                     {TargetDomain = currentURL, IsHTTP = useHTTP};
                 APIPlayer.Create(settings);
@@ -265,8 +266,14 @@ namespace Hypernex.UIActions
                     {
                         foreach (ConfigUser configUser in new List<ConfigUser>(ConfigManager.LoadedConfig.SavedAccounts))
                         {
-                            if (configUser.UserId == user.Id)
-                                ConfigManager.LoadedConfig.SavedAccounts.Remove(configUser);
+                            if (configUser.UserId == user.Id && configUser.Server.ToLower() == currentURL.ToLower())
+                            {
+                                if (c == null)
+                                {
+                                    configUser.TokenContent = loginResult!.Token.content;
+                                    c = configUser;
+                                }
+                            }
                         }
                         if (c == null)
                         {
@@ -284,6 +291,17 @@ namespace Hypernex.UIActions
                     }
                     else
                     {
+                        foreach (ConfigUser configUser in new List<ConfigUser>(ConfigManager.LoadedConfig.SavedAccounts))
+                        {
+                            if (configUser.UserId == user.Id && configUser.Server.ToLower() == currentURL.ToLower())
+                            {
+                                if (c == null)
+                                {
+                                    configUser.TokenContent = loginResult!.Token.content;
+                                    c = configUser;
+                                }
+                            }
+                        }
                         if (c == null)
                             ConfigManager.SelectedConfigUser = new ConfigUser
                             {

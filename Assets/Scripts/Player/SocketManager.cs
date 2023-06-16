@@ -15,6 +15,7 @@ namespace Hypernex.Player
     {
         private static List<SharedAvatarToken> avatarTokens = new();
         public static List<SharedAvatarToken> SharedAvatarTokens => new(avatarTokens);
+        public static Action<SharedAvatarToken> OnAvatarToken { get; set; } = token => { };
 
         public static Action<InstanceOpened, WorldMeta> OnInstanceOpened { get; set; } =
             (openedInstance, worldMeta) => { };
@@ -70,11 +71,13 @@ namespace Hypernex.Player
                                         avatarTokens.Remove(avatarToken);
                             }
                             avatarTokens.Add(sharedAvatarToken);
+                            OnAvatarToken.Invoke(sharedAvatarToken);
                         }));
                         break;
                     // TODO: Implement other messages
                 }
             };
+            APIPlayer.UserSocket.OnOpen += () => QuickInvoke.InvokeActionOnMainThread(APIPlayer.OnSocketConnect);
             APIPlayer.UserSocket.Open();
             GameInstance.Init();
         }

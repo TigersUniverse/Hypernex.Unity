@@ -8,24 +8,24 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     // I know this class name sounds stupid, but it is the LocalAvatar for Local scripts
     public static class LocalLocalAvatar
     {
-        public static Item GetAvatarObject(HumanBodyBones humanBodyBones)
+        public static ReadonlyItem GetAvatarObject(HumanBodyBones humanBodyBones)
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return null;
             Transform bone = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(humanBodyBones);
             if (bone == null)
                 return null;
-            return new Item(bone);
+            return new ReadonlyItem(bone);
         }
 
-        public static Item GetAvatarObjectByPath(string path)
+        public static ReadonlyItem GetAvatarObjectByPath(string path)
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return null;
             Transform bone = LocalPlayer.Instance.avatar.Avatar.transform.Find(path);
             if (bone == null)
                 return null;
-            return new Item(bone);
+            return new ReadonlyItem(bone);
         }
 
         public static void TeleportTo(float3 position)

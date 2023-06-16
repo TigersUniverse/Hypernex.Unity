@@ -32,10 +32,10 @@ namespace Hypernex.UI.Templates
         public void Render(LoginPageManager lpm, SafeInstance instance, WorldMeta worldMeta, User hoster = null, User creator = null)
         {
             WorldText.text = worldMeta.Name;
-            if(hoster != null)
-                CreatorText.text = "Hosted By " + hoster.Username + " (" + instance.InstancePublicity + ")";
             if (creator != null)
                 CreatorText.text = "Created By " + creator.Username;
+            if(hoster != null)
+                CreatorText.text = "Hosted By " + hoster.Username + " (" + instance.InstancePublicity + ")";
             if (!string.IsNullOrEmpty(worldMeta.ThumbnailURL))
                 DownloadTools.DownloadBytes(worldMeta.ThumbnailURL,
                     bytes =>

@@ -6,6 +6,7 @@ using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
+using Hypernex.Tools;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -30,6 +31,9 @@ namespace Hypernex.Game
         private bool calibrated;
         private VRIKCalibrator.CalibrationData calibrationData = new();
         private GameObject headAlign;
+        internal GameObject voiceAlign;
+        internal AudioSource audioSource;
+        internal OpusHandler opusHandler;
         
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -41,6 +45,7 @@ namespace Hypernex.Game
             headAlign = new GameObject("headalign_" + new Guid().ToString());
             headAlign.transform.position = a.ViewPosition;
             headAlign.transform.SetParent(GetBoneFromHumanoid(HumanBodyBones.Head), true);
+            a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform);
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
             MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
@@ -81,9 +86,24 @@ namespace Hypernex.Game
             a = Object.Instantiate(a.gameObject).GetComponent<Avatar>();
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, netPlayer.gameObject.scene);
-            a.transform.SetParent(netPlayer.transform);
-            a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
             MainAnimator = a.GetComponent<Animator>();
+            MainAnimator.runtimeAnimatorController = null;
+            voiceAlign = new GameObject("voicealign_" + new Guid());
+            voiceAlign.transform.position = a.SpeechPosition;
+            voiceAlign.transform.SetParent(GetBoneFromHumanoid(HumanBodyBones.Head), true);
+            voiceAlign.AddComponent<AudioSource>();
+            opusHandler = voiceAlign.AddComponent<OpusHandler>();
+            opusHandler.OnDecoded += opusHandler.PlayDecodedToVoice;
+            audioSource = opusHandler.gameObject.GetComponent<AudioSource>();
+            audioSource.spatialize = true;
+            audioSource.spatialBlend = 1f;
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.minDistance = 0;
+            audioSource.maxDistance = 10;
+            a.transform.SetParent(netPlayer.transform);
+            a.gameObject.name = "avatar";
+            a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
+            // TODO: Full NetPlayer sync (with component toggles for example)
             foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
             {
                 if (customPlayableAnimator.AnimatorOverrideController != null)
@@ -371,12 +391,16 @@ namespace Hypernex.Game
             if(MainAnimator != null)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
             if (!calibrated && WorldTrackers.Count == 3 && vrik != null)
+            {
                 isCalibrating = true;
+                MainAnimator.SetBool("isCalibrating", true);
+            }
             else if (WorldTrackers.Count != 3 && vrik != null)
             {
                 VRIKCalibrator.Calibrate(vrik, calibrationData, cameraTransform, null, LeftHandReference.transform,
                     RightHandReference.transform);
                 isCalibrating = false;
+                MainAnimator.SetBool("isCalibrating", false);
                 calibrated = true;
             }
             if (isCalibrating && areTwoTriggersClicked && vrik != null)
@@ -397,6 +421,7 @@ namespace Hypernex.Game
                             LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
                         calibrated = true;
                         isCalibrating = false;
+                        MainAnimator.SetBool("isCalibrating", false);
                     }
                 }
             }
@@ -465,6 +490,8 @@ namespace Hypernex.Game
                     if (s == extraneousObject.Key)
                         LocalPlayer.MoreExtraneousObjects.Remove(extraneousObject.Key);
             }
+            if(opusHandler != null)
+                opusHandler.OnDecoded -= opusHandler.PlayDecodedToVoice;
             Object.Destroy(Avatar.gameObject);
         }
     }

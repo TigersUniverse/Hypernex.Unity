@@ -23,6 +23,11 @@ namespace Hypernex.UI.Templates
 
         public void Render(User user)
         {
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                child.gameObject.SetActive(true);
+            }
             Username.text = !string.IsNullOrEmpty(user.Bio.DisplayName) ? user.Bio.DisplayName : user.Username;
             switch (user.Bio.Status)
             {
@@ -48,6 +53,8 @@ namespace Hypernex.UI.Templates
                     user.Bio.Pronouns.ToString();
                 PronounContainer.SetActive(true);
             }
+            else
+                PronounContainer.SetActive(false);
             if (!string.IsNullOrEmpty(user.Bio.PfpURL))
                 DownloadTools.DownloadBytes(user.Bio.PfpURL,
                     bytes =>

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using Avatar = Hypernex.CCK.Unity.Avatar;
@@ -21,14 +22,23 @@ namespace Hypernex.Tools
             }
         }
 
-        private static List<AssetBundle> cachedAssetBundles = new ();
+        private static Dictionary<string, AssetBundle> cachedAssetBundles = new ();
 
         public static string LoadSceneFromFile(string file)
         {
-            AssetBundle loadedAssetBundle = AssetBundle.LoadFromFile(file);
+            bool a = false;
+            AssetBundle loadedAssetBundle;
+            if (cachedAssetBundles.ContainsKey(file))
+            {
+                loadedAssetBundle = cachedAssetBundles[file];
+                a = true;
+            }
+            else
+                loadedAssetBundle = AssetBundle.LoadFromFile(file);
             if (loadedAssetBundle != null)
             {
-                cachedAssetBundles.Add(loadedAssetBundle);
+                if(!a)
+                    cachedAssetBundles.Add(file, loadedAssetBundle);
                 string scenePath = loadedAssetBundle.GetAllScenePaths()[0];
                 //loadedAssetBundle.UnloadAsync(false);
                 return scenePath;
@@ -38,10 +48,19 @@ namespace Hypernex.Tools
 
         public static Avatar LoadAvatarFromFile(string file)
         {
-            AssetBundle loadedAssetBundle = AssetBundle.LoadFromFile(file);
+            bool a = false;
+            AssetBundle loadedAssetBundle;
+            if (cachedAssetBundles.ContainsKey(file))
+            {
+                loadedAssetBundle = cachedAssetBundles[file];
+                a = true;
+            }
+            else
+                loadedAssetBundle = AssetBundle.LoadFromFile(file);
             if (loadedAssetBundle != null)
             {
-                cachedAssetBundles.Add(loadedAssetBundle);
+                if(!a)
+                    cachedAssetBundles.Add(file, loadedAssetBundle);
                 Object[] loadedAssets = loadedAssetBundle.LoadAllAssets();
                 foreach (Object loadedAsset in loadedAssets)
                 {
@@ -59,10 +78,10 @@ namespace Hypernex.Tools
 
         internal static void UnloadAllAssetBundles()
         {
-            foreach (AssetBundle assetBundle in new List<AssetBundle>(cachedAssetBundles))
+            foreach (KeyValuePair<string, AssetBundle> assetBundle in new Dictionary<string, AssetBundle>(cachedAssetBundles))
             {
-                assetBundle.Unload(true);
-                cachedAssetBundles.Remove(assetBundle);
+                assetBundle.Value.Unload(true);
+                cachedAssetBundles.Remove(assetBundle.Key);
             }
         }
     }

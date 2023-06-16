@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
 using System.Threading;
 using Hypernex.Configuration;
 using Logger = Hypernex.CCK.Logger;
@@ -40,16 +41,27 @@ namespace Hypernex.Tools
             Check();
         }
 
-        private static List<string> accessedFileOutputs = new ();
+        private static string GetFileHash(string file)
+        {
+            using MD5 md5 = MD5.Create();
+            using FileStream fileStream = new FileStream(file, FileMode.Open, FileAccess.ReadWrite,
+                FileShare.ReadWrite | FileShare.Delete);
+            byte[] hash = md5.ComputeHash(fileStream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
 
         public static void DownloadFile(string url, string output, Action<string> OnDownload,
-            Action<DownloadProgressChangedEventArgs> DownloadProgress = null)
+            string knownFileHash = null, Action<DownloadProgressChangedEventArgs> DownloadProgress = null)
         {
             if (!Directory.Exists(DownloadsPath))
                 Directory.CreateDirectory(DownloadsPath);
             string fileOutput = Path.Combine(DownloadsPath, output);
-            if(File.Exists(fileOutput)/* && accessedFileOutputs.Contains(fileOutput)*/)
-                OnDownload.Invoke(fileOutput);
+            bool fileExists = File.Exists(fileOutput);
+            bool isHashSame = false;
+            if (fileExists && !string.IsNullOrEmpty(knownFileHash))
+                isHashSame = GetFileHash(fileOutput) == knownFileHash;
+            if(fileExists && isHashSame)
+                QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
             else
             {
                 DownloadMeta meta = new DownloadMeta
@@ -59,7 +71,6 @@ namespace Hypernex.Tools
                     {
                         File.WriteAllBytes(fileOutput, b);
                         Array.Clear(b, 0, b.Length);
-                        accessedFileOutputs.Add(fileOutput);
                         QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
                     },
                     progress = p =>
