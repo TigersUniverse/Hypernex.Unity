@@ -1,10 +1,18 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Hypernex.Game
 {
     public interface IBinding
     {
+        /// <summary>
+        /// An Identifier for each IBinding
+        /// </summary>
         public string Id { get; }
+        /// <summary>
+        /// Used for Binding Raycasts and anything else
+        /// </summary>
+        public Transform AttachedObject { get; }
         /// <summary>
         /// Is this device used for looking? (This would be true for a mouse)
         /// </summary>

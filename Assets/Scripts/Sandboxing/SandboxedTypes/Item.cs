@@ -15,6 +15,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         }
 
         internal Item(Transform t) => this.t = t;
+
+        public bool Enabled
+        {
+            get => t.gameObject.activeSelf;
+            set => t.gameObject.SetActive(value);
+        }
         
         public float3 Position
         {
@@ -60,6 +66,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (tr != null)
                 return new Item(tr);
             return null;
+        }
+        
+        public static bool operator ==(Item x, Item y) => x?.Equals(y) ?? false;
+        public static bool operator !=(Item x, Item y) => !(x == y);
+        public override bool Equals(object obj)
+        {
+            if (obj == null || obj.GetType() != typeof(Item))
+                return false;
+            return t == ((Item) obj).t;
         }
     }
 }

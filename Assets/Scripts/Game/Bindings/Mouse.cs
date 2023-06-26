@@ -7,6 +7,7 @@ namespace Hypernex.Game.Bindings
     public class Mouse : IBinding, IDisposable
     {
         public string Id => "Mouse";
+        public Transform AttachedObject => LocalPlayer.Instance.Camera.transform;
         public bool IsLook => true;
         
         public float Up { get; set; }
@@ -58,8 +59,8 @@ namespace Hypernex.Game.Bindings
                     Down = 0;
                     break;
             }
-            Button = Input.GetKey(KeyCode.E);
-            if(Input.GetKeyDown(KeyCode.E))
+            Button = Input.GetKey(KeyCode.Space);
+            if(Input.GetKeyDown(KeyCode.Space))
                 ButtonClick.Invoke();
             Button2 = Input.GetKey(KeyCode.Tab);
             if(Input.GetKeyDown(KeyCode.Tab))

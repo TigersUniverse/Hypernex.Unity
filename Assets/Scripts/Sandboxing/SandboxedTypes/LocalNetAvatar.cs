@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hypernex.Game;
+using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -47,6 +48,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return new ReadonlyItem(bone);
         }
+        
+        public static bool IsAvatarItem(Item item) =>
+            AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<NetPlayer>() != null;
+        
+        public static bool IsAvatarItem(ReadonlyItem item) =>
+            AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<NetPlayer>() != null;
         
         public ReadonlyItem[] GetAllChildrenInAvatar(string userid, string path)
         {

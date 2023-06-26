@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using Hypernex.Game;
+using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
-    // I know this class name sounds stupid, but this is the LocalAvatar for LocalAvatar scripts
     public static class LocalAvatarLocalAvatar
     {
         internal static List<string> AssignedTags = new();
@@ -29,6 +29,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return new Item(bone);
         }
+        
+        public static bool IsAvatarItem(Item item) =>
+            AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<LocalPlayer>() != null;
+        
+        public static bool IsAvatarItem(ReadonlyItem item) =>
+            AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<LocalPlayer>() != null;
 
         public static object GetParameter(string parameterName)
         {
@@ -67,7 +73,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return LocalPlayer.Instance.LastExtraneousObjects[key];
         }
 
-        public static void SetExtraneousObject(string key, object value)
+        public static void AddExtraneousObject(string key, object value)
         {
             if (LocalPlayer.Instance == null)
                 return;
@@ -80,6 +86,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             }
             LocalPlayer.MoreExtraneousObjects.Add(key, value);
         }
+
+        public static void RemoveExtraneousObject(string key)
+        {
+            if (LocalPlayer.Instance == null)
+                return;
+            if (ExtraneousKeys.Contains(key))
+                ExtraneousKeys.Remove(key);
+            if (LocalPlayer.MoreExtraneousObjects.ContainsKey(key))
+                LocalPlayer.MorePlayerAssignedTags.Remove(key);
+        }
         
         public static string[] GetPlayerAssignedTags()
         {
@@ -88,7 +104,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
         }
         
-        public static void SetPlayerAssignedTag(string tag)
+        public static void AddPlayerAssignedTag(string tag)
         {
             if (LocalPlayer.Instance == null)
                 return;
@@ -97,6 +113,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (LocalPlayer.MorePlayerAssignedTags.Contains(tag))
                 return;
             LocalPlayer.MorePlayerAssignedTags.Add(tag);
+        }
+
+        public static void RemovePlayerAssignedTag(string tag)
+        {
+            if (LocalPlayer.Instance == null)
+                return;
+            if (AssignedTags.Contains(tag))
+                AssignedTags.Remove(tag);
+            if (LocalPlayer.MorePlayerAssignedTags.Contains(tag))
+                LocalPlayer.MorePlayerAssignedTags.Remove(tag);
         }
     }
 }

@@ -25,11 +25,14 @@ namespace Hypernex.Game
         public FaceTrackingDescriptor FaceTrackingDescriptor;
         
         private List<AnimatorPlayable> PlayableAnimators = new ();
-        private List<Sandbox> localAvatarSandboxes = new();
+        internal List<Sandbox> localAvatarSandboxes = new();
         private VRIK vrik;
         private bool isCalibrating;
         private bool calibrated;
-        private VRIKCalibrator.CalibrationData calibrationData = new();
+        private VRIKCalibrator.Settings vrikSettings = new()
+        {
+            handOffset = new Vector3(0, 0, -0.15f)
+        };
         private GameObject headAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
@@ -42,9 +45,11 @@ namespace Hypernex.Game
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
-            headAlign = new GameObject("headalign_" + new Guid().ToString());
+            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
+            headAlign = new GameObject("headalign_" + Guid.NewGuid());
             headAlign.transform.position = a.ViewPosition;
-            headAlign.transform.SetParent(GetBoneFromHumanoid(HumanBodyBones.Head), true);
+            headAlign.transform.SetParent(head, true);
+            vrikSettings.headOffset = head.position - headAlign.transform.position;
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform);
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
@@ -77,8 +82,8 @@ namespace Hypernex.Game
                 vrik = Avatar.gameObject.AddComponent<VRIK>();
             isCalibrating = false;
             calibrated = false;
-            foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
+            foreach (Transform child in GetBoneFromHumanoid(HumanBodyBones.Head).GetComponentsInChildren<Transform>())
+                child.gameObject.layer = 7;
         }
 
         public AvatarCreator(NetPlayer netPlayer, Avatar a)
@@ -88,7 +93,7 @@ namespace Hypernex.Game
             SceneManager.MoveGameObjectToScene(a.gameObject, netPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
             MainAnimator.runtimeAnimatorController = null;
-            voiceAlign = new GameObject("voicealign_" + new Guid());
+            voiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
             voiceAlign.transform.position = a.SpeechPosition;
             voiceAlign.transform.SetParent(GetBoneFromHumanoid(HumanBodyBones.Head), true);
             voiceAlign.AddComponent<AudioSource>();
@@ -103,7 +108,6 @@ namespace Hypernex.Game
             a.transform.SetParent(netPlayer.transform);
             a.gameObject.name = "avatar";
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
-            // TODO: Full NetPlayer sync (with component toggles for example)
             foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
             {
                 if (customPlayableAnimator.AnimatorOverrideController != null)
@@ -125,8 +129,6 @@ namespace Hypernex.Game
                 });
                 playableGraph.Play();
             }
-            foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
         }
 
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
@@ -397,7 +399,7 @@ namespace Hypernex.Game
             }
             else if (WorldTrackers.Count != 3 && vrik != null)
             {
-                VRIKCalibrator.Calibrate(vrik, calibrationData, cameraTransform, null, LeftHandReference.transform,
+                VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
                     RightHandReference.transform);
                 isCalibrating = false;
                 MainAnimator.SetBool("isCalibrating", false);
@@ -417,7 +419,7 @@ namespace Hypernex.Game
                     if (body != null && leftFoot != null && rightFoot != null)
                     {
                         Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
-                        VRIKCalibrator.Calibrate(vrik, calibrationData, cameraTransform, newTs[0].transform,
+                        VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0].transform,
                             LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
                         calibrated = true;
                         isCalibrating = false;
@@ -429,15 +431,12 @@ namespace Hypernex.Game
 
         internal void LateUpdate(bool isVR, Transform cameraTransform)
         {
-            if (headAlign != null)
+            if (!isVR && headAlign != null)
             {
                 cameraTransform.position = headAlign.transform.position;
-                if (!isVR)
-                {
-                    Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
-                    if(headBone != null)
-                        headBone.rotation = cameraTransform.rotation;
-                }
+                Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
+                if(headBone != null)
+                    headBone.rotation = cameraTransform.rotation;
             }
         }
 
@@ -469,7 +468,11 @@ namespace Hypernex.Game
         public void Dispose()
         {
             foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
-                playableAnimator.PlayableGraph.Destroy();
+                try
+                {
+                    playableAnimator.PlayableGraph.Destroy();
+                }
+                catch(ArgumentException){}
             foreach (Sandbox localAvatarSandbox in new List<Sandbox>(localAvatarSandboxes))
             {
                 localAvatarSandboxes.Remove(localAvatarSandbox);

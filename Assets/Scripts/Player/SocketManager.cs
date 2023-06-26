@@ -65,7 +65,7 @@ namespace Hypernex.Player
                                     x.avatarId == sharedAvatarToken.avatarId &&
                                     x.fromUserId == sharedAvatarToken.fromUserId) > 0)
                             {
-                                foreach (SharedAvatarToken avatarToken in avatarTokens)
+                                foreach (SharedAvatarToken avatarToken in SharedAvatarTokens)
                                     if (avatarToken.avatarId == sharedAvatarToken.avatarId &&
                                         avatarToken.fromUserId == sharedAvatarToken.fromUserId)
                                         avatarTokens.Remove(avatarToken);

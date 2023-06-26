@@ -25,7 +25,7 @@
                 },
                 {
                     "name": "Jump",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "9a947bae-4eec-45fb-a3be-5ffd61813971",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -34,7 +34,7 @@
                 },
                 {
                     "name": "Dashboard",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "1e580be4-d59f-4d49-a161-fe883cf76d18",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -43,7 +43,7 @@
                 },
                 {
                     "name": "Action",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "9463ed60-4391-407b-b0d6-3131b528b5a0",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -52,7 +52,7 @@
                 },
                 {
                     "name": "ToggleMicrophone",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "fbf0f572-9cc5-4680-9293-4c692071b926",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -649,7 +649,7 @@
                 },
                 {
                     "name": "Jump",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "3cd66113-2dce-4bd9-a1fa-93cda574644d",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -658,7 +658,7 @@
                 },
                 {
                     "name": "Dashboard",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "e434db37-bc02-4131-9f4a-00b92eb4a624",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -667,7 +667,7 @@
                 },
                 {
                     "name": "Action",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "2be71d9b-6a80-4027-990a-a615164757d9",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -676,7 +676,7 @@
                 },
                 {
                     "name": "ToggleMicrophone",
-                    "type": "Value",
+                    "type": "Button",
                     "id": "130620ad-78f1-4141-aa11-c998dace6579",
                     "expectedControlType": "Button",
                     "processors": "",
@@ -718,6 +718,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Point",
+                    "type": "PassThrough",
+                    "id": "c28161ed-6486-4749-b2c3-f206f5642539",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -828,6 +837,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "RightGrab",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "34c4fbb6-a072-44d3-92c2-c0a0712159df",
+                    "path": "<XRController>{LeftHand}/pointer",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Point",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5ce769cf-32de-4cfd-a33c-b416ed0c8b1c",
+                    "path": "<XRController>{RightHand}/pointer",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Point",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

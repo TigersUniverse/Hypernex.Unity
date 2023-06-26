@@ -4,39 +4,34 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Hands;
 using UnityEngine.XR.Management;
-using Logger = Hypernex.CCK.Logger;
 
 // ReSharper disable Unity.NoNullPropagation
 
 namespace Hypernex.Game.Bindings
 {
-    public class XRBinding : IBinding, VRBindings.IUnknownActions, VRBindings.IIndexActions, VRBindings.IOculusActions
+    public class XRBinding : IBinding
     {
-        public string Id => IsLook ? "Left" : "Right" + " VRController";
+        public string Id => (IsLook ? "Left" : "Right") + " VRController";
+        public Transform AttachedObject =>
+            IsLook ? LocalPlayer.Instance.RightHandReference : LocalPlayer.Instance.LeftHandReference;
+        public bool IsLeftController => !IsLook;
+        public bool IsRightController => IsLook;
         public bool IsLook { get; }
         public float Up { get; set; }
         public float Down { get; set; }
         public float Left { get; set; }
         public float Right { get; set; }
         public bool Button { get; set; }
-        public Action ButtonClick { get; set; }
+        public Action ButtonClick { get; set; } = () => { };
         public bool Button2 { get; set; }
-        public Action Button2Click { get; set; }
+        public Action Button2Click { get; set; } = () => { };
         public float Trigger { get; set; }
-        public Action TriggerClick { get; set; }
+        public Action TriggerClick { get; set; } = () => { };
         public bool Grab { get; set; }
 
-        private VRBindings vrBindings;
         private XRHandSubsystem handSubsystem;
         
-        public XRBinding(VRBindings vrBindings, bool isLook)
-        {
-            IsLook = isLook;
-            this.vrBindings = vrBindings;
-            vrBindings.Unknown.SetCallbacks(this);
-            vrBindings.Index.SetCallbacks(this);
-            vrBindings.Oculus.SetCallbacks(this);
-        }
+        public XRBinding(bool isLook) => IsLook = isLook;
 
         private float maxAngleForFullCurl = 90f;
         public bool AreFingersTracked { get; private set; }
@@ -114,14 +109,14 @@ namespace Hypernex.Game.Bindings
             else
                 AreFingersTracked = IsLook ? handSubsystem.rightHand.isTracked : handSubsystem.leftHand.isTracked;
 
-            Logger.CurrentLogger.Log(Id + " : " + ThumbCurl + ", " + IndexCurl + ", " + MiddleCurl + ", " + RingCurl +
-                                     ", " + PinkyCurl);
+            /*Logger.CurrentLogger.Log(Id + " : " + ThumbCurl + ", " + IndexCurl + ", " + MiddleCurl + ", " + RingCurl +
+                                     ", " + PinkyCurl);*/
         }
 
         public void OnMove(InputAction.CallbackContext context)
         {
-            if (IsLook)
-                return;
+            //if (IsLeftController)
+                //return;
             Vector2 move = context.ReadValue<Vector2>();
             switch (move.x)
             {
@@ -157,8 +152,8 @@ namespace Hypernex.Game.Bindings
 
         public void OnTurn(InputAction.CallbackContext context)
         {
-            if(!IsLook)
-                return;
+            //if(IsRightController)
+                //return;
             Vector2 move = context.ReadValue<Vector2>();
             switch (move.x)
             {
@@ -194,9 +189,9 @@ namespace Hypernex.Game.Bindings
 
         public void OnJump(InputAction.CallbackContext context)
         {
-            if (!IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
+            //if (IsRightController)
+                //return;
+            bool value = context.ReadValue<float>() >= 0.99f;
             if(!Button && value)
                 ButtonClick.Invoke();
             Button = value;
@@ -204,9 +199,9 @@ namespace Hypernex.Game.Bindings
 
         public void OnDashboard(InputAction.CallbackContext context)
         {
-            if (!IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
+            //if (IsLeftController)
+                //return;
+            bool value = context.ReadValue<float>() >= 0.99f;
             if(!Button2 && value)
                 Button2Click.Invoke();
             Button2 = value;
@@ -214,9 +209,9 @@ namespace Hypernex.Game.Bindings
 
         public void OnAction(InputAction.CallbackContext context)
         {
-            if (IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
+            //if (IsLeftController)
+                //return;
+            bool value = context.ReadValue<float>() >= 0.99f;
             if(!Button && value)
                 ButtonClick.Invoke();
             Button = value;
@@ -224,9 +219,9 @@ namespace Hypernex.Game.Bindings
 
         public void OnToggleMicrophone(InputAction.CallbackContext context)
         {
-            if (IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
+            //if (IsLeftController)
+                //return;
+            bool value = context.ReadValue<float>() >= 0.99f;
             if(!Button2 && value)
                 Button2Click.Invoke();
             Button2 = value;
@@ -234,36 +229,36 @@ namespace Hypernex.Game.Bindings
 
         public void OnPrimaryClick(InputAction.CallbackContext context)
         {
-            if (!IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
-            if(Trigger <= 0.05f && value)
+            //if (IsRightController)
+                //return;
+            float value = context.ReadValue<float>();
+            if(Trigger <= 0.05f && value > 0.05f)
                 TriggerClick.Invoke();
-            Trigger = value ? 1f : 0f;
+            Trigger = value;
         }
 
         public void OnSecondaryClick(InputAction.CallbackContext context)
         {
-            if (IsLook)
-                return;
-            bool value = context.ReadValue<bool>();
-            if(Trigger <= 0.05f && value)
+            //if (IsLeftController)
+                //return;
+            float value = context.ReadValue<float>();
+            if(Trigger <= 0.05f && value > 0.05f)
                 TriggerClick.Invoke();
-            Trigger = value ? 1f : 0f;
+            Trigger = value;
         }
 
         public void OnLeftGrab(InputAction.CallbackContext context)
         {
-            if (!IsLook)
-                return;
-            Grab = context.ReadValue<float>() > 0.9f;
+            //if (IsLeftController)
+                //return;
+            Grab = context.ReadValue<float>() >= 0.9f;
         }
 
         public void OnRightGrab(InputAction.CallbackContext context)
         {
-            if(IsLook)
-                return;
-            Grab = context.ReadValue<float>() > 0.9f;
+            //if(IsRightController)
+                //return;
+            Grab = context.ReadValue<float>() >= 0.9f;
         }
 
         public static List<(string, float)> GetFingerTrackingWeights(XRBinding left, XRBinding right)

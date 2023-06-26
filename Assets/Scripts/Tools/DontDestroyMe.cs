@@ -16,10 +16,8 @@ public class DontDestroyMe : MonoBehaviour
     public void Register()
     {
         if (!IsPresent)
-        {
             Cache.Add(gameObject.name, gameObject);
-            DontDestroyOnLoad(gameObject);
-        }
+        DontDestroyOnLoad(gameObject);
     }
 
     public void Start() => Register();

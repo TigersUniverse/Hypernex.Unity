@@ -1,3 +1,6 @@
+using System;
+using Hypernex.Game;
+using Hypernex.UI.Templates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +22,68 @@ namespace Hypernex.UI
                 RawImage rawimg = GetComponent<RawImage>();
                 if(rawimg != null)
                     rawimg.color = ThemeType == UIThemeObjectType.PrimaryVector ? theme.PrimaryColor : theme.SecondaryColor;
+                TMP_Dropdown dropdown = GetComponent<TMP_Dropdown>();
+                if (dropdown != null)
+                {
+                    dropdown.colors = new ColorBlock
+                    {
+                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        colorMultiplier = 1
+                    };
+                    dropdown.itemText.color = theme.PrimaryLabelColor;
+                    dropdown.captionText.color = theme.PrimaryLabelColor;
+                }
+                Toggle toggle = GetComponent<Toggle>();
+                if (toggle != null)
+                {
+                    toggle.colors = new ColorBlock
+                    {
+                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        colorMultiplier = 1
+                    };
+                }
+                Scrollbar scrollbar = GetComponent<Scrollbar>();
+                if (scrollbar != null)
+                {
+                    scrollbar.colors = new ColorBlock
+                    {
+                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        colorMultiplier = 1
+                    };
+                }
             }
             else if (ThemeType is UIThemeObjectType.InverseVector)
             {
@@ -59,6 +124,50 @@ namespace Hypernex.UI
                     }
                 }
             }
+            else if (ThemeType is UIThemeObjectType.PrimaryInput or UIThemeObjectType.SecondaryInput)
+            {
+                TMP_InputField inputField = gameObject.GetComponent<TMP_InputField>();
+                if (inputField != null)
+                {
+                    inputField.colors = new ColorBlock
+                    {
+                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryInputColor
+                            : theme.SecondaryInputColor,
+                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryInputColor
+                            : theme.SecondaryInputColor,
+                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryInputColor
+                            : theme.SecondaryInputColor,
+                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryInputColor
+                            : theme.SecondaryInputColor,
+                        colorMultiplier = 1
+                    };
+                    inputField.textComponent.color = ThemeType == UIThemeObjectType.PrimaryInput
+                        ? theme.PrimaryInputTextColor
+                        : theme.SecondaryInputTextColor;
+                    inputField.textComponent.font = ThemeType == UIThemeObjectType.PrimaryInput
+                        ? theme.PrimaryInputFont
+                        : theme.SecondaryInputFont;
+                    inputField.onSelect.RemoveAllListeners();
+                    inputField.onSelect.AddListener(_ =>
+                    {
+                        if (!LocalPlayer.IsVR)
+                            return;
+                        KeyboardTemplate.GetKeyboardTemplateByLanguage("en").RequestInput(s => inputField.text = s);
+                    });
+                }
+            }
+        }
+
+        private void OnEnable()
+        {
+            try
+            {
+                ApplyTheme(UITheme.SelectedTheme);
+            }catch(Exception){}
         }
     }
 
@@ -69,6 +178,8 @@ namespace Hypernex.UI
         PrimaryText,
         SecondaryText,
         ButtonText,
-        InverseVector
+        InverseVector,
+        PrimaryInput,
+        SecondaryInput
     }
 }

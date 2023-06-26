@@ -10,6 +10,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public Collider() => c = new UnityEngine.Collider();
         internal Collider(UnityEngine.Collider c) => this.c = c;
 
+        public ReadonlyItem item => new ReadonlyItem(c.transform);
         public bool isTrigger
         {
             get => c.isTrigger;
@@ -51,6 +52,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (!hit)
                 return null;
             return new RaycastHit(g);
+        }
+        
+        public static bool operator ==(Collider x, Collider y) => x?.Equals(y) ?? false;
+        public static bool operator !=(Collider x, Collider y) => !(x == y);
+        public override bool Equals(object obj)
+        {
+            if (obj == null || obj.GetType() != typeof(Collider))
+                return false;
+            return c == ((Collider) obj).c;
         }
     }
 }

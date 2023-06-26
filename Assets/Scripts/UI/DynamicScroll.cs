@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI
 {
@@ -14,9 +15,43 @@ namespace Hypernex.UI
         private ScrollRect scrollRect;
         public List<RectTransform> Items = new();
 
+        private void Scale()
+        {
+            float sizeUntilScale = 0f;
+            float size = 0f;
+            switch (Direction)
+            {
+                case ScrollDirection.Vertical:
+                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, 0);
+                    sizeUntilScale += scrollRect.content.rect.size.y;
+                    foreach (RectTransform rectTransform in Items)
+                    {
+                        size += rectTransform.sizeDelta.y + Spacing;
+                        if (size >= scrollRect.content.sizeDelta.y && sizeUntilScale == 0f)
+                            sizeUntilScale = size;
+                    }
+                    if (size < scrollRect.content.sizeDelta.y)
+                        break;
+                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, size - sizeUntilScale);
+                    break;
+                case ScrollDirection.Horizontal:
+                    scrollRect.content.sizeDelta = new Vector2(0, scrollRect.content.sizeDelta.y);
+                    sizeUntilScale += scrollRect.content.rect.size.x;
+                    foreach (RectTransform rectTransform in Items)
+                    {
+                        size += rectTransform.sizeDelta.x + Spacing;
+                        if (size >= scrollRect.content.sizeDelta.x && sizeUntilScale == 0f)
+                            sizeUntilScale = size;
+                    }
+                    if (size < scrollRect.content.sizeDelta.x)
+                        break;
+                    scrollRect.content.sizeDelta = new Vector2(size - sizeUntilScale, scrollRect.content.sizeDelta.y);
+                    break;
+            }
+        }
+
         public void Refresh()
         {
-            // TODO: Scale Canvas
             if (Items.Count <= 0)
                 return;
             float sizes = 0;
@@ -53,6 +88,7 @@ namespace Hypernex.UI
                     break;
                 }
             }
+            Scale();
         }
     
         public void AddItem(RectTransform item)

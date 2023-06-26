@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
@@ -17,8 +17,10 @@ using HypernexSharp.SocketObjects;
 using Nexbox;
 using Nexport;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.XR.Interaction.Toolkit.UI;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Game
@@ -64,6 +66,9 @@ namespace Hypernex.Game
         internal Scene loadedScene;
         internal bool authed;
         private List<Sandbox> sandboxes = new ();
+        internal bool isHost { get; private set; }
+        private List<User> usersBeforeMe = new ();
+        private bool isDisposed;
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
@@ -90,13 +95,24 @@ namespace Hypernex.Game
             client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
             client.OnDisconnect += () =>
             {
+                if (isDisposed)
+                    return;
                 // Verify they actually leave the socket instance too
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
+            OnUserLoaded += usersBeforeMe.Add;
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
+            OnClientDisconnect += user =>
+            {
+                usersBeforeMe.Remove(user);
+                if (usersBeforeMe.Count <= 0 && !ConnectedUsers.Contains(host))
+                    isHost = true;
+                PlayerManagement.PlayerLeave(this, user);
+            };
+            OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
+            isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
         }
 
         private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
@@ -119,13 +135,17 @@ namespace Hypernex.Game
             client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
             client.OnDisconnect += () =>
             {
+                if (isDisposed)
+                    return;
                 // Verify they actually leave the socket instance too
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
             OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
+            OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
+            isHost = true;
         }
 
         private void OnUser(CallbackResult<GetUserResult> r, string hostId)
@@ -151,10 +171,16 @@ namespace Hypernex.Game
         }
         public void Close()
         {
-            SceneManager.LoadScene(0);
+            CoroutineRunner.Instance.Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
+                s =>
+                {
+                    LocalPlayer.Instance.Respawn(s);
+                    LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+                }));
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
             PlayerManagement.DestroyGameInstance(this);
-            client?.Stop();
+            if(IsOpen)
+                client?.Stop();
         }
 
         /// <summary>
@@ -164,73 +190,109 @@ namespace Hypernex.Game
         /// <param name="messageChannel">channel to send message over</param>
         public void SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
         {
-            if(authed)
+            if(authed && IsOpen)
                 client.SendMessage(message, messageChannel);
         }
-        
-        internal void __SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable) =>
-            client.SendMessage(message, messageChannel);
 
-        private IEnumerator LoadScene(bool open, string s)
+        internal void __SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
         {
-            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s, new LoadSceneParameters(LoadSceneMode.Single, LocalPhysicsMode.Physics3D));
-            /*while (!asyncOperation.isDone)
-                yield return null;*/
-            yield return new WaitUntil(() => asyncOperation.isDone);
-            Scene currentScene = SceneManager.GetSceneByPath(s);
-            //SceneManager.MoveGameObjectToScene(
-                //DontDestroyMe.GetNotDestroyedObject("Physics").GetComponent<DontDestroyMe>().Clone(), currentScene);
-            foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
-            {
-                Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>();
-                foreach (Transform transform in ts)
-                {
-                    World w1 = transform.gameObject.GetComponent<World>();
-                    if (w1 != null)
-                        World = w1;
-                    Camera c1 = transform.gameObject.GetComponent<Camera>();
-                    if (c1 != null && c1.transform.parent != null && c1.transform.parent.gameObject.GetComponent<Mirror>() == null)
-                    {
-                        c1.gameObject.tag = "Untagged";
-                        c1.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
-                    }
-                    AudioListener a1 = transform.gameObject.GetComponent<AudioListener>();
-                    if(a1 != null)
-                        Object.Destroy(a1);
-                    Canvas c2 = transform.gameObject.GetComponent<Canvas>();
-                    if (c2 != null)
-                        c2.worldCamera = LocalPlayer.Instance.Camera;
-                }
-            }
-            LocalPlayer.Instance.DontDestroyMe.MoveToScene(currentScene);
-            if (World == null)
-                Dispose();
-            else
-            {
-                loadedScene = currentScene;
-                FocusedInstance = this;
-                if(open)
-                    Open();
-                foreach (NexboxScript worldLocalScript in World.LocalScripts)
-                    sandboxes.Add(new Sandbox(worldLocalScript, SandboxRestriction.Local, this));
-                if (LocalPlayer.Instance.Dashboard.IsVisible)
-                {
-                    LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
-                    LocalPlayer.Instance.LockCamera = false;
-                    LocalPlayer.Instance.LockMovement = false;
-                }
-                yield return new WaitUntil(() => currentScene.isLoaded);
-                Vector3 spawnPosition = Vector3.zero;
-                if (World.SpawnPoints.Count > 0)
-                {
-                    Transform spT = World.SpawnPoints[new System.Random().Next(0, World.SpawnPoints.Count - 1)]
-                        .transform;
-                    spawnPosition = spT.position;
-                }
-                LocalPlayer.Instance.transform.position = spawnPosition;
-                OnGameInstanceLoaded.Invoke(this, worldMeta);
-            }
+            if(IsOpen)
+                client.SendMessage(message, messageChannel);
         }
+
+        private void LoadScene(bool open, string s) => CoroutineRunner.Instance.Run(
+            LocalPlayer.Instance.SafeSwitchScene(s, currentScene =>
+            {
+                //SceneManager.MoveGameObjectToScene(
+                //DontDestroyMe.GetNotDestroyedObject("Physics").GetComponent<DontDestroyMe>().Clone(), currentScene);
+                foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
+                {
+                    Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>(true);
+                    foreach (Transform transform in ts)
+                    {
+                        World w1 = transform.gameObject.GetComponent<World>();
+                        if (w1 != null)
+                            World = w1;
+                        Camera c1 = transform.gameObject.GetComponent<Camera>();
+                        if (c1 != null && c1.transform.parent != null &&
+                            c1.transform.parent.gameObject.GetComponent<Mirror>() == null)
+                        {
+                            c1.gameObject.tag = "Untagged";
+                            c1.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
+                        }
+
+                        AudioListener a1 = transform.gameObject.GetComponent<AudioListener>();
+                        if (a1 != null)
+                            Object.Destroy(a1);
+                        Canvas c2 = transform.gameObject.GetComponent<Canvas>();
+                        if (c2 != null)
+                        {
+                            c2.worldCamera = LocalPlayer.Instance.Camera;
+                            if (c2.renderMode == RenderMode.WorldSpace)
+                            {
+                                TrackedDeviceGraphicRaycaster trackedDeviceGraphicRaycaster =
+                                    c2.gameObject.GetComponent<TrackedDeviceGraphicRaycaster>();
+                                if (trackedDeviceGraphicRaycaster == null)
+                                    c2.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+                                /*trackedDeviceGraphicRaycaster.checkFor3DOcclusion = true;
+                                trackedDeviceGraphicRaycaster.blockingMask = ~0;*/
+                            }
+                        }
+                        NetworkSyncDescriptor networkSyncDescriptor = transform.gameObject.GetComponent<NetworkSyncDescriptor>();
+                        if (networkSyncDescriptor != null)
+                        {
+                            NetworkSync networkSync = networkSyncDescriptor.gameObject.AddComponent<NetworkSync>();
+                            networkSync.InstanceHostOnly = networkSyncDescriptor.InstanceHostOnly;
+                            networkSync.CanSteal = networkSyncDescriptor.CanSteal;
+                            networkSync.AlwaysSync = networkSyncDescriptor.AlwaysSync;
+                            if(networkSyncDescriptor.InstanceHostOnly && isHost)
+                                networkSync.Claim();
+                        }
+                        GrabbableDescriptor grabbableDescriptor =
+                            transform.gameObject.GetComponent<GrabbableDescriptor>();
+                        if (grabbableDescriptor != null)
+                        {
+                            Grabbable grabbable = grabbableDescriptor.gameObject.AddComponent<Grabbable>();
+                            grabbable.ApplyVelocity = grabbableDescriptor.ApplyVelocity;
+                            grabbable.ApplyVelocity = false;
+                            grabbable.VelocityAmount = grabbableDescriptor.VelocityAmount;
+                            grabbable.VelocityThreshold = grabbableDescriptor.VelocityThreshold;
+                            grabbable.GrabByLaser = grabbableDescriptor.GrabByLaser;
+                            grabbable.LaserGrabDistance = grabbableDescriptor.LaserGrabDistance;
+                            grabbable.GrabDistance = grabbableDescriptor.GrabDistance;
+                            grabbable.GrabDistance = grabbableDescriptor.GrabDistance;
+                        }
+                        RespawnableDescriptor respawnableDescriptor =
+                            transform.gameObject.GetComponent<RespawnableDescriptor>();
+                        if (respawnableDescriptor != null)
+                        {
+                            Respawnable respawnable = respawnableDescriptor.gameObject.AddComponent<Respawnable>();
+                            respawnable.LowestPointRespawnThreshold = respawnableDescriptor.LowestPointRespawnThreshold;
+                        }
+                        EventSystem eventSystem = transform.gameObject.GetComponent<EventSystem>();
+                        if(eventSystem != null)
+                            Object.Destroy(eventSystem.gameObject);
+                    }
+                }
+
+                if (World == null)
+                    Dispose();
+                else
+                {
+                    loadedScene = currentScene;
+                    FocusedInstance = this;
+                    if (open)
+                        Open();
+                    foreach (NexboxScript worldLocalScript in World.LocalScripts)
+                        sandboxes.Add(new Sandbox(worldLocalScript, SandboxRestriction.Local, this));
+                    if (LocalPlayer.Instance.Dashboard.IsVisible)
+                        LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
+                }
+            }, currentScene =>
+            {
+                LocalPlayer.Instance.Respawn();
+                OnGameInstanceLoaded.Invoke(this, worldMeta);
+            }));
 
         private void Load(bool open = true)
         {
@@ -256,23 +318,28 @@ namespace Hypernex.Game
                     knownHash = fileMetaResult.result.FileMeta.Hash;
                 DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                 {
-                    string s = AssetBundleTools.LoadSceneFromFile(o);
-                    if (!string.IsNullOrEmpty(s))
+                    CoroutineRunner.Instance.Run(AssetBundleTools.LoadSceneFromFile(o, s =>
                     {
-                        CoroutineRunner.Instance.Run(LoadScene(open, s));
-                    }
-                    else
-                        Dispose();
+                        if (!string.IsNullOrEmpty(s))
+                            LoadScene(open, s);
+                        else
+                            Dispose();
+                    }));
                 }, knownHash);
             }, worldMeta.OwnerId, fileId);
         }
 
         public void Dispose()
         {
+            if (isDisposed)
+                return;
+            isDisposed = true;
+            FocusedInstance = null;
             Close();
-            LocalPlayer.Instance.DontDestroyMe.Register();
             foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
                 Runtime.RemoveOnUpdate(sandboxAction);
+            foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)
+                Runtime.RemoveOnLateUpdate(sandboxAction);
             foreach (Sandbox sandbox in sandboxes)
                 sandbox.Dispose();
         }

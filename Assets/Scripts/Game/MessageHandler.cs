@@ -1,6 +1,9 @@
 ﻿using System;
 using Hypernex.Networking.Messages;
+using Hypernex.Tools;
 using Nexport;
+using UnityEngine;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
@@ -26,6 +29,26 @@ namespace Hypernex.Game
                 {
                     PlayerObjectUpdate playerObjectUpdate = (PlayerObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(PlayerObjectUpdate));
                     PlayerManagement.HandlePlayerObjectUpdate(gameInstance, playerObjectUpdate);
+                    break;
+                }
+                case "Hypernex.Networking.Messages.WorldObjectUpdate":
+                {
+                    WorldObjectUpdate worldObjectUpdate =
+                        (WorldObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(WorldObjectUpdate));
+                    Transform targetObject = AnimationUtility.GetObjectFromRoot(worldObjectUpdate.Object.ObjectLocation,
+                        gameInstance.loadedScene);
+                    if (targetObject != null)
+                    {
+                        // We only want to sync objects that have a reason to be synced
+                        // Otherwise, clients could just say they claim a player (for example) and control them
+                        NetworkSync networkSync = targetObject.gameObject.GetComponent<NetworkSync>();
+                        if(networkSync != null)
+                            networkSync.HandleNetworkUpdate(worldObjectUpdate);
+                        else
+                            Logger.CurrentLogger.Warn("NetworkSync not found!");
+                    }
+                    else
+                        Logger.CurrentLogger.Warn("No Object found at Path " + worldObjectUpdate.Object.ObjectLocation);
                     break;
                 }
                 case "Hypernex.Networking.Messages.RespondAuth":

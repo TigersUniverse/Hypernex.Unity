@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
@@ -11,47 +12,37 @@ using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
+using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Nexport;
-using UnityEditor.XR.LegacyInputHelpers;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SpatialTracking;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR;
-using Avatar = Hypernex.CCK.Unity.Avatar;
 using CommonUsages = UnityEngine.XR.CommonUsages;
 using InputDevice = UnityEngine.XR.InputDevice;
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
 using Mic = Hypernex.Tools.Mic;
 using Mouse = Hypernex.Game.Bindings.Mouse;
+using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
 
 namespace Hypernex.Game
 {
     [RequireComponent(typeof(DontDestroyMe))]
     [RequireComponent(typeof(OpusHandler))]
-    public class LocalPlayer : MonoBehaviour
+    public class LocalPlayer : MonoBehaviour, IDisposable
     {
         public static LocalPlayer Instance;
         public static readonly List<string> MorePlayerAssignedTags = new();
         public static readonly Dictionary<string, object> MoreExtraneousObjects = new();
 
-        public bool IsVR
-        {
-            get
-            {
-                List<XRDisplaySubsystem> d = new List<XRDisplaySubsystem>();
-                SubsystemManager.GetInstances(d);
-                foreach (XRDisplaySubsystem xrDisplaySubsystem in d)
-                    if (xrDisplaySubsystem.running)
-                        return true;
-                return false;
-            }
-        }
+        public static bool IsVR { get; internal set; }
 
         private bool mic;
         public bool MicrophoneEnabled
@@ -87,7 +78,7 @@ namespace Hypernex.Game
         public List<IBinding> Bindings = new();
 
         public DashboardManager Dashboard;
-        public CameraOffset CameraOffset;
+        public XROrigin XROrigin;
         public Camera Camera;
         public List<TrackedPoseDriver> TrackedPoseDriver;
         public CharacterController CharacterController;
@@ -96,8 +87,10 @@ namespace Hypernex.Game
         public PlayerInput vrPlayerInput;
         public List<string> LastPlayerAssignedTags = new();
         public Dictionary<string, object> LastExtraneousObjects = new();
+        public VRInputListener VRInputListener;
+        public Vector3 LowestPoint;
+        public float LowestPointRespawnThreshold = 50f;
 
-        private VRBindings vrBindings;
         private float verticalVelocity;
         private float groundedTimer;
         internal AvatarMeta avatarMeta;
@@ -106,6 +99,69 @@ namespace Hypernex.Game
         private List<PathDescriptor> SavedTransforms = new();
         internal Dictionary<string, string> OwnedAvatarIdTokens = new();
         private OpusHandler opusHandler;
+        private bool didSnapTurn;
+        private Scene? scene;
+
+        public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
+        {
+            DontDestroyMe.Register();
+            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s);
+            yield return new WaitUntil(() => asyncOperation.isDone);
+            Scene currentScene = SceneManager.GetSceneByPath(s);
+            scene = currentScene;
+            if(onAsyncDone != null)
+                onAsyncDone.Invoke(currentScene);
+            yield return new WaitUntil(() => currentScene.isLoaded);
+            DontDestroyMe.MoveToScene(currentScene);
+            if(onDone != null)
+                onDone.Invoke(currentScene);
+            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
+        }
+        
+        public IEnumerator SafeSwitchScene(int i, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
+        {
+            DontDestroyMe.Register();
+            AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(i);
+            yield return new WaitUntil(() => asyncOperation.isDone);
+            Scene currentScene = SceneManager.GetSceneByBuildIndex(i);
+            scene = currentScene;
+            if(onAsyncDone != null)
+                onAsyncDone.Invoke(currentScene);
+            yield return new WaitUntil(() => currentScene.isLoaded);
+            DontDestroyMe.MoveToScene(currentScene);
+            if(onDone != null)
+                onDone.Invoke(currentScene);
+            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
+        }
+        
+        // TODO: maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
+        public void RefreshAvatar() => OnAvatarDownload(avatarFile, avatarMeta);
+
+        public void Respawn(Scene? s = null)
+        {
+            Vector3 spawnPosition = new Vector3(0, 1, 0);
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World.SpawnPoints.Count > 0)
+            {
+                // TODO: This throws error on GameInstance.Dispose()
+                // Check into player not being moved back into DontDestroyMe
+                Transform spT = GameInstance.FocusedInstance.World
+                    .SpawnPoints[new System.Random().Next(0, GameInstance.FocusedInstance.World.SpawnPoints.Count - 1)]
+                    .transform;
+                spawnPosition = spT.position;
+            }
+            else
+            {
+                GameObject searchSpawn;
+                if (s == null)
+                    searchSpawn = SceneManager.GetActiveScene().GetRootGameObjects()
+                        .FirstOrDefault(x => x.name.ToLower() == "Spawn");
+                else
+                    searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "Spawn");
+                if (searchSpawn != null)
+                    spawnPosition = searchSpawn.transform.position;
+            }
+            transform.position = spawnPosition;
+        }
 
         private void SetMicrophone()
         {
@@ -282,28 +338,32 @@ namespace Hypernex.Game
             if (!File.Exists(file))
                 return;
             AvatarCreator lastAvatar = avatar;
-            Avatar a = AssetBundleTools.LoadAvatarFromFile(file);
-            if (a == null)
+            StartCoroutine(AssetBundleTools.LoadAvatarFromFile(file, a =>
             {
-                avatar = lastAvatar;
-                return;
-            }
-            avatarMeta = am;
-            lastAvatar?.Dispose();
-            avatar = new AvatarCreator(this, a, IsVR);
-            avatarFile = file;
-            SavedTransforms.Clear();
-            foreach (Transform child in transform.GetComponentsInChildren<Transform>())
-            {
-                child.gameObject.layer = 7;
-                PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
-                if (pathDescriptor == null)
-                    pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
-                pathDescriptor.root = transform;
-                SavedTransforms.Add(pathDescriptor);
-            }
-            if (am.Publicity == AvatarPublicity.OwnerOnly)
-                ShareAvatarTokenToConnectedUsersInInstance(am);
+                if (a == null)
+                {
+                    avatar = lastAvatar;
+                    return;
+                }
+                avatarMeta = am;
+                lastAvatar?.Dispose();
+                avatar = new AvatarCreator(this, a, IsVR);
+                foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
+                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
+                avatarFile = file;
+                SavedTransforms.Clear();
+                foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+                {
+                    child.gameObject.layer = 7;
+                    PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
+                    if (pathDescriptor == null)
+                        pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
+                    pathDescriptor.root = transform;
+                    SavedTransforms.Add(pathDescriptor);
+                }
+                if (am.Publicity == AvatarPublicity.OwnerOnly)
+                    ShareAvatarTokenToConnectedUsersInInstance(am);
+            }));
         }
 
         private void GetTokenForOwnerAvatar(string avatarId, Action<string> result)
@@ -414,30 +474,13 @@ namespace Hypernex.Game
             Bindings.Add(new Keyboard()
                 .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
             Bindings.Add(new Mouse());
-            Bindings[1].Button2Click += () =>
-            {
-                Dashboard.ToggleDashboard(this);
-                LockCamera = Dashboard.IsVisible;
-                LockMovement = Dashboard.IsVisible;
-            };
+            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
             Mic.OnClipReady += samples =>
             {
                 if (GameInstance.FocusedInstance == null || opusHandler == null)
                     return;
                 opusHandler.EncodeMicrophone(samples);
             };
-            if (IsVR)
-            {
-                Bindings.Clear();
-                // Create Bindings
-                vrPlayerInput.ActivateInput();
-                vrBindings = new VRBindings();
-                XRBinding leftBinding = new XRBinding(vrBindings, true);
-                XRBinding rightBinding = new XRBinding(vrBindings, false);
-                Bindings.Add(leftBinding);
-                Bindings.Add(rightBinding);
-                Logger.CurrentLogger.Log("Added VR Bindings");
-            }
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
             {
                 lastCoroutine = StartCoroutine(UpdatePlayer(instance));
@@ -468,45 +511,63 @@ namespace Hypernex.Game
             {
                 while (!cts.IsCancellationRequested)
                 {
-                    if (mutex.WaitOne())
+                    if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen)
                     {
-                        if (msgs.Count > 0)
+                        if (mutex.WaitOne())
                         {
-                            for (int i = 0; i < msgs.Count; i++)
+                            if (msgs.Count > 0)
                             {
-                                PlayerObjectUpdate p = msgs.Dequeue();
-                                byte[] msg = Msg.Serialize(p);
-                                GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
+                                for (int i = 0; i < msgs.Count; i++)
+                                {
+                                    PlayerObjectUpdate p = msgs.Dequeue();
+                                    byte[] msg = Msg.Serialize(p);
+                                    GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
+                                }
                             }
+                            mutex.ReleaseMutex();
                         }
-                        mutex.ReleaseMutex();
                     }
                     Thread.Sleep(10);
                 }
             }).Start();
         }
 
+        internal void StartVR()
+        {
+            Bindings.Clear();
+            // Create Bindings
+            vrPlayerInput.ActivateInput();
+            XRBinding leftBinding = new XRBinding(false);
+            XRBinding rightBinding = new XRBinding(true);
+            leftBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
+            rightBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
+            Bindings.Add(leftBinding);
+            VRInputListener.AddXRBinding(leftBinding);
+            Bindings.Add(rightBinding);
+            VRInputListener.AddXRBinding(rightBinding);
+            Logger.CurrentLogger.Log("Added VR Bindings");
+        }
+
+        internal void StopVR()
+        {
+            foreach (IBinding binding in new List<IBinding>(Bindings))
+            {
+                if (binding.GetType() == typeof(XRBinding))
+                    Bindings.Remove(binding);
+            }
+            vrPlayerInput.DeactivateInput();
+            Bindings.Add(new Keyboard()
+                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
+            Bindings.Add(new Mouse());
+            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+            Logger.CurrentLogger.Log("Removed VR Bindings");
+        }
+
         private float rotx;
         private float s_;
 
-        private (Vector3, bool, bool)? HandleBinding(IBinding binding)
+        private (Vector3, bool, bool)? HandleLeftBinding(IBinding binding)
         {
-            if (!LockCamera && binding.Id == "Mouse")
-            {
-                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Mouse)binding).Sensitivity, 0);
-                rotx += -(binding.Up + binding.Down * -1) * ((Mouse) binding).Sensitivity;
-                rotx = Mathf.Clamp(rotx, -90f, 90f);
-                Camera.transform.localEulerAngles = new Vector3(rotx, 0, 0);
-                return null;
-            }
-            if (!LockCamera && binding.IsLook)
-            {
-                // Right-Hand
-                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Mouse)binding).Sensitivity, 0);
-                return null;
-            }
-            if (LockMovement)
-                return null;
             // Left-Hand
             Vector3 move = transform.forward * (binding.Up + binding.Down * -1) + transform.right * (binding.Left * -1 + binding.Right);
             s_ = binding.Button2 ? RunSpeed : WalkSpeed;
@@ -514,7 +575,46 @@ namespace Hypernex.Game
                 if(GameInstance.FocusedInstance.World != null)
                     if (!GameInstance.FocusedInstance.World.AllowRunning)
                         s_ = WalkSpeed;
-            return (move * s_, binding.Button, binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f);
+            return (move * s_, binding.Button,
+                binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f);
+        }
+
+        private (Vector3, bool, bool)? HandleRightBinding(IBinding binding)
+        {
+            if (!LockCamera && binding.Id == "Mouse" && !IsVR)
+            {
+                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Mouse)binding).Sensitivity, 0);
+                rotx += -(binding.Up + binding.Down * -1) * ((Mouse) binding).Sensitivity;
+                rotx = Mathf.Clamp(rotx, -90f, 90f);
+                Camera.transform.localEulerAngles = new Vector3(rotx, 0, 0);
+                return (Vector3.zero, binding.Button, false);
+            }
+            if (!LockCamera)
+            {
+                // Right-Hand
+                if (VRInputListener.UseSnapTurn)
+                {
+                    float amountTurn = binding.Left * -1 + binding.Right;
+                    if (!didSnapTurn && (amountTurn > 0.1f || amountTurn < -0.1f))
+                    {
+                        float val = 1f;
+                        if (amountTurn < 0)
+                            val = -1f;
+                        transform.Rotate(0, VRInputListener.TurnDegree * val, 0);
+                        didSnapTurn = true;
+                    }
+                    else if (didSnapTurn && (amountTurn < 0.1f && amountTurn > -0.1f))
+                        didSnapTurn = false;
+                }
+                else
+                    transform.Rotate(0, (binding.Left * -1 + binding.Right) * 1, 0);
+                if (LockMovement)
+                    return null;
+                return (Vector3.zero, binding.Button, false);
+            }
+            if (LockMovement)
+                return null;
+            return (Vector3.zero, binding.Button, false);
         }
 
         private bool areTwoTriggersClicked()
@@ -531,13 +631,10 @@ namespace Hypernex.Game
             return left && right;
         }
 
-        // TODO: maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
-        public void RefreshAvatar() => OnAvatarDownload(avatarFile, avatarMeta);
-
         private void Update()
         {
             bool vr = IsVR;
-            CameraOffset.enabled = vr;
+            XROrigin.enabled = vr;
             foreach (TrackedPoseDriver trackedPoseDriver in TrackedPoseDriver)
                 trackedPoseDriver.enabled = vr;
             if (vr)
@@ -548,9 +645,9 @@ namespace Hypernex.Game
                 {
                     if (!WorldTrackers.ContainsKey(inputDevice))
                     {
-                        GameObject gameObject = new GameObject(inputDevice.name);
-                        gameObject.transform.SetParent(transform);
-                        WorldTrackers.Add(inputDevice, gameObject);
+                        GameObject o = new GameObject(inputDevice.name);
+                        o.transform.SetParent(transform);
+                        WorldTrackers.Add(inputDevice, o);
                     }
                     else
                     {
@@ -573,27 +670,47 @@ namespace Hypernex.Game
                     verticalVelocity = 0f;
                 verticalVelocity += Gravity * Time.deltaTime;
             }
-            (Vector3, bool, bool)? m = null;
+            (Vector3, bool, bool)? left_m = null;
+            (Vector3, bool, bool)? right_m = null;
             foreach (IBinding binding in new List<IBinding>(Bindings))
             {
                 binding.Update();
-                (Vector3, bool, bool)? r = HandleBinding(binding);
-                if (r != null)
-                    m = r.Value;
+                bool g = !binding.IsLook;
+                if (vr)
+                    g = binding.IsLook;
+                if (g)
+                {
+                    (Vector3, bool, bool)? r = HandleLeftBinding(binding);
+                    if (r != null)
+                        left_m = r.Value;
+                }
+                else
+                {
+                    (Vector3, bool, bool)? r = HandleRightBinding(binding);
+                    if (r != null)
+                        right_m = r.Value;
+                }
             }
-            if (m != null && !LockMovement)
+            Vector3 move = new Vector3();
+            if (right_m != null && right_m.Value.Item2)
+                if (groundedTimer > 0)
+                {
+                    groundedTimer = 0;
+                    verticalVelocity += Mathf.Sqrt(JumpHeight * 2 * -Gravity);
+                }
+            if (left_m != null && !LockMovement)
             {
-                Vector3 move = m.Value.Item1;
-                if (m.Value.Item2)
-                    if (groundedTimer > 0)
-                    {
-                        groundedTimer = 0;
-                        verticalVelocity += Mathf.Sqrt(JumpHeight * 2 * -Gravity);
-                    }
-                move.y = verticalVelocity;
+                if(left_m.Value.Item3)
+                {
+                    move = left_m.Value.Item1;
+                }
+            }
+            if (!LockMovement)
+            {
+                move = new Vector3(move.x, verticalVelocity, move.z);
                 CharacterController.Move(move * Time.deltaTime);
             }
-            avatar?.SetSpeed(m?.Item3 ?? false ? s_ : 0.0f);
+            avatar?.SetSpeed(left_m?.Item3 ?? false ? s_ : 0.0f);
             avatar?.SetIsGrounded(groundedPlayer);
             avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
                 Camera.transform, LeftHandReference, RightHandReference);
@@ -612,6 +729,8 @@ namespace Hypernex.Game
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = GameInstance.FocusedInstance.userIdToken
                 }));
+            if(transform.position.y < LowestPoint.y - Mathf.Abs(LowestPointRespawnThreshold))
+                Respawn(scene);
         }
 
         private void LateUpdate()
@@ -619,8 +738,15 @@ namespace Hypernex.Game
             avatar?.LateUpdate(IsVR, Camera.transform);
         }
 
-        private void OnDestroy()
+        private void OnDestroy() => Dispose();
+
+        public void Dispose()
         {
+            avatar?.Dispose();
+            /*cts?.Cancel();
+            cts?.Dispose();
+            mutex?.Dispose();
+            StopCoroutine(lastCoroutine);*/
             foreach (IBinding binding in Bindings)
             {
                 if(binding.GetType() == typeof(Keyboard))
@@ -633,8 +759,11 @@ namespace Hypernex.Game
                 StopCoroutine(lastCoroutine);
                 lastCoroutine = null;
             }
-            opusHandler.OnEncoded -= OnOpusEncoded;
-            cts?.Cancel();
+            if(opusHandler != null)
+                opusHandler.OnEncoded -= OnOpusEncoded;
+            if(cts != null && !cts.IsCancellationRequested)
+                cts.Cancel();
+            mutex?.Dispose();
         }
     }
 }

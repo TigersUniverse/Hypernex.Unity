@@ -16,6 +16,7 @@ using Nexbox;
 using UnityEngine;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
+using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class Init : MonoBehaviour
     public bool ForceVR;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
     public InstanceProtocol InstanceProtocol = InstanceProtocol.KCP;
+    public Material OutlineMaterial;
 
     private string GetPluginLocation() =>
 #if UNITY_EDITOR
@@ -35,14 +37,20 @@ public class Init : MonoBehaviour
 
     private void StartVR()
     {
+        if (LocalPlayer.IsVR) return;
         XRGeneralSettings.Instance.Manager.InitializeLoaderSync();
         XRGeneralSettings.Instance.Manager.StartSubsystems();
+        LocalPlayer.IsVR = true;
+        LocalPlayer.Instance.StartVR();
     }
 
     private void StopVR()
     {
+        if (!LocalPlayer.IsVR) return;
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+        LocalPlayer.IsVR = false;
+        LocalPlayer.Instance.StopVR();
     }
 
     private void Start()
@@ -50,6 +58,7 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
+        Application.backgroundLoadingPriority = ThreadPriority.Low;
         string[] args = Environment.GetCommandLineArgs();
         if(ForceVR || args.Contains("-xr"))
             StartVR();
@@ -71,12 +80,33 @@ public class Init : MonoBehaviour
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                     FaceTrackingManager.Init(Application.streamingAssetsPath)));
         };
+        GetComponent<CoroutineRunner>()
+            .Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
+                s =>
+                {
+                    LocalPlayer.Instance.transform.position =
+                        s.GetRootGameObjects().First(x => x.name == "Spawn").transform.position;
+                    LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+                }));
     }
 
     private void Update()
     {
         DiscordTools.RunCallbacks();
         foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
+            try
+            {
+                SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
+    }
+
+    private void LateUpdate()
+    {
+        foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)
             try
             {
                 SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
@@ -133,7 +163,8 @@ public class Init : MonoBehaviour
         foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.Instance.OwnedAvatarIdTokens)
             APIPlayer.APIObject.RemoveAssetToken(_ => { }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarIdToken.Key,
                 avatarIdToken.Value);
-        LocalPlayer.Instance.avatar?.Dispose();
+        if(LocalPlayer.Instance != null)
+            LocalPlayer.Instance.Dispose();
         FaceTrackingManager.Destroy();
         if(GameInstance.FocusedInstance != null)
             GameInstance.FocusedInstance.Dispose();

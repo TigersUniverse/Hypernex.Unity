@@ -38,7 +38,8 @@ namespace Hypernex.Sandboxing
                 ["Collision"] = typeof(Collision),
                 ["Collider"] = typeof(Collider),
                 ["Colliders"] = typeof(Colliders),
-                ["PenetrationResult"] = typeof(PenetrationResult)
+                ["PenetrationResult"] = typeof(PenetrationResult),
+                ["Physics"] = typeof(Physics)
             });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
@@ -63,7 +64,9 @@ namespace Hypernex.Sandboxing
             ["Collision"] = typeof(Collision),
             ["Collider"] = typeof(Collider),
             ["Colliders"] = typeof(Colliders),
-            ["PenetrationResult"] = typeof(PenetrationResult)
+            ["PenetrationResult"] = typeof(PenetrationResult),
+            ["Physics"] = typeof(Physics),
+            ["Interactables"] = typeof(Interactables)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, GameInstance gameInstance)

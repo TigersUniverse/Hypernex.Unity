@@ -27,5 +27,14 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return sandboxContactPoints.ToArray();
             }
         }
+        
+        public static bool operator ==(Collision x, Collision y) => x?.Equals(y) ?? false;
+        public static bool operator !=(Collision x, Collision y) => !(x == y);
+        public override bool Equals(object obj)
+        {
+            if (obj == null || obj.GetType() != typeof(Collision))
+                return false;
+            return c == ((Collision) obj).c;
+        }
     }
 }

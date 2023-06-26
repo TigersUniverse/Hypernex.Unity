@@ -13,7 +13,6 @@ using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Avatar = Hypernex.CCK.Unity.Avatar;
 
 namespace Hypernex.Game
 {
@@ -86,17 +85,24 @@ namespace Hypernex.Game
                            FileShare.ReadWrite | FileShare.Delete))
                 {
                     stream.CopyTo(fs);
-                    Avatar a = AssetBundleTools.LoadAvatarFromFile(path);
-                    if (a == null)
-                        return;
-                    Avatar?.Dispose();
-                    avatarUpdates.Clear();
-                    Avatar = new AvatarCreator(this, a);
-                    headOffset = Avatar.Avatar.SpeechPosition - Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position;
-                    // TODO: Resize based on avatar size
-                    if(nameplateTemplate != null)
-                        nameplateTemplate.transform.SetLocalPositionAndRotation(new Vector3(0, transform.localScale.y + 1f, 0),
-                            Quaternion.identity);
+                    StartCoroutine(AssetBundleTools.LoadAvatarFromFile(path, a =>
+                    {
+                        if (a == null)
+                            return;
+                        Avatar?.Dispose();
+                        avatarUpdates.Clear();
+                        Avatar = new AvatarCreator(this, a);
+                        // NetPlayers do not run LocalScripts
+                        /*foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
+                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));*/
+                        headOffset = Avatar.Avatar.SpeechPosition -
+                                     Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position;
+                        // TODO: Resize based on avatar size
+                        if (nameplateTemplate != null)
+                            nameplateTemplate.transform.SetLocalPositionAndRotation(
+                                new Vector3(0, transform.localScale.y + 1f, 0),
+                                Quaternion.identity);
+                    }));
                 }
             }));
         }
@@ -300,6 +306,7 @@ namespace Hypernex.Game
 
         public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
+            // TODO: Double Lerp
             if (string.IsNullOrEmpty(playerObjectUpdate.Object.ObjectLocation))
                 playerObjectUpdate.Object.ObjectLocation = "";
             if (!avatarUpdates.ContainsKey(playerObjectUpdate.Object.ObjectLocation))

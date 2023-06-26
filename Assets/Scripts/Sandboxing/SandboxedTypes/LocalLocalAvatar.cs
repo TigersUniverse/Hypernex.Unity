@@ -28,6 +28,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return new ReadonlyItem(bone);
         }
 
+        public static bool IsAvatarItem(Item item) =>
+            AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<LocalPlayer>() != null;
+        
+        public static bool IsAvatarItem(ReadonlyItem item) =>
+            AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<LocalPlayer>() != null;
+
         public static void TeleportTo(float3 position)
         {
             if (LocalPlayer.Instance == null)
@@ -63,6 +69,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (LocalPlayer.Instance == null)
                 return null;
             return LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
+        }
+
+        public static void Respawn()
+        {
+            if (LocalPlayer.Instance == null)
+                return;
+            LocalPlayer.Instance.Respawn();
         }
     }
 }

@@ -47,7 +47,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Jump"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""9a947bae-4eec-45fb-a3be-5ffd61813971"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -56,7 +56,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Dashboard"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""1e580be4-d59f-4d49-a161-fe883cf76d18"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -65,7 +65,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Action"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""9463ed60-4391-407b-b0d6-3131b528b5a0"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -74,7 +74,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""ToggleMicrophone"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""fbf0f572-9cc5-4680-9293-4c692071b926"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -671,7 +671,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Jump"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""3cd66113-2dce-4bd9-a1fa-93cda574644d"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -680,7 +680,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Dashboard"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""e434db37-bc02-4131-9f4a-00b92eb4a624"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -689,7 +689,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Action"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""2be71d9b-6a80-4027-990a-a615164757d9"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -698,7 +698,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""ToggleMicrophone"",
-                    ""type"": ""Value"",
+                    ""type"": ""Button"",
                     ""id"": ""130620ad-78f1-4141-aa11-c998dace6579"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
@@ -740,6 +740,15 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Point"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""c28161ed-6486-4749-b2c3-f206f5642539"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -852,6 +861,28 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                     ""action"": ""RightGrab"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""34c4fbb6-a072-44d3-92c2-c0a0712159df"",
+                    ""path"": ""<XRController>{LeftHand}/pointer"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Point"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5ce769cf-32de-4cfd-a33c-b416ed0c8b1c"",
+                    ""path"": ""<XRController>{RightHand}/pointer"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Point"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -906,6 +937,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         m_Unknown_SecondaryClick = m_Unknown.FindAction("SecondaryClick", throwIfNotFound: true);
         m_Unknown_LeftGrab = m_Unknown.FindAction("LeftGrab", throwIfNotFound: true);
         m_Unknown_RightGrab = m_Unknown.FindAction("RightGrab", throwIfNotFound: true);
+        m_Unknown_Point = m_Unknown.FindAction("Point", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -1331,6 +1363,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
     private readonly InputAction m_Unknown_SecondaryClick;
     private readonly InputAction m_Unknown_LeftGrab;
     private readonly InputAction m_Unknown_RightGrab;
+    private readonly InputAction m_Unknown_Point;
     public struct UnknownActions
     {
         private @VRBindings m_Wrapper;
@@ -1345,6 +1378,7 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         public InputAction @SecondaryClick => m_Wrapper.m_Unknown_SecondaryClick;
         public InputAction @LeftGrab => m_Wrapper.m_Unknown_LeftGrab;
         public InputAction @RightGrab => m_Wrapper.m_Unknown_RightGrab;
+        public InputAction @Point => m_Wrapper.m_Unknown_Point;
         public InputActionMap Get() { return m_Wrapper.m_Unknown; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1384,6 +1418,9 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
             @RightGrab.started += instance.OnRightGrab;
             @RightGrab.performed += instance.OnRightGrab;
             @RightGrab.canceled += instance.OnRightGrab;
+            @Point.started += instance.OnPoint;
+            @Point.performed += instance.OnPoint;
+            @Point.canceled += instance.OnPoint;
         }
 
         private void UnregisterCallbacks(IUnknownActions instance)
@@ -1418,6 +1455,9 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
             @RightGrab.started -= instance.OnRightGrab;
             @RightGrab.performed -= instance.OnRightGrab;
             @RightGrab.canceled -= instance.OnRightGrab;
+            @Point.started -= instance.OnPoint;
+            @Point.performed -= instance.OnPoint;
+            @Point.canceled -= instance.OnPoint;
         }
 
         public void RemoveCallbacks(IUnknownActions instance)
@@ -1486,5 +1526,6 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         void OnSecondaryClick(InputAction.CallbackContext context);
         void OnLeftGrab(InputAction.CallbackContext context);
         void OnRightGrab(InputAction.CallbackContext context);
+        void OnPoint(InputAction.CallbackContext context);
     }
 }

@@ -7,6 +7,7 @@ namespace Hypernex.Game.Bindings
     public class Keyboard : IBinding, IDisposable
     {
         public string Id => "Keyboard";
+        public Transform AttachedObject => LocalPlayer.Instance.Camera.transform;
         public bool IsLook => false;
         
         public float Up { get; set; }
@@ -57,8 +58,8 @@ namespace Hypernex.Game.Bindings
                     Down = 0;
                     break;
             }
-            Button = Input.GetKey(KeyCode.Space);
-            if(Input.GetKeyDown(KeyCode.Space))
+            Button = Input.GetKey(KeyCode.E);
+            if(Input.GetKeyDown(KeyCode.E))
                 ButtonClick.Invoke();
             Button2 = Input.GetKey(KeyCode.LeftShift);
             if(Input.GetKeyDown(KeyCode.LeftShift))
