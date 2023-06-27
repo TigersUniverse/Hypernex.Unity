@@ -11,10 +11,8 @@ using UnityEngine.UI;
 
 namespace Hypernex.UI.Templates
 {
-    public class InstanceCardTemplate : MonoBehaviour
+    public class WorldCardTemplate : MonoBehaviour
     {
-        public JoinInstanceTemplate JoinInstanceTemplate;
-        
         public TMP_Text WorldText;
         public TMP_Text CreatorText;
         public RawImage BannerImage;
@@ -24,20 +22,15 @@ namespace Hypernex.UI.Templates
         public Button NavigateButton;
 
         private WorldTemplate worldTemplate;
-        private SafeInstance lastRenderedSafeInstance;
         private WorldMeta lastWorldMeta;
         private User lastHoster;
         private User lastCreator;
         private LoginPageTopBarButton PreviousPage;
 
-        public void Render(WorldTemplate wt, LoginPageTopBarButton pp, SafeInstance instance, WorldMeta worldMeta,
-            User hoster = null, User creator = null)
+        public void Render(WorldTemplate wt, LoginPageTopBarButton pp, WorldMeta worldMeta, User creator)
         {
             WorldText.text = worldMeta.Name;
-            if (creator != null)
-                CreatorText.text = "Created By " + creator.Username;
-            if(hoster != null)
-                CreatorText.text = "Hosted By " + hoster.Username + " (" + instance.InstancePublicity + ")";
+            CreatorText.text = "Created By " + creator.Username;
             if (!string.IsNullOrEmpty(worldMeta.ThumbnailURL))
                 DownloadTools.DownloadBytes(worldMeta.ThumbnailURL,
                     bytes =>
@@ -54,9 +47,7 @@ namespace Hypernex.UI.Templates
                 BannerImage.texture = DefaultBanner;
             worldTemplate = wt;
             PreviousPage = pp;
-            lastRenderedSafeInstance = instance;
             lastWorldMeta = worldMeta;
-            lastHoster = hoster;
             lastCreator = creator;
         }
 
@@ -88,20 +79,10 @@ namespace Hypernex.UI.Templates
     
         private void Start() => NavigateButton.onClick.AddListener(() =>
         {
-            if (lastHoster != null)
+            GetAllInstanceHosts(instances =>
             {
-                // Direct to an Instance Screen
-                JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator);
-                JoinInstanceTemplate.gameObject.SetActive(true);
-            }
-            else if (lastCreator != null)
-            {
-                // Direct to a World Page
-                GetAllInstanceHosts(instances =>
-                {
-                    worldTemplate.Render(lastWorldMeta, lastCreator, instances, PreviousPage);
-                }, APIPlayer.SharedInstances);
-            }
+                worldTemplate.Render(lastWorldMeta, lastCreator, instances, PreviousPage);
+            }, APIPlayer.SharedInstances);
         });
     }
 }

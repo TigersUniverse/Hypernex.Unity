@@ -16,6 +16,7 @@ namespace Hypernex.UIActions
     {
         internal static List<SafeInstance> LastInstances = new();
 
+        public LoginPageTopBarButton HomePage;
         public TMP_Text FriendsLabel;
         public DynamicScroll FriendsContainer;
         public TMP_Text FriendRequestsLabel;
@@ -79,7 +80,8 @@ namespace Hypernex.UIActions
                 .Find("InstanceCardTemplate").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<InstanceCardTemplate>().Render(this, safeInstance, worldMeta, host, creator);
+            newInstanceCard.GetComponent<InstanceCardTemplate>()
+                .Render(WorldTemplate, HomePage, safeInstance, worldMeta, host, creator);
             InstancesContainer.AddItem(c);
         }
 

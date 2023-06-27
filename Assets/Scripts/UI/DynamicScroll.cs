@@ -60,13 +60,15 @@ namespace Hypernex.UI
                 case ScrollDirection.Vertical:
                 {
                     int i = 0;
-                    sizes += Items[0].rect.height / 2;
+                    sizes -= Items[0].rect.height / 2;
                     foreach (RectTransform item in Items)
                     {
                         if(i > 0)
+                        {
                             sizes += item.rect.height;
-                        sizes += Spacing;
-                        item.anchoredPosition3D = new Vector3(item.rect.width/2, sizes, 0);
+                            sizes += Spacing;
+                        }
+                        item.anchoredPosition3D = new Vector3(0, sizes, 0);
                         item.rotation = new Quaternion(0, 0, 0, 0);
                         i++;
                     }
@@ -79,8 +81,10 @@ namespace Hypernex.UI
                     foreach (RectTransform item in Items)
                     {
                         if(i > 0)
+                        {
                             sizes += item.rect.width;
-                        sizes += Spacing;
+                            sizes += Spacing;
+                        }
                         item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
                         item.rotation = new Quaternion(0, 0, 0, 0);
                         i++;

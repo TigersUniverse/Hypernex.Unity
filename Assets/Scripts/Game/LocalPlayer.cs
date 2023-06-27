@@ -709,9 +709,14 @@ namespace Hypernex.Game
             {
                 move = new Vector3(move.x, verticalVelocity, move.z);
                 CharacterController.Move(move * Time.deltaTime);
+                avatar?.SetSpeed(left_m?.Item3 ?? false ? s_ : 0.0f);
+                avatar?.SetIsGrounded(groundedPlayer);
             }
-            avatar?.SetSpeed(left_m?.Item3 ?? false ? s_ : 0.0f);
-            avatar?.SetIsGrounded(groundedPlayer);
+            else
+            {
+                avatar?.SetSpeed(0.0f);
+                avatar?.SetIsGrounded(true);
+            }
             avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
                 Camera.transform, LeftHandReference, RightHandReference);
             if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&

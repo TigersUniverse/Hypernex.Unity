@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Hypernex.Configuration;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UIActions;
@@ -17,7 +18,6 @@ namespace Hypernex.UI.Templates
 
         public LoginPageTopBarButton WorldPage;
         public CreateInstanceTemplate CreateInstanceTemplate;
-        
         public TMP_Text WorldName;
         public RawImage Banner;
         public TMP_Text WorldCreator;
@@ -26,7 +26,9 @@ namespace Hypernex.UI.Templates
         public DynamicScroll InstancesList;
         public Button NextIcon;
         public Button PreviousIcon;
-
+        public Button ReturnButton;
+        public Button FavoriteButton;
+        public TMP_Text FavoriteButtonText;
         public Texture2D DefaultIcon;
 
         private List<(Texture2D, byte[])> Icons = new();
@@ -79,7 +81,8 @@ namespace Hypernex.UI.Templates
             }, worldId);
         }
 
-        public void Render(WorldMeta worldMeta, User creator, List<(SafeInstance, User)> instances)
+        public void Render(WorldMeta worldMeta, User creator, List<(SafeInstance, User)> instances,
+            LoginPageTopBarButton previousPage)
         {
             InstancesList.Clear();
             Icons.Clear();
@@ -111,6 +114,22 @@ namespace Hypernex.UI.Templates
                     });
                 }
             }
+            else if (!string.IsNullOrEmpty(worldMeta.ThumbnailURL))
+            {
+                DownloadTools.DownloadBytes(worldMeta.ThumbnailURL, bytes =>
+                {
+                    if (GifRenderer.IsGif(bytes))
+                    {
+                        Icons.Add((null, bytes));
+                        RenderIcon();
+                    }
+                    else
+                    {
+                        Icons.Add((ImageTools.BytesToTexture2D(bytes), null));
+                        RenderIcon();
+                    }
+                });
+            }
             else
             {
                 Icons.Add((DefaultIcon, null));
@@ -122,6 +141,31 @@ namespace Hypernex.UI.Templates
                 CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2, creator);
             lastWorldMeta = worldMeta;
             lastCreator = creator;
+            FavoriteButtonText.text = ConfigManager.SelectedConfigUser.SavedWorlds.Contains(worldMeta.Id)
+                ? "Unfavorite"
+                : "Favorite";
+            FavoriteButton.onClick.RemoveAllListeners();
+            FavoriteButton.onClick.AddListener(() =>
+            {
+                if (!ConfigManager.SelectedConfigUser.SavedWorlds.Contains(worldMeta.Id))
+                {
+                    ConfigManager.SelectedConfigUser.SavedWorlds.Add(worldMeta.Id);
+                    ConfigManager.SaveConfigToFile();
+                    FavoriteButtonText.text = "Unfavorite";
+                }
+                else
+                {
+                    ConfigManager.SelectedConfigUser.SavedWorlds.Remove(worldMeta.Id);
+                    ConfigManager.SaveConfigToFile();
+                    FavoriteButtonText.text = "Favorite";
+                }
+            });
+            ReturnButton.onClick.RemoveAllListeners();
+            ReturnButton.onClick.AddListener(() =>
+            {
+                CreateInstanceTemplate.gameObject.SetActive(false);
+                previousPage.Show();
+            });
             WorldPage.Show();
         }
 
@@ -130,7 +174,9 @@ namespace Hypernex.UI.Templates
             APIPlayer.OnUserRefresh += u => CachedWorldMeta.Clear();
             NextIcon.onClick.AddListener(() =>
             {
-                if (currentIndex + 1 > Icons.Count - 1)
+                if (Icons.Count <= 0)
+                    return;
+                if (currentIndex + 1 <= Icons.Count - 1)
                 {
                     currentIndex++;
                     RenderIcon();
@@ -141,6 +187,8 @@ namespace Hypernex.UI.Templates
             });
             PreviousIcon.onClick.AddListener(() =>
             {
+                if (Icons.Count <= 0)
+                    return;
                 if (currentIndex - 1 >= 0)
                 {
                     currentIndex--;

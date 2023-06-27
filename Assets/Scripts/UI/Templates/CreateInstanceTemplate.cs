@@ -43,7 +43,7 @@ namespace Hypernex.UI.Templates
         }
         public void Return() => gameObject.SetActive(false);
 
-        public void Update()
+        private void Update()
         {
             InstancePublicityLabel.text = "Instance Publicity: " + instancePublicity;
             InstanceProtocolLabel.text = "Instance Protocol: " + instanceProtocol;

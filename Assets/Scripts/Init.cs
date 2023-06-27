@@ -25,7 +25,6 @@ public class Init : MonoBehaviour
     public UITheme DefaultTheme;
     public bool ForceVR;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
-    public InstanceProtocol InstanceProtocol = InstanceProtocol.KCP;
     public Material OutlineMaterial;
 
     private string GetPluginLocation() =>
