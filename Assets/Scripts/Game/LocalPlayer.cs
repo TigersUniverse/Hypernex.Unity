@@ -182,7 +182,7 @@ namespace Hypernex.Game
 
         private PlayerUpdate GetPlayerUpdate(GameInstance gameInstance)
         {
-            if (!APIPlayer.IsFullReady)
+            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen)
                 return null;
             PlayerUpdate playerUpdate = new PlayerUpdate
             {
@@ -191,7 +191,7 @@ namespace Hypernex.Game
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = gameInstance.userIdToken
                 },
-                AvatarId = ConfigManager.SelectedConfigUser.CurrentAvatar,
+                AvatarId = avatarMeta.Id,
                 IsPlayerVR = IsVR,
                 IsSpeaking = MicrophoneEnabled,
                 PlayerAssignedTags = new List<string>(),
@@ -251,15 +251,20 @@ namespace Hypernex.Game
             };
             foreach (PathDescriptor child in new List<PathDescriptor>(SavedTransforms))
             {
-                Transform t = child.transform;
-                Vector3 lea = t.localEulerAngles;
-                networkedObjects.Add(new NetworkedObject
+                if (child == null)
+                    SavedTransforms.Remove(child);
+                else
                 {
-                    ObjectLocation = child.path,
-                    Position = NetworkConversionTools.Vector3Tofloat3(t.localPosition),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(lea.x, lea.y, lea.z, 0)),
-                    Size = NetworkConversionTools.Vector3Tofloat3(t.localScale)
-                });
+                    Transform t = child.transform;
+                    Vector3 lea = t.localEulerAngles;
+                    networkedObjects.Add(new NetworkedObject
+                    {
+                        ObjectLocation = child.path,
+                        Position = NetworkConversionTools.Vector3Tofloat3(t.localPosition),
+                        Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(lea.x, lea.y, lea.z, 0)),
+                        Size = NetworkConversionTools.Vector3Tofloat3(t.localScale)
+                    });
+                }
             }
             return networkedObjects;
         }
@@ -351,6 +356,7 @@ namespace Hypernex.Game
                 foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
                     avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
                 avatarFile = file;
+                // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
                 foreach (Transform child in transform.GetComponentsInChildren<Transform>())
                 {
@@ -397,6 +403,8 @@ namespace Hypernex.Game
                 // TODO: Share token in instance, excluding blocked users
                 GetTokenForOwnerAvatar(r.result.Meta.Id, t =>
                 {
+                    if (OwnedAvatarIdTokens.ContainsKey(r.result.Meta.Id))
+                        OwnedAvatarIdTokens.Remove(r.result.Meta.Id);
                     OwnedAvatarIdTokens.Add(r.result.Meta.Id, t);
                     file = $"{APIPlayer.APIObject.Settings.APIURL}file/{r.result.Meta.OwnerId}/{build.FileId}/{t}";
                     APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
@@ -443,11 +451,18 @@ namespace Hypernex.Game
                     // TODO: Message Queues are slow, fix underlying issue in Nexport
                     if (mutex.WaitOne(1))
                     {
-                        foreach (PlayerObjectUpdate playerObjectUpdate in GetPlayerObjectUpdates())
+                        try
                         {
-                            msgs.Enqueue(playerObjectUpdate);
-                            //byte[] g = Msg.Serialize(playerObjectUpdate);
-                            //gameInstance.SendMessage(g, MessageChannel.Unreliable);
+                            foreach (PlayerObjectUpdate playerObjectUpdate in GetPlayerObjectUpdates())
+                            {
+                                msgs.Enqueue(playerObjectUpdate);
+                                //byte[] g = Msg.Serialize(playerObjectUpdate);
+                                //gameInstance.SendMessage(g, MessageChannel.Unreliable);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.CurrentLogger.Error("Failed to get PlayerUpdate! Exception: " + e);
                         }
                         mutex.ReleaseMutex();
                     }

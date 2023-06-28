@@ -24,6 +24,7 @@ public class Init : MonoBehaviour
     
     public UITheme DefaultTheme;
     public bool ForceVR;
+    public bool UseHTTP;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
     public Material OutlineMaterial;
 

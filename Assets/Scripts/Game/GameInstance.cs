@@ -51,7 +51,7 @@ namespace Hypernex.Game
         public Action<MsgMeta, MessageChannel> OnMessage { get; set; } = (meta, channel) => { };
         public Action<User> OnClientDisconnect { get; set; } = identifier => { };
         public Action OnDisconnect { get; set; } = () => { };
-        
+
         public bool IsOpen => client?.IsOpen ?? false;
         public List<User> ConnectedUsers => client.ConnectedUsers;
 
@@ -335,13 +335,13 @@ namespace Hypernex.Game
                 return;
             isDisposed = true;
             FocusedInstance = null;
-            Close();
             foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
                 Runtime.RemoveOnUpdate(sandboxAction);
             foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)
                 Runtime.RemoveOnLateUpdate(sandboxAction);
             foreach (Sandbox sandbox in sandboxes)
                 sandbox.Dispose();
+            Close();
         }
     }
 }

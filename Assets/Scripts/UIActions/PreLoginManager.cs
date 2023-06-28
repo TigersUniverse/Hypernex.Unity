@@ -66,7 +66,6 @@ namespace Hypernex.UIActions
         public GameObject LoginPageObject;
 
         private string currentURL;
-        private bool useHTTP;
         private bool saveLogin;
 
         public void Start()
@@ -174,11 +173,11 @@ namespace Hypernex.UIActions
         private void SetServer(string url)
         {
             currentURL = url;
-            useHTTP = true;
             RefreshUsers(ConfigManager.LoadedConfig);
-            new HypernexObject(new HypernexSettings {TargetDomain = url, IsHTTP = useHTTP}).IsInviteCodeRequired(result =>
-                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                    SignUpInviteCodeInput.gameObject.SetActive(result.result.inviteCodeRequired))));
+            new HypernexObject(new HypernexSettings {TargetDomain = url, IsHTTP = Init.Instance.UseHTTP})
+                .IsInviteCodeRequired(result =>
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        SignUpInviteCodeInput.gameObject.SetActive(result.result.inviteCodeRequired))));
             ServerSelectorObject.SetActive(false);
             UserSelectorGameObject.SetActive(true);
         }
@@ -191,7 +190,7 @@ namespace Hypernex.UIActions
             {
                 isSettingUser = true;
                 HypernexSettings settings = new HypernexSettings(configUser.UserId, configUser.TokenContent)
-                    {TargetDomain = currentURL, IsHTTP = useHTTP};
+                    {TargetDomain = currentURL, IsHTTP = Init.Instance.UseHTTP};
                 APIPlayer.Create(settings);
                 APIPlayer.Login((lr, u) => HandleSetUser(lr, u, configUser));
             }
@@ -204,7 +203,7 @@ namespace Hypernex.UIActions
             {
                 isSettingUser = true;
                 HypernexSettings settings = new HypernexSettings(username: username, password: password)
-                    {TargetDomain = currentURL, IsHTTP = useHTTP};
+                    {TargetDomain = currentURL, IsHTTP = Init.Instance.UseHTTP};
                 APIPlayer.Create(settings);
                 APIPlayer.Login((lr, u) => HandleSetUser(lr, u));
             }
@@ -216,7 +215,7 @@ namespace Hypernex.UIActions
             {
                 isSettingUser = true;
                 HypernexSettings settings = new HypernexSettings(username, password, twofacode: twofa)
-                    {TargetDomain = currentURL, IsHTTP = useHTTP};
+                    {TargetDomain = currentURL, IsHTTP = Init.Instance.UseHTTP};
                 APIPlayer.Create(settings);
                 APIPlayer.Login((lr, u) => HandleSetUser(lr, u));
             }
@@ -229,7 +228,7 @@ namespace Hypernex.UIActions
             {
                 isSettingUser = true;
                 HypernexSettings settings = new HypernexSettings(username, email, password, inviteCode)
-                    {TargetDomain = currentURL, IsHTTP = useHTTP};
+                    {TargetDomain = currentURL, IsHTTP = Init.Instance.UseHTTP};
                 APIPlayer.Create(settings);
                 APIPlayer.Register(HandleNewSetUser);
             }

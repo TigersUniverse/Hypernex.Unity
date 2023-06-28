@@ -100,7 +100,7 @@ namespace Hypernex.Game
                         // TODO: Resize based on avatar size
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
-                                new Vector3(0, transform.localScale.y + 1f, 0),
+                                new Vector3(0, transform.localScale.y + 0.9f, 0),
                                 Quaternion.identity);
                     }));
                 }
@@ -184,7 +184,7 @@ namespace Hypernex.Game
                 if (bone != null)
                 {
                     Vector3 newPos = bone.position;
-                    newPos.y += 1f;
+                    newPos.y += 0.9f;
                     nameplateTemplate.transform.position = newPos;
                 }
             }
@@ -246,8 +246,8 @@ namespace Hypernex.Game
 
         public void NetworkUpdate(PlayerUpdate playerUpdate)
         {
-            if (!string.IsNullOrEmpty(playerUpdate.AvatarId) && string.IsNullOrEmpty(AvatarId) ||
-                playerUpdate.AvatarId != AvatarId)
+            if (!string.IsNullOrEmpty(playerUpdate.AvatarId) && (string.IsNullOrEmpty(AvatarId) ||
+                playerUpdate.AvatarId != AvatarId))
             {
                 AvatarId = playerUpdate.AvatarId;
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
