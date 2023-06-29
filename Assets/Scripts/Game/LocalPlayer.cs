@@ -96,7 +96,7 @@ namespace Hypernex.Game
         internal AvatarMeta avatarMeta;
         public AvatarCreator avatar;
         private string avatarFile;
-        private List<PathDescriptor> SavedTransforms = new();
+        internal List<PathDescriptor> SavedTransforms = new();
         internal Dictionary<string, string> OwnedAvatarIdTokens = new();
         private OpusHandler opusHandler;
         private bool didSnapTurn;
@@ -235,6 +235,8 @@ namespace Hypernex.Game
             return playerUpdate;
         }
 
+        internal Dictionary<string, NetworkedObject> children = new();
+
         private List<NetworkedObject> GetNetworkObjects()
         {
             Transform r = transform;
@@ -249,7 +251,7 @@ namespace Hypernex.Game
                     Size = NetworkConversionTools.Vector3Tofloat3(r.localScale)
                 }
             };
-            foreach (PathDescriptor child in new List<PathDescriptor>(SavedTransforms))
+            /*foreach (PathDescriptor child in new List<PathDescriptor>(pathsWaiting.Dequeue()))
             {
                 if (child == null)
                     SavedTransforms.Remove(child);
@@ -265,7 +267,9 @@ namespace Hypernex.Game
                         Size = NetworkConversionTools.Vector3Tofloat3(t.localScale)
                     });
                 }
-            }
+            }*/
+            foreach (NetworkedObject networkedObject in new List<NetworkedObject>(children.Values))
+                networkedObjects.Add(networkedObject);
             return networkedObjects;
         }
 
@@ -354,12 +358,13 @@ namespace Hypernex.Game
                 lastAvatar?.Dispose();
                 avatar = new AvatarCreator(this, a, IsVR);
                 foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));
+                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
                 foreach (Transform child in transform.GetComponentsInChildren<Transform>())
                 {
+                    if(child.Equals(transform)) continue;
                     child.gameObject.layer = 7;
                     PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
                     if (pathDescriptor == null)
@@ -369,6 +374,7 @@ namespace Hypernex.Game
                 }
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(am);
+                Dashboard.PositionDashboard(this);
             }));
         }
 
@@ -492,9 +498,9 @@ namespace Hypernex.Game
             Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
             Mic.OnClipReady += samples =>
             {
-                if (GameInstance.FocusedInstance == null || opusHandler == null)
-                    return;
-                opusHandler.EncodeMicrophone(samples);
+                if (GameInstance.FocusedInstance != null && opusHandler != null)
+                    opusHandler.EncodeMicrophone(samples);
+                avatar?.ApplyAudioClipToLipSync(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
             {
@@ -652,6 +658,8 @@ namespace Hypernex.Game
             XROrigin.enabled = vr;
             foreach (TrackedPoseDriver trackedPoseDriver in TrackedPoseDriver)
                 trackedPoseDriver.enabled = vr;
+            LeftHandReference.GetChild(0).GetChild(0).gameObject.SetActive(vr && avatar == null);
+            RightHandReference.GetChild(0).GetChild(0).gameObject.SetActive(vr && avatar == null);
             if (vr)
             {
                 trackers.Clear();

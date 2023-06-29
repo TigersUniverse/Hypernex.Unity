@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
@@ -29,14 +29,18 @@ namespace Hypernex.Game
         private VRIK vrik;
         private bool isCalibrating;
         private bool calibrated;
+        // TODO: Find a way to rotate controllers towards center
         private VRIKCalibrator.Settings vrikSettings = new()
         {
-            handOffset = new Vector3(0, 0, -0.15f)
+            handOffset = new Vector3(0, 0, -0.15f),
+            handTrackerUp = Vector3.back
         };
         private GameObject headAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
         internal OpusHandler opusHandler;
+        private OVRLipSyncContext lipSyncContext;
+        private List<OVRLipSyncContextMorphTarget> morphTargets = new ();
         
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -45,11 +49,14 @@ namespace Hypernex.Game
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
-            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
             headAlign = new GameObject("headalign_" + Guid.NewGuid());
-            headAlign.transform.position = a.ViewPosition;
-            headAlign.transform.SetParent(head, true);
-            vrikSettings.headOffset = head.position - headAlign.transform.position;
+            headAlign.transform.SetParent(a.ViewPosition.transform);
+            headAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
+            voiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
+            voiceAlign.transform.SetParent(a.SpeechPosition.transform);
+            voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
+            audioSource = voiceAlign.AddComponent<AudioSource>();
+            //vrikSettings.headOffset = GetBoneFromHumanoid(HumanBodyBones.Head).position - headAlign.transform.position;
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform);
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
@@ -78,12 +85,14 @@ namespace Hypernex.Game
                 });
                 playableGraph.Play();
             }
+
             if (isVR)
                 vrik = Avatar.gameObject.AddComponent<VRIK>();
             isCalibrating = false;
             calibrated = false;
             foreach (Transform child in GetBoneFromHumanoid(HumanBodyBones.Head).GetComponentsInChildren<Transform>())
                 child.gameObject.layer = 7;
+            SetupLipSyncLocalPlayer();
         }
 
         public AvatarCreator(NetPlayer netPlayer, Avatar a)
@@ -94,8 +103,8 @@ namespace Hypernex.Game
             MainAnimator = a.GetComponent<Animator>();
             MainAnimator.runtimeAnimatorController = null;
             voiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
-            voiceAlign.transform.position = a.SpeechPosition;
-            voiceAlign.transform.SetParent(GetBoneFromHumanoid(HumanBodyBones.Head), true);
+            voiceAlign.transform.SetParent(a.SpeechPosition.transform);
+            voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
             voiceAlign.AddComponent<AudioSource>();
             opusHandler = voiceAlign.AddComponent<OpusHandler>();
             opusHandler.OnDecoded += opusHandler.PlayDecodedToVoice;
@@ -128,6 +137,75 @@ namespace Hypernex.Game
                     AnimatorControllerParameters = GetAllParameters(animatorControllerPlayable)
                 });
                 playableGraph.Play();
+            }
+            SetupLipSyncNetPlayer();
+        }
+
+        private OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(
+            SkinnedMeshRenderer skinnedMeshRenderer)
+        {
+            foreach (OVRLipSyncContextMorphTarget morphTarget in new List<OVRLipSyncContextMorphTarget>(morphTargets))
+            {
+                if (morphTarget == null)
+                    morphTargets.Remove(morphTarget);
+                else if (morphTarget.skinnedMeshRenderer == skinnedMeshRenderer)
+                    return morphTarget;
+            }
+            OVRLipSyncContextMorphTarget m = voiceAlign.AddComponent<OVRLipSyncContextMorphTarget>();
+            m.skinnedMeshRenderer = skinnedMeshRenderer;
+            morphTargets.Add(m);
+            return m;
+        }
+
+        private void SetVisemeAsBlendshape(ref OVRLipSyncContextMorphTarget morphTarget, Viseme viseme,
+            BlendshapeDescriptor blendshapeDescriptor)
+        {
+            int indexToInsert = (int) viseme;
+            int[] currentBlendshapes = new int[15];
+            Array.Copy(morphTarget.visemeToBlendTargets, currentBlendshapes, 15);
+            currentBlendshapes[indexToInsert] = blendshapeDescriptor.BlendshapeIndex;
+            morphTarget.visemeToBlendTargets = currentBlendshapes;
+        }
+
+        private void SetupLipSyncNetPlayer()
+        {
+            if (!Avatar.UseVisemes) return;
+            lipSyncContext = voiceAlign.AddComponent<OVRLipSyncContext>();
+            lipSyncContext.audioSource = audioSource;
+            lipSyncContext.enableKeyboardInput = false;
+            lipSyncContext.enableTouchInput = false;
+            lipSyncContext.audioLoopback = true;
+            morphTargets.Clear();
+            foreach (KeyValuePair<Viseme, BlendshapeDescriptor> avatarVisemeRenderer in Avatar.VisemesDict)
+            {
+                OVRLipSyncContextMorphTarget morphTarget =
+                    GetMorphTargetBySkinnedMeshRenderer(avatarVisemeRenderer.Value.SkinnedMeshRenderer);
+                SetVisemeAsBlendshape(ref morphTarget, avatarVisemeRenderer.Key, avatarVisemeRenderer.Value);
+            }
+        }
+
+        internal void ApplyAudioClipToLipSync(float[] data)
+        {
+            if (lipSyncContext == null)
+                return;
+            lipSyncContext.PreprocessAudioSamples(data, (int) Mic.NumChannels);
+            lipSyncContext.ProcessAudioSamples(data, (int) Mic.NumChannels);
+            lipSyncContext.PostprocessAudioSamples(data, (int) Mic.NumChannels);
+        }
+
+        private void SetupLipSyncLocalPlayer()
+        {
+            if (!Avatar.UseVisemes) return;
+            lipSyncContext = voiceAlign.AddComponent<OVRLipSyncContext>();
+            lipSyncContext.audioSource = audioSource;
+            lipSyncContext.enableKeyboardInput = false;
+            lipSyncContext.enableTouchInput = false;
+            morphTargets.Clear();
+            foreach (KeyValuePair<Viseme, BlendshapeDescriptor> avatarVisemeRenderer in Avatar.VisemesDict)
+            {
+                OVRLipSyncContextMorphTarget morphTarget =
+                    GetMorphTargetBySkinnedMeshRenderer(avatarVisemeRenderer.Value.SkinnedMeshRenderer);
+                SetVisemeAsBlendshape(ref morphTarget, avatarVisemeRenderer.Key, avatarVisemeRenderer.Value);
             }
         }
 
@@ -387,45 +465,87 @@ namespace Hypernex.Game
             return newTs.ToArray();
         }
 
+        private bool a;
+
         internal void Update(bool areTwoTriggersClicked, Dictionary<InputDevice, GameObject> WorldTrackers,
             Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
         {
             if(MainAnimator != null)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
-            if (!calibrated && WorldTrackers.Count == 3 && vrik != null)
+            if (vrik != null && !calibrated)
             {
-                isCalibrating = true;
-                MainAnimator.SetBool("isCalibrating", true);
-            }
-            else if (WorldTrackers.Count != 3 && vrik != null)
-            {
-                VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
-                    RightHandReference.transform);
-                isCalibrating = false;
-                MainAnimator.SetBool("isCalibrating", false);
-                calibrated = true;
-            }
-            if (isCalibrating && areTwoTriggersClicked && vrik != null)
-            {
-                GameObject[] ts = new GameObject[3];
-                int i = 0;
-                foreach (KeyValuePair<InputDevice, GameObject> keyValuePair in WorldTrackers)
-                    ts[i] = keyValuePair.Value;
-                if (ts[0] != null && ts[1] != null && ts[2] != null)
+                if (WorldTrackers.Count == 3)
                 {
-                    Transform body = GetBoneFromHumanoid(HumanBodyBones.Hips);
-                    Transform leftFoot = GetBoneFromHumanoid(HumanBodyBones.LeftFoot);
-                    Transform rightFoot = GetBoneFromHumanoid(HumanBodyBones.RightFoot);
-                    if (body != null && leftFoot != null && rightFoot != null)
+                    isCalibrating = true;
+                    MainAnimator.SetBool("isCalibrating", true);
+                }
+                else if (WorldTrackers.Count != 3)
+                {
+                    VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
+                        RightHandReference.transform);
+                    isCalibrating = false;
+                    MainAnimator.SetBool("isCalibrating", false);
+                    calibrated = true;
+                }
+                if (isCalibrating && areTwoTriggersClicked)
+                {
+                    GameObject[] ts = new GameObject[3];
+                    int i = 0;
+                    foreach (KeyValuePair<InputDevice, GameObject> keyValuePair in WorldTrackers)
+                        ts[i] = keyValuePair.Value;
+                    if (ts[0] != null && ts[1] != null && ts[2] != null)
                     {
-                        Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
-                        VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0].transform,
-                            LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
-                        calibrated = true;
-                        isCalibrating = false;
-                        MainAnimator.SetBool("isCalibrating", false);
+                        Transform body = GetBoneFromHumanoid(HumanBodyBones.Hips);
+                        Transform leftFoot = GetBoneFromHumanoid(HumanBodyBones.LeftFoot);
+                        Transform rightFoot = GetBoneFromHumanoid(HumanBodyBones.RightFoot);
+                        if (body != null && leftFoot != null && rightFoot != null)
+                        {
+                            Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
+                            VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0].transform,
+                                LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
+                            calibrated = true;
+                            isCalibrating = false;
+                            MainAnimator.SetBool("isCalibrating", false);
+                        }
                     }
                 }
+            }
+            if (!a)
+            {
+                if (vrik == null)
+                    return;
+                IKSolver s = vrik.GetIKSolver();
+                if(s == null)
+                    return;
+                s.OnPostUpdate += () =>
+                {
+                    if (!LocalPlayer.IsVR)
+                        return;
+                    foreach (PathDescriptor pathDescriptor in new List<PathDescriptor>(LocalPlayer.Instance.SavedTransforms))
+                    {
+                        if (pathDescriptor == null)
+                            LocalPlayer.Instance.SavedTransforms.Remove(pathDescriptor);
+                        else
+                        {
+                            if(pathDescriptor.path == null) continue;
+                            NetworkedObject networkedObject = new NetworkedObject
+                            {
+                                ObjectLocation = pathDescriptor.path,
+                                Position = NetworkConversionTools.Vector3Tofloat3(
+                                    pathDescriptor.transform.localPosition),
+                                Rotation = new float4(pathDescriptor.transform.localEulerAngles.x,
+                                    pathDescriptor.transform.localEulerAngles.y,
+                                    pathDescriptor.transform.localEulerAngles.z, 0),
+                                Size = NetworkConversionTools.Vector3Tofloat3(pathDescriptor.transform.localScale)
+                            };
+                            if (!LocalPlayer.Instance.children.ContainsKey(pathDescriptor.path))
+                                LocalPlayer.Instance.children.Add(pathDescriptor.path, networkedObject);
+                            else
+                                LocalPlayer.Instance.children[pathDescriptor.path] = networkedObject;
+                        }
+                    }
+                };
+                a = true;
             }
         }
 
@@ -437,6 +557,32 @@ namespace Hypernex.Game
                 Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
                 if(headBone != null)
                     headBone.rotation = cameraTransform.rotation;
+            }
+            if (!isVR)
+            {
+                foreach (PathDescriptor pathDescriptor in new List<PathDescriptor>(LocalPlayer.Instance.SavedTransforms))
+                {
+                    if (pathDescriptor == null)
+                        LocalPlayer.Instance.SavedTransforms.Remove(pathDescriptor);
+                    else
+                    {
+                        if(pathDescriptor.path == null) continue;
+                        NetworkedObject networkedObject = new NetworkedObject
+                        {
+                            ObjectLocation = pathDescriptor.path,
+                            Position = NetworkConversionTools.Vector3Tofloat3(
+                                pathDescriptor.transform.localPosition),
+                            Rotation = new float4(pathDescriptor.transform.localEulerAngles.x,
+                                pathDescriptor.transform.localEulerAngles.y,
+                                pathDescriptor.transform.localEulerAngles.z, 0),
+                            Size = NetworkConversionTools.Vector3Tofloat3(pathDescriptor.transform.localScale)
+                        };
+                        if (!LocalPlayer.Instance.children.ContainsKey(pathDescriptor.path))
+                            LocalPlayer.Instance.children.Add(pathDescriptor.path, networkedObject);
+                        else
+                            LocalPlayer.Instance.children[pathDescriptor.path] = networkedObject;
+                    }
+                }
             }
         }
 

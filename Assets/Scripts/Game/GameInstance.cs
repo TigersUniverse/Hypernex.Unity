@@ -72,6 +72,7 @@ namespace Hypernex.Game
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
+            FocusedInstance?.Dispose();
             gameServerId = joinInstance.gameServerId;
             instanceId = joinInstance.instanceId;
             userIdToken = joinInstance.tempUserToken;
@@ -117,6 +118,7 @@ namespace Hypernex.Game
 
         private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
         {
+            FocusedInstance?.Dispose();
             gameServerId = instanceOpened.gameServerId;
             instanceId = instanceOpened.instanceId;
             userIdToken = instanceOpened.tempUserToken;
@@ -284,7 +286,7 @@ namespace Hypernex.Game
                     if (open)
                         Open();
                     foreach (NexboxScript worldLocalScript in World.LocalScripts)
-                        sandboxes.Add(new Sandbox(worldLocalScript, SandboxRestriction.Local, this));
+                        sandboxes.Add(new Sandbox(worldLocalScript, this));
                     if (LocalPlayer.Instance.Dashboard.IsVisible)
                         LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
                 }

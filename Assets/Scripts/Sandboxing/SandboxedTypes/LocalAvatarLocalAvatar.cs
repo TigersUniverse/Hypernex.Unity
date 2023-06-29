@@ -1,81 +1,105 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Hypernex.Game;
 using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
-    public static class LocalAvatarLocalAvatar
+    public class LocalAvatarLocalAvatar
     {
         internal static List<string> AssignedTags = new();
         internal static List<string> ExtraneousKeys = new();
 
-        public static Item GetAvatarObject(HumanBodyBones humanBodyBones)
+        private Transform avatarRoot;
+        private bool isLocalAvatar;
+        private LocalPlayer localPlayer;
+        private NetPlayer netPlayer;
+
+        public LocalAvatarLocalAvatar() => throw new Exception("Cannot instantiate LocalAvatarLocalAvatar");
+
+        internal LocalAvatarLocalAvatar(Transform avatarRoot)
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            this.avatarRoot = avatarRoot;
+            isLocalAvatar = avatarRoot.GetComponent<LocalPlayer>() != null;
+            if (isLocalAvatar)
+                localPlayer = avatarRoot.GetComponent<LocalPlayer>();
+            else
+                netPlayer = avatarRoot.GetComponent<NetPlayer>();
+        }
+
+        private AvatarCreator GetAvatarCreator()
+        {
+            if (localPlayer != null)
+                return localPlayer.avatar;
+            return netPlayer.Avatar;
+        }
+
+        public Item GetAvatarObject(HumanBodyBones humanBodyBones)
+        {
+            if (avatarRoot == null)
                 return null;
-            Transform bone = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(humanBodyBones);
+            Transform bone = GetAvatarCreator().GetBoneFromHumanoid(humanBodyBones);
             if (bone == null)
                 return null;
             return new Item(bone);
         }
 
-        public static Item GetAvatarObjectByPath(string path)
+        public Item GetAvatarObjectByPath(string path)
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            if (avatarRoot == null)
                 return null;
-            Transform bone = LocalPlayer.Instance.avatar.Avatar.transform.Find(path);
+            Transform bone = GetAvatarCreator().Avatar.transform.Find(path);
             if (bone == null)
                 return null;
             return new Item(bone);
         }
-        
-        public static bool IsAvatarItem(Item item) =>
-            AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<LocalPlayer>() != null;
-        
-        public static bool IsAvatarItem(ReadonlyItem item) =>
-            AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<LocalPlayer>() != null;
 
-        public static object GetParameter(string parameterName)
-        {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
-                return null;
-            return LocalPlayer.Instance.avatar.GetParameter(parameterName);
-        }
+        public bool IsAvatarItem(Item item) => AnimationUtility.GetRootOfChild(item.t) == avatarRoot;
+        public bool IsAvatarItem(ReadonlyItem item) => AnimationUtility.GetRootOfChild(item.item.t) == avatarRoot;
 
-        public static void SetParameter(string name, bool value)
+        public object GetParameter(string parameterName) =>
+            avatarRoot == null ? null : GetAvatarCreator().GetParameter(parameterName);
+
+        public void SetParameter(string name, bool value)
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            if (!isLocalAvatar || localPlayer == null)
                 return;
-            LocalPlayer.Instance.avatar.SetParameter(name, value);
+            localPlayer.avatar.SetParameter(name, value);
         }
         
-        public static void SetParameter(string name, int value)
+        public void SetParameter(string name, int value)
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            if (!isLocalAvatar || localPlayer == null)
                 return;
-            LocalPlayer.Instance.avatar.SetParameter(name, value);
+            localPlayer.avatar.SetParameter(name, value);
         }
         
-        public static void SetParameter(string name, float value)
+        public void SetParameter(string name, float value)
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            if (!isLocalAvatar || localPlayer == null)
                 return;
-            LocalPlayer.Instance.avatar.SetParameter(name, value);
+            localPlayer.avatar.SetParameter(name, value);
         }
         
-        public static object GetExtraneousObject(string key)
+        public object GetExtraneousObject(string key)
         {
-            if (LocalPlayer.Instance == null)
+            if (isLocalAvatar)
+            {
+                if (localPlayer == null || !localPlayer.LastExtraneousObjects.ContainsKey(key))
+                    return null;
+                return localPlayer.LastExtraneousObjects[key];
+            }
+            if (netPlayer == null || !netPlayer.LastExtraneousObjects.ContainsKey(key))
                 return null;
-            if (!LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key))
-                return null;
-            return LocalPlayer.Instance.LastExtraneousObjects[key];
+            return netPlayer.LastExtraneousObjects[key];
         }
 
-        public static void AddExtraneousObject(string key, object value)
+        public void AddExtraneousObject(string key, object value)
         {
-            if (LocalPlayer.Instance == null)
+            if (!isLocalAvatar)
+                return;
+            if (localPlayer == null)
                 return;
             if(!ExtraneousKeys.Contains(key))
                 ExtraneousKeys.Add(key);
@@ -87,9 +111,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             LocalPlayer.MoreExtraneousObjects.Add(key, value);
         }
 
-        public static void RemoveExtraneousObject(string key)
+        public void RemoveExtraneousObject(string key)
         {
-            if (LocalPlayer.Instance == null)
+            if (!isLocalAvatar)
+                return;
+            if (localPlayer == null)
                 return;
             if (ExtraneousKeys.Contains(key))
                 ExtraneousKeys.Remove(key);
@@ -97,16 +123,24 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 LocalPlayer.MorePlayerAssignedTags.Remove(key);
         }
         
-        public static string[] GetPlayerAssignedTags()
+        public string[] GetPlayerAssignedTags()
         {
-            if (LocalPlayer.Instance == null)
+            if (isLocalAvatar)
+            {
+                if (localPlayer == null)
+                    return null;
+                return localPlayer.LastPlayerAssignedTags.ToArray();
+            }
+            if (netPlayer == null)
                 return null;
-            return LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
+            return netPlayer.LastPlayerTags.ToArray();
         }
         
-        public static void AddPlayerAssignedTag(string tag)
+        public void AddPlayerAssignedTag(string tag)
         {
-            if (LocalPlayer.Instance == null)
+            if (!isLocalAvatar)
+                return;
+            if (localPlayer == null)
                 return;
             if(!AssignedTags.Contains(tag))
                 AssignedTags.Add(tag);
@@ -115,9 +149,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             LocalPlayer.MorePlayerAssignedTags.Add(tag);
         }
 
-        public static void RemovePlayerAssignedTag(string tag)
+        public void RemovePlayerAssignedTag(string tag)
         {
-            if (LocalPlayer.Instance == null)
+            if (!isLocalAvatar)
+                return;
+            if (localPlayer == null)
                 return;
             if (AssignedTags.Contains(tag))
                 AssignedTags.Remove(tag);

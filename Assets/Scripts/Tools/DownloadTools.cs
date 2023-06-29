@@ -131,7 +131,7 @@ namespace Hypernex.Tools
                 return;
             double s = 0.0;
             foreach (byte[] d in Cache.Values)
-                s += d.Length / (1024.0 * 1024.0);
+                s += d?.Length / (1024.0 * 1024.0) ?? 0;
             if (s >= ConfigManager.LoadedConfig.MaxMemoryStorageCache || s + dataSize >= ConfigManager.LoadedConfig.MaxMemoryStorageCache)
             {
                 while (s >= ConfigManager.LoadedConfig.MaxMemoryStorageCache || s + dataSize >= ConfigManager.LoadedConfig.MaxMemoryStorageCache)

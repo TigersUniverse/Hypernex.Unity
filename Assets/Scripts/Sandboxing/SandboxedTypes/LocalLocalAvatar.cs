@@ -1,5 +1,6 @@
 ﻿using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Player;
 using Hypernex.Tools;
 using UnityEngine;
 
@@ -8,6 +9,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     // I know this class name sounds stupid, but it is the LocalAvatar for Local scripts
     public static class LocalLocalAvatar
     {
+        public static bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
+        
         public static ReadonlyItem GetAvatarObject(HumanBodyBones humanBodyBones)
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)

@@ -215,9 +215,9 @@ namespace Hypernex.Game
                         Register(LocalPlayer.Instance.Camera.transform, instanceBinding);
                     else
                     {
-                        if(!instanceBinding.IsLook && IsFacingObject(LocalPlayer.Instance.LeftHandReference, transform))
+                        if(instanceBinding.IsLook && IsFacingObject(LocalPlayer.Instance.LeftHandReference, transform))
                             Register(LocalPlayer.Instance.LeftHandReference, instanceBinding);
-                        else if(instanceBinding.IsLook && IsFacingObject(LocalPlayer.Instance.RightHandReference, transform))
+                        else if(!instanceBinding.IsLook && IsFacingObject(LocalPlayer.Instance.RightHandReference, transform))
                             Register(LocalPlayer.Instance.RightHandReference, instanceBinding);
                     }
                     NoHighlight();

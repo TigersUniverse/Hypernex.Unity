@@ -3,6 +3,8 @@ using Hypernex.CCK;
 using Hypernex.Game;
 using Nexbox;
 using Nexbox.Interpreters;
+using UnityEngine;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Sandboxing
 {
@@ -10,7 +12,7 @@ namespace Hypernex.Sandboxing
     {
         private IInterpreter interpreter;
         
-        public Sandbox(NexboxScript script, SandboxRestriction sandboxRestriction, GameInstance gameInstance = null)
+        public Sandbox(NexboxScript script, GameInstance gameInstance)
         {
             switch (script.Language)
             {
@@ -24,7 +26,25 @@ namespace Hypernex.Sandboxing
                     throw new Exception("Unknown NexboxScript language");
             }
             interpreter.StartSandbox(o => Logger.CurrentLogger.Log($"[{script.Name}{script.GetExtensionFromLanguage()}] {o}"));
-            SandboxForwarding.Forward(interpreter, sandboxRestriction, gameInstance);
+            SandboxForwarding.Forward(interpreter, SandboxRestriction.Local, null, gameInstance);
+            interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
+        }
+        
+        public Sandbox(NexboxScript script, Transform avatarRoot)
+        {
+            switch (script.Language)
+            {
+                case NexboxLanguage.Lua:
+                    interpreter = new LuaInterpreter();
+                    break;
+                case NexboxLanguage.JavaScript:
+                    interpreter = new JavaScriptInterpreter();
+                    break;
+                default:
+                    throw new Exception("Unknown NexboxScript language");
+            }
+            interpreter.StartSandbox(o => Logger.CurrentLogger.Log($"[{script.Name}{script.GetExtensionFromLanguage()}] {o}"));
+            SandboxForwarding.Forward(interpreter, SandboxRestriction.LocalAvatar, avatarRoot, null);
             interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
 

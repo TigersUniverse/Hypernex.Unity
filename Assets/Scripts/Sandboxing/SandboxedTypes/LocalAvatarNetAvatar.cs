@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hypernex.Game;
+using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using UnityEngine;
@@ -32,6 +33,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public static ReadonlyItem GetAvatarObject(string userid, HumanBodyBones humanBodyBones)
         {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                    return null;
+                Transform b = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(humanBodyBones);
+                if (b == null)
+                    return null;
+                return new ReadonlyItem(b);
+            }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -45,6 +55,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public static ReadonlyItem GetAvatarObjectByPath(string userid, string path)
         {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                    return null;
+                Transform b = LocalPlayer.Instance.avatar.Avatar.transform.Find(path);
+                if (b == null)
+                    return null;
+                return new ReadonlyItem(b);
+            }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -55,15 +74,48 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return new ReadonlyItem(bone);
         }
-        
-        public static bool IsAvatarItem(Item item) =>
-            AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<NetPlayer>() != null;
-        
-        public static bool IsAvatarItem(ReadonlyItem item) =>
-            AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<NetPlayer>() != null;
 
-        public static ReadonlyItem[] GetAllChildrenInAvatar(string userid, string path)
+        public static bool IsAvatarItem(Item item, string userid = "")
         {
+            {
+                LocalPlayer localPlayer = AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<LocalPlayer>();
+                NetPlayer netPlayer = AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<NetPlayer>();
+                if (!string.IsNullOrEmpty(userid))
+                {
+                    if (netPlayer != null && netPlayer.User.Id == userid)
+                        return true;
+                    if (localPlayer != null && APIPlayer.APIUser.Id == userid)
+                        return true;
+                }
+                return netPlayer != null;
+            }
+        }
+
+        public static bool IsAvatarItem(ReadonlyItem item, string userid = "")
+        {
+            LocalPlayer localPlayer = AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<LocalPlayer>();
+            NetPlayer netPlayer = AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<NetPlayer>();
+            if (!string.IsNullOrEmpty(userid))
+            {
+                if (netPlayer != null && netPlayer.User.Id == userid)
+                    return true;
+                if (localPlayer != null && APIPlayer.APIUser.Id == userid)
+                    return true;
+            }
+            return netPlayer != null;
+        }
+
+        public static ReadonlyItem[] GetAllChildrenInAvatar(string userid)
+        {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                    return null;
+                List<ReadonlyItem> i = new List<ReadonlyItem>();
+                foreach (Transform transform in LocalPlayer.Instance.avatar.Avatar.GetComponentsInChildren<Transform>())
+                    i.Add(new ReadonlyItem(transform));
+                return i.ToArray();
+            }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -77,6 +129,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public static string[] GetSelfAssignedTags(string userid)
         {
+            if (userid == APIPlayer.APIUser.Id)
+                return LocalPlayer.Instance == null ? null : LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -85,6 +139,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public static object GetExtraneousObject(string userid, string key)
         {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if (LocalPlayer.Instance == null || !LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key))
+                    return null;
+                return LocalPlayer.Instance.LastExtraneousObjects[key];
+            }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -95,6 +155,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public static object GetParameterValue(string userid, string parameterName)
         {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                    return null;
+                return LocalPlayer.Instance.avatar.GetParameter(parameterName);
+            }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;

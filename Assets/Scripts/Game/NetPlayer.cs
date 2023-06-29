@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Hypernex.CCK;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
+using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using HypernexSharp.API;
@@ -29,8 +31,6 @@ namespace Hypernex.Game
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
         private NameplateTemplate nameplateTemplate;
-        
-        private Vector3 headOffset;
         
         public float volume = 1f;
         private AudioClip voice;
@@ -92,11 +92,8 @@ namespace Hypernex.Game
                         Avatar?.Dispose();
                         avatarUpdates.Clear();
                         Avatar = new AvatarCreator(this, a);
-                        // NetPlayers do not run LocalScripts
-                        /*foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, SandboxRestriction.LocalAvatar));*/
-                        headOffset = Avatar.Avatar.SpeechPosition -
-                                     Avatar.GetBoneFromHumanoid(HumanBodyBones.Head).position;
+                        foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
+                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
                         // TODO: Resize based on avatar size
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
@@ -225,7 +222,8 @@ namespace Hypernex.Game
                             networkedObject.Rotation.z)), interpolationRatio);
 
                     }
-                    //target.localScale = localSize;
+                    target.localScale = Vector3.Lerp(target.localScale,
+                        NetworkConversionTools.float3ToVector3(networkedObject.Size), interpolationRatio);
                 }
             }
         }
