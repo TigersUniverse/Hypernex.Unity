@@ -18,6 +18,8 @@ namespace Hypernex.Configuration.ConfigMeta
         public bool UseFacialTracking;
         public Dictionary<string, string> FacialTrackingSettings = new();
 
+        public int EmojiType;
+
         public void Clone(ConfigUser c)
         {
             Server = c.Server;
@@ -30,6 +32,7 @@ namespace Hypernex.Configuration.ConfigMeta
             SavedWorlds = c.SavedWorlds;
             UseFacialTracking = c.UseFacialTracking;
             FacialTrackingSettings = c.FacialTrackingSettings;
+            EmojiType = c.EmojiType;
         }
     }
 }

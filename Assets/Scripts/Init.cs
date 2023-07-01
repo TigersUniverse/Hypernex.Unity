@@ -11,8 +11,8 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
-using HypernexSharp.SocketObjects;
 using Nexbox;
+using TMPro;
 using UnityEngine;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
@@ -27,6 +27,7 @@ public class Init : MonoBehaviour
     public bool UseHTTP;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
     public Material OutlineMaterial;
+    public List<TMP_SpriteAsset> EmojiSprites = new ();
 
     private string GetPluginLocation() =>
 #if UNITY_EDITOR
