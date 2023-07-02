@@ -322,7 +322,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   LowestPointRespawnThreshold: 50
-  Grabbable: {fileID: 595483574}
 --- !u!1 &1830361359
 GameObject:
   m_ObjectHideFlags: 0

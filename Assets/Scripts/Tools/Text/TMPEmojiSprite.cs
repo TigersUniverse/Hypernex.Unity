@@ -7,6 +7,7 @@ using Hypernex.Configuration;
 using Hypernex.Player;
 using TMPro;
 using UnityEngine;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Tools.Text
 {
@@ -90,7 +91,7 @@ namespace Hypernex.Tools.Text
             return stringBuilder.ToString();
         }
         
-        private string SpaceUTF32s(string input)
+        /*private string SpaceUTF32s(string input)
         {
             StringBuilder stringBuilder = new StringBuilder();
             if (!input.Contains(@"\U"))
@@ -104,7 +105,7 @@ namespace Hypernex.Tools.Text
                 stringBuilder.Append(c);
             }
             return stringBuilder.ToString();
-        }
+        }*/
 
         private static int CompareLongest(string x, string y)
         {
@@ -147,7 +148,7 @@ namespace Hypernex.Tools.Text
             for (int i = 0; i < input.Length; i++)
             {
                 char c = input[i];
-                if (c == '\\')
+                if (c == '\\' && input.Length > i + 1 && input[i + 1] == 'U')
                 {
                     string sub = input.Substring(i);
                     int length = GetLengthOfIndexOfUTF32(sub);
@@ -162,7 +163,7 @@ namespace Hypernex.Tools.Text
                         else if(unicodeCharacters.Contains(utf))
                             replacements.Add(utf);
                     }
-                    i += length;
+                    //i += length;
                 }
             }
             replacements.Sort(CompareLongest);
@@ -191,7 +192,7 @@ namespace Hypernex.Tools.Text
         {
             string t = EmojisToUTF32(text.text);
             t = ToUTF32(t);
-            t = SpaceUTF32s(t);
+            //t = SpaceUTF32s(t);
             foreach (string replacement in GetUTF32ToReplace(t))
             {
                 int i = GetEmojiIndex(replacement);

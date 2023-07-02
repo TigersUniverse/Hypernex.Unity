@@ -83,7 +83,9 @@ namespace Hypernex.Game
         public List<TrackedPoseDriver> TrackedPoseDriver;
         public CharacterController CharacterController;
         public Transform LeftHandReference;
+        public Transform LeftHandVRIKTarget;
         public Transform RightHandReference;
+        public Transform RightHandVRIKTarget;
         public PlayerInput vrPlayerInput;
         public List<string> LastPlayerAssignedTags = new();
         public Dictionary<string, object> LastExtraneousObjects = new();
@@ -101,6 +103,7 @@ namespace Hypernex.Game
         private OpusHandler opusHandler;
         private bool didSnapTurn;
         private Scene? scene;
+        internal float vrHeight;
 
         public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {
@@ -134,7 +137,7 @@ namespace Hypernex.Game
             LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
         }
         
-        // TODO: maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
+        // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
         public void RefreshAvatar() => OnAvatarDownload(avatarFile, avatarMeta);
 
         public void Respawn(Scene? s = null)
@@ -142,8 +145,6 @@ namespace Hypernex.Game
             Vector3 spawnPosition = new Vector3(0, 1, 0);
             if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World.SpawnPoints.Count > 0)
             {
-                // TODO: This throws error on GameInstance.Dispose()
-                // Check into player not being moved back into DontDestroyMe
                 Transform spT = GameInstance.FocusedInstance.World
                     .SpawnPoints[new System.Random().Next(0, GameInstance.FocusedInstance.World.SpawnPoints.Count - 1)]
                     .transform;
@@ -365,11 +366,13 @@ namespace Hypernex.Game
                 foreach (Transform child in transform.GetComponentsInChildren<Transform>())
                 {
                     if(child.Equals(transform)) continue;
-                    child.gameObject.layer = 7;
+                    //child.gameObject.layer = 7;
                     PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
                     if (pathDescriptor == null)
                         pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
                     pathDescriptor.root = transform;
+                    if (AnimationUtility.IsChildOfTransform(child, avatar.Avatar.transform))
+                        child.gameObject.layer = 7;
                     SavedTransforms.Add(pathDescriptor);
                 }
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
@@ -406,7 +409,6 @@ namespace Hypernex.Game
             {
                 if(r.result.Meta.OwnerId != APIPlayer.APIUser.Id)
                     return;
-                // TODO: Share token in instance, excluding blocked users
                 GetTokenForOwnerAvatar(r.result.Meta.Id, t =>
                 {
                     if (OwnedAvatarIdTokens.ContainsKey(r.result.Meta.Id))
@@ -454,7 +456,6 @@ namespace Hypernex.Game
                 {
                     PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
                     gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-                    // TODO: Message Queues are slow, fix underlying issue in Nexport
                     if (mutex.WaitOne(1))
                     {
                         try
@@ -473,7 +474,7 @@ namespace Hypernex.Game
                         mutex.ReleaseMutex();
                     }
                 }
-                yield return new WaitForSeconds(0.05f);
+                yield return new WaitForSeconds(0.1f);
             }
         }
 
@@ -555,6 +556,7 @@ namespace Hypernex.Game
 
         internal void StartVR()
         {
+            AlignVR();
             Bindings.Clear();
             // Create Bindings
             vrPlayerInput.ActivateInput();
@@ -582,6 +584,16 @@ namespace Hypernex.Game
             Bindings.Add(new Mouse());
             Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
             Logger.CurrentLogger.Log("Removed VR Bindings");
+        }
+
+        public void AlignVR()
+        {
+            // Align the character controller
+            vrHeight = Mathf.Clamp(XROrigin.CameraInOriginSpaceHeight, 0, Single.PositiveInfinity);
+            Vector3 center = XROrigin.CameraInOriginSpacePos;
+            center.y = vrHeight / 2f + CharacterController.skinWidth;
+            CharacterController.height = vrHeight;
+            CharacterController.center = center;
         }
 
         private float rotx;
@@ -658,8 +670,8 @@ namespace Hypernex.Game
             XROrigin.enabled = vr;
             foreach (TrackedPoseDriver trackedPoseDriver in TrackedPoseDriver)
                 trackedPoseDriver.enabled = vr;
-            LeftHandReference.GetChild(0).GetChild(0).gameObject.SetActive(vr && avatar == null);
-            RightHandReference.GetChild(0).GetChild(0).gameObject.SetActive(vr && avatar == null);
+            LeftHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
+            RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
             if (vr)
             {
                 trackers.Clear();
@@ -741,7 +753,7 @@ namespace Hypernex.Game
                 avatar?.SetIsGrounded(true);
             }
             avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
-                Camera.transform, LeftHandReference, RightHandReference);
+                Camera.transform, LeftHandVRIKTarget, RightHandVRIKTarget);
             if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
                 FaceTrackingManager.HasInitialized)
             {

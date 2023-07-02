@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Discord.GameSDK;
 using Discord.GameSDK.Activities;
+using Hypernex.CCK;
 using Hypernex.Player;
 using HypernexSharp.APIObjects;
 
@@ -86,13 +87,15 @@ namespace Hypernex.Tools
 
         internal static void FocusInstance(WorldMeta worldMeta, string id, User host)
         {
+            if (!Discord.GameSDK.Discord.IsInitialized)
+                return;
             ignoreUserRefresh = true;
             long time;
             if (InstanceDateTimes.ContainsKey(id))
                 time = InstanceDateTimes[id];
             else
             {
-                time = new DateTimeOffset(new()).ToUnixTimeMilliseconds();
+                time = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
                 InstanceDateTimes.Add(id, time);
             }
             string status = APIPlayer.APIUser.Bio.Status.ToString();
@@ -100,9 +103,9 @@ namespace Hypernex.Tools
             discord.GetActivityManager().UpdateActivity(new Activity
             {
                 Name = "Hypernex",
-                Details = $"Playing on {worldMeta.Name} as {APIPlayer.APIUser.Username}",
+                Details = $"Playing as {APIPlayer.APIUser.Username}",
                 Timestamps = new ActivityTimestamps {Start = time},
-                State = worldMeta.Name,
+                State = "Visiting " + worldMeta.Name,
                 Assets = new ActivityAssets
                 {
                     LargeImage = string.IsNullOrEmpty(worldMeta.ThumbnailURL) ? "logo" : worldMeta.ThumbnailURL,

@@ -21,6 +21,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using Logger = Hypernex.CCK.Logger;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Game
@@ -87,8 +88,9 @@ namespace Hypernex.Game
             client.OnConnect += () =>
             {
                 QuickInvoke.InvokeActionOnMainThread(OnConnect);
-                APIPlayer.APIObject.GetUser(r => OnUser(r, joinInstance.instanceCreatorId),
-                    joinInstance.instanceCreatorId, isUserId: true);
+                if(!isHost)
+                    APIPlayer.APIObject.GetUser(r => OnUser(r, joinInstance.instanceCreatorId),
+                        joinInstance.instanceCreatorId, isUserId: true);
             };
             client.OnUserLoaded += user => QuickInvoke.InvokeActionOnMainThread(OnUserLoaded, user);
             client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
@@ -114,6 +116,8 @@ namespace Hypernex.Game
             OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
             isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
+            if (isHost)
+                host = APIPlayer.APIUser;
         }
 
         private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
@@ -147,6 +151,7 @@ namespace Hypernex.Game
             OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
             OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
+            host = APIPlayer.APIUser;
             isHost = true;
         }
 
@@ -170,6 +175,8 @@ namespace Hypernex.Game
         {
             if(!client.IsOpen)
                 client.Open();
+            if(isHost)
+                DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
         }
         public void Close()
         {

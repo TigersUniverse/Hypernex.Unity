@@ -32,7 +32,8 @@ namespace Hypernex.Game
         // TODO: Find a way to rotate controllers towards center
         private VRIKCalibrator.Settings vrikSettings = new()
         {
-            handOffset = new Vector3(0, 0, -0.15f),
+            scaleMlp = 1f,
+            handOffset = new Vector3(0, 0, -0.1f),
             handTrackerUp = Vector3.back
         };
         private GameObject headAlign;
@@ -56,10 +57,14 @@ namespace Hypernex.Game
             voiceAlign.transform.SetParent(a.SpeechPosition.transform);
             voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
             audioSource = voiceAlign.AddComponent<AudioSource>();
-            //vrikSettings.headOffset = GetBoneFromHumanoid(HumanBodyBones.Head).position - headAlign.transform.position;
+            vrikSettings.headOffset = GetBoneFromHumanoid(HumanBodyBones.Head).position - headAlign.transform.position;
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform);
-            a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
+            if(isVR)
+                a.transform.SetLocalPositionAndRotation(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 0));
+            else
+                a.transform.SetLocalPositionAndRotation(new Vector3(0, -(a.transform.localScale.y * 0.75f), 0), new Quaternion(0, 0, 0, 0));
+            a.transform.localScale = Vector3.one;
             MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
             // MotionSpeed (4)
             MainAnimator.SetFloat("MotionSpeed", 1f);
@@ -87,7 +92,28 @@ namespace Hypernex.Game
             }
 
             if (isVR)
+            {
                 vrik = Avatar.gameObject.AddComponent<VRIK>();
+                for (int i = 0; i < LocalPlayer.Instance.Camera.transform.childCount; i++)
+                {
+                    Transform child = LocalPlayer.Instance.Camera.transform.GetChild(i);
+                    if (child.name == "Head Target")
+                        Object.Destroy(child.gameObject);
+                }
+                for (int i = 0; i < LocalPlayer.Instance.LeftHandVRIKTarget.childCount; i++)
+                {
+                    Transform child = LocalPlayer.Instance.LeftHandVRIKTarget.GetChild(i);
+                    Object.Destroy(child.gameObject);
+                }
+                for (int i = 0; i < LocalPlayer.Instance.RightHandVRIKTarget.childCount; i++)
+                {
+                    Transform child = LocalPlayer.Instance.RightHandVRIKTarget.GetChild(i);
+                    Object.Destroy(child.gameObject);
+                }
+                RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
+                    GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
+                    GetBoneFromHumanoid(HumanBodyBones.RightHand));
+            }
             isCalibrating = false;
             calibrated = false;
             foreach (Transform child in GetBoneFromHumanoid(HumanBodyBones.Head).GetComponentsInChildren<Transform>())
@@ -438,6 +464,16 @@ namespace Hypernex.Game
             if (MainAnimator == null)
                 return null;
             return MainAnimator.GetBoneTransform(humanBodyBones);
+        }
+
+        private void RelaxWrists(Transform leftLowerArm, Transform rightLowerArm, Transform leftHand,
+            Transform rightHand)
+        {
+            TwistRelaxer twistRelaxer = Avatar.gameObject.AddComponent<TwistRelaxer>();
+            twistRelaxer.ik = vrik;
+            TwistSolver leftSolver = new TwistSolver { transform = leftLowerArm, children = new []{leftHand} };
+            TwistSolver rightSolver = new TwistSolver { transform = rightLowerArm, children = new []{rightHand} };
+            twistRelaxer.twistSolvers = new[] { leftSolver, rightSolver };
         }
         
         /// <summary>

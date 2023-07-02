@@ -8,7 +8,6 @@ namespace Hypernex.Tools
 {
     public static class AnimationUtility
     {
-        // TODO: fix this whole method
         public static Transform GetObjectFromRoot(string path, Scene? s = null)
         {
             if (s == null)
@@ -105,6 +104,20 @@ namespace Hypernex.Tools
                 }
             }
             return lowestPoint;
+        }
+
+        public static bool IsChildOfTransform(Transform child, Transform t)
+        {
+            Transform parent = child.parent;
+            if (parent == null)
+                return false;
+            while (parent != null)
+            {
+                if (parent == t)
+                    return true;
+                parent = parent.parent;
+            }
+            return false;
         }
     }
 }

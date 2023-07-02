@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,13 +26,16 @@ namespace Hypernex.Game
         private Scene scene;
         public User User;
         public AvatarCreator Avatar;
-        
+
         private string AvatarId;
         private SharedAvatarToken avatarFileToken;
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
         private NameplateTemplate nameplateTemplate;
-        
+
+        public int interpolationFramesCount = 120;
+        private int elapsedFrames;
+
         public float volume = 1f;
         private AudioClip voice;
 
@@ -57,6 +61,7 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetUser(OnUser, UserId, isUserId: true);
                 return;
             }
+
             QuickInvoke.InvokeActionOnMainThread(new Action(() =>
             {
                 User = result.result.UserData;
@@ -76,10 +81,11 @@ namespace Hypernex.Game
                         avatarFileToken.avatarToken);
                 return;
             }
+
             QuickInvoke.InvokeActionOnMainThread(new Action(() =>
             {
                 string path = Path.Combine(DownloadTools.DownloadsPath, $"{AvatarId}.hna");
-                if(File.Exists(path))
+                if (File.Exists(path))
                     File.Delete(path);
                 using (FileStream fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite,
                            FileShare.ReadWrite | FileShare.Delete))
@@ -94,7 +100,6 @@ namespace Hypernex.Game
                         Avatar = new AvatarCreator(this, a);
                         foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
                             Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
-                        // TODO: Resize based on avatar size
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
                                 new Vector3(0, transform.localScale.y + 0.9f, 0),
@@ -111,6 +116,7 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
                 return;
             }
+
             if (result.result.Meta.Id == AvatarId)
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
@@ -124,7 +130,6 @@ namespace Hypernex.Game
                     avatarBuild = b;
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                     {
-                        // TODO: Wait for token
                         if (SocketManager.SharedAvatarTokens.Count(x =>
                                 x.avatarId == AvatarId && x.fromUserId == UserId) > 0)
                         {
@@ -138,6 +143,7 @@ namespace Hypernex.Game
                             return;
                         }
                     }
+
                     if (avatarFileToken == null)
                         APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId);
                     else
@@ -166,7 +172,7 @@ namespace Hypernex.Game
 
         public void Update()
         {
-            //float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
+            float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
             if (instance != null && User == null)
             {
                 foreach (User instanceConnectedUser in instance.ConnectedUsers)
@@ -185,13 +191,56 @@ namespace Hypernex.Game
                     nameplateTemplate.transform.position = newPos;
                 }
             }
+            foreach (string key in new List<string>(avatarUpdates.Keys))
+                UpdatePlayerObjectUpdate(key, interpolationRatio);
+            elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 
-        private Dictionary<string, PlayerObjectUpdate> avatarUpdates = new();
+        private Dictionary<string, PlayerObjectUpdateHolder> avatarUpdates = new();
+
+        private void UpdatePlayerObjectUpdate(string key, float interpolationRatio)
+        {
+            Vector3 position = NetworkConversionTools.float3ToVector3(avatarUpdates[key].Object.Object.Position);
+            Quaternion rotation = Quaternion.Euler(new Vector3(avatarUpdates[key].Object.Object.Rotation.x,
+                avatarUpdates[key].Object.Object.Rotation.y, avatarUpdates[key].Object.Object.Rotation.z));
+            if (string.IsNullOrEmpty(avatarUpdates[key].Object.Object.ObjectLocation))
+            {
+                avatarUpdates[key].ExpectedPosition =
+                    Vector3.Lerp(avatarUpdates[key].t.position, position, interpolationRatio);
+                avatarUpdates[key].ExpectedRotation =
+                    Quaternion.Lerp(avatarUpdates[key].t.rotation, rotation, interpolationRatio);
+            }
+            else
+            {
+                avatarUpdates[key].ExpectedPosition =
+                    Vector3.Lerp(avatarUpdates[key].t.localPosition, position, interpolationRatio);
+                avatarUpdates[key].ExpectedRotation =
+                    Quaternion.Lerp(avatarUpdates[key].t.localRotation, rotation, interpolationRatio);
+            }
+            avatarUpdates[key].ExpectedSize =
+                Vector3.Lerp(avatarUpdates[key].t.localScale,
+                    NetworkConversionTools.float3ToVector3(avatarUpdates[key].Object.Object.Size), interpolationRatio);
+        }
+
+        private void UpdatePlayerUpdate(string path, PlayerObjectUpdate playerObjectUpdate, Transform p = null)
+        {
+            if (!avatarUpdates.ContainsKey(path))
+            {
+                if (p == null)
+                    return;
+                avatarUpdates.Add(path, new PlayerObjectUpdateHolder
+                {
+                    t = p,
+                    Object = playerObjectUpdate
+                });
+            }
+            avatarUpdates[path].Object = playerObjectUpdate;
+        }
 
         private void LateUpdate()
         {
-            float interpolationRatio = Time.frameCount / Time.time;
+            /*float interpolationRatio = Time.frameCount / Time.time;
+            interpolationRatio *= interpolationAmount;
             foreach (KeyValuePair<string,PlayerObjectUpdate> playerObjectUpdate in avatarUpdates)
             {
                 Transform target = transform.Find(playerObjectUpdate.Key);
@@ -205,7 +254,7 @@ namespace Hypernex.Game
                     {
                         /*target.position = position;
                         target.rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));*/
+                            networkedObject.Rotation.z));#1#
                         target.position = Vector3.Lerp(target.position, position, interpolationRatio);
                         target.rotation = Quaternion.Lerp(target.rotation, Quaternion.Euler(new Vector3(
                             networkedObject.Rotation.x, networkedObject.Rotation.y,
@@ -215,7 +264,7 @@ namespace Hypernex.Game
                     {
                         /*target.localPosition = position;
                         target.localRotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));*/
+                            networkedObject.Rotation.z));#1#
                         target.localPosition = Vector3.Lerp(target.localPosition, position, interpolationRatio);
                         target.localRotation = Quaternion.Lerp(target.localRotation, Quaternion.Euler(new Vector3(
                             networkedObject.Rotation.x, networkedObject.Rotation.y,
@@ -225,7 +274,25 @@ namespace Hypernex.Game
                     target.localScale = Vector3.Lerp(target.localScale,
                         NetworkConversionTools.float3ToVector3(networkedObject.Size), interpolationRatio);
                 }
+            }*/
+            //float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
+            foreach (string key in new List<string>(avatarUpdates.Keys))
+            {
+                PlayerObjectUpdateHolder playerObjectUpdateHolder = avatarUpdates[key];
+                //UpdatePlayerObjectUpdate(key, interpolationRatio);
+                if (string.IsNullOrEmpty(playerObjectUpdateHolder.Object.Object.ObjectLocation))
+                {
+                    playerObjectUpdateHolder.t.position = playerObjectUpdateHolder.ExpectedPosition;
+                    playerObjectUpdateHolder.t.rotation = playerObjectUpdateHolder.ExpectedRotation;
+                }
+                else
+                {
+                    playerObjectUpdateHolder.t.localPosition = playerObjectUpdateHolder.ExpectedPosition;
+                    playerObjectUpdateHolder.t.localRotation = playerObjectUpdateHolder.ExpectedRotation;
+                }
+                playerObjectUpdateHolder.t.localScale = playerObjectUpdateHolder.ExpectedSize;
             }
+            //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 
         public void Init(string userid, GameInstance gameInstance)
@@ -304,13 +371,26 @@ namespace Hypernex.Game
 
         public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
-            // TODO: Double Lerp
             if (string.IsNullOrEmpty(playerObjectUpdate.Object.ObjectLocation))
                 playerObjectUpdate.Object.ObjectLocation = "";
             if (!avatarUpdates.ContainsKey(playerObjectUpdate.Object.ObjectLocation))
-                avatarUpdates.Add(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate);
+            {
+                Transform p = transform.Find(playerObjectUpdate.Object.ObjectLocation);
+                if (p == null)
+                    return;
+                UpdatePlayerUpdate(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate, p);
+            }
             else
-                avatarUpdates[playerObjectUpdate.Object.ObjectLocation] = playerObjectUpdate;
+                UpdatePlayerUpdate(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate);
+        }
+        
+        private class PlayerObjectUpdateHolder
+        {
+            public Transform t;
+            public PlayerObjectUpdate Object;
+            public Vector3 ExpectedPosition;
+            public Quaternion ExpectedRotation;
+            public Vector3 ExpectedSize;
         }
     }
 }
