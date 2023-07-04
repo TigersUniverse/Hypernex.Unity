@@ -26,7 +26,7 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            Pfp.texture = ImageTools.BytesToTexture2D(bytes);
+                            Pfp.texture = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes);
                     });
             else
                 Pfp.texture = DefaultPfp;

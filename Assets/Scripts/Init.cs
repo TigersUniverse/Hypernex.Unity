@@ -59,6 +59,12 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
+        kcp2k.Log.Info = s => unityLogger.Log(s);
+        kcp2k.Log.Warning = s => unityLogger.Warn(s);
+        kcp2k.Log.Error = s => unityLogger.Error(s);
+        Telepathy.Log.Info = s => unityLogger.Log(s);
+        Telepathy.Log.Warning = s => unityLogger.Warn(s);
+        Telepathy.Log.Error = s => unityLogger.Error(s);
         Application.backgroundLoadingPriority = ThreadPriority.Low;
         string[] args = Environment.GetCommandLineArgs();
         if(ForceVR || args.Contains("-xr"))

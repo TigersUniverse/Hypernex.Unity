@@ -14,7 +14,7 @@ namespace Nexport.Transports.Telepathy
         
         public override void RunTask()
         {
-            _client = new global::Telepathy.Client(4096);
+            _client = new global::Telepathy.Client(6144000);
             _client.OnConnected += OnConnect;
             _client.OnData += bytes =>
             {

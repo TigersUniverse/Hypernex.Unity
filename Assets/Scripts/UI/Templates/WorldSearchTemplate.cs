@@ -83,7 +83,7 @@ namespace Hypernex.UI.Templates
                         gifRenderer.LoadGif(bytes);
                     }
                     else
-                        Banner.texture = ImageTools.BytesToTexture2D(bytes);
+                        Banner.texture = ImageTools.BytesToTexture2D(worldMeta.ThumbnailURL, bytes);
                 });
             else
                 Banner.texture = DefaultWorldBanner;

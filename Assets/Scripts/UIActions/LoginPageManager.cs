@@ -28,6 +28,20 @@ namespace Hypernex.UIActions
         public WorldTemplate WorldTemplate;
 
         private bool hasEnabledOnce;
+
+        public void RefreshFriends()
+        {
+            if (APIPlayer.APIUser == null)
+                return;
+            OnLogin(APIPlayer.APIUser);
+        }
+
+        public void RefreshInstances()
+        {
+            if (APIPlayer.APIObject == null)
+                return;
+            OnSocket();
+        }
         
         void OnEnable()
         {
@@ -88,6 +102,8 @@ namespace Hypernex.UIActions
         void OnLogin(User user)
         {
             FriendsLabel.text = "Friends (" + user.Friends.Count + ")";
+            FriendsContainer.Clear();
+            FriendRequestsContainer.Clear();
             foreach (string userFriendId in user.Friends)
             {
                 APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>

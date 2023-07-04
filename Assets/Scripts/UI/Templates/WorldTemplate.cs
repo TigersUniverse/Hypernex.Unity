@@ -105,7 +105,7 @@ namespace Hypernex.UI.Templates
                         }
                         else
                         {
-                            Icons.Add((ImageTools.BytesToTexture2D(bytes), null));
+                            Icons.Add((ImageTools.BytesToTexture2D(iconURL, bytes), null));
                             if (x > 0)
                                 return;
                             RenderIcon();
@@ -125,7 +125,7 @@ namespace Hypernex.UI.Templates
                     }
                     else
                     {
-                        Icons.Add((ImageTools.BytesToTexture2D(bytes), null));
+                        Icons.Add((ImageTools.BytesToTexture2D(worldMeta.ThumbnailURL, bytes), null));
                         RenderIcon();
                     }
                 });

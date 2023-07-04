@@ -309,6 +309,8 @@ namespace kcp2k
             {
                 int size = len > (int)mss ? (int)mss : len;
                 Segment seg = SegmentNew();
+                while (seg == null)
+                    seg = SegmentNew();
 
                 if (len > 0)
                 {
@@ -818,6 +820,7 @@ namespace kcp2k
             {
                 if (snd_queue.Count == 0) break;
 
+                // WARNING: This segment was null and it crashed the Unity Editor. May be unstable...
                 Segment newseg = snd_queue.Dequeue();
 
                 newseg.conv = conv;

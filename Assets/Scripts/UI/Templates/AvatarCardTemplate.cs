@@ -34,7 +34,7 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            BannerImage.texture = ImageTools.BytesToTexture2D(bytes);
+                            BannerImage.texture = ImageTools.BytesToTexture2D(avatarMeta.ImageURL, bytes);
                     });
             else
                 BannerImage.texture = DefaultBanner;

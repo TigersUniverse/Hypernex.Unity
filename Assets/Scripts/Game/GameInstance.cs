@@ -36,6 +36,12 @@ namespace Hypernex.Game
             // main thread
             SocketManager.OnInstanceJoined += (instance, meta) =>
             {
+                if (FocusedInstance != null && FocusedInstance.gameServerId == instance.gameServerId &&
+                    FocusedInstance.instanceId == instance.instanceId)
+                {
+                    // Reconnect Socket
+                    return;
+                }
                 GameInstance gameInstance = new GameInstance(instance, meta);
                 gameInstance.Load();
             };
@@ -67,6 +73,7 @@ namespace Hypernex.Game
         internal Scene loadedScene;
         internal bool authed;
         private List<Sandbox> sandboxes = new ();
+        private string hostId;
         internal bool isHost { get; private set; }
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
@@ -78,46 +85,13 @@ namespace Hypernex.Game
             instanceId = joinInstance.instanceId;
             userIdToken = joinInstance.tempUserToken;
             this.worldMeta = worldMeta;
+            hostId = joinInstance.instanceCreatorId;
+            isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
             string[] s = joinInstance.Uri.Split(':');
             string ip = s[0];
             int port = Convert.ToInt32(s[1]);
             InstanceProtocol instanceProtocol = joinInstance.InstanceProtocol;
-            ClientSettings clientSettings = new ClientSettings(ip, port, true);
-            client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
-                clientSettings);
-            client.OnConnect += () =>
-            {
-                QuickInvoke.InvokeActionOnMainThread(OnConnect);
-                if(!isHost)
-                    APIPlayer.APIObject.GetUser(r => OnUser(r, joinInstance.instanceCreatorId),
-                        joinInstance.instanceCreatorId, isUserId: true);
-            };
-            client.OnUserLoaded += user => QuickInvoke.InvokeActionOnMainThread(OnUserLoaded, user);
-            client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
-            client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
-            client.OnClientDisconnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientDisconnect, user);
-            client.OnDisconnect += () =>
-            {
-                if (isDisposed)
-                    return;
-                // Verify they actually leave the socket instance too
-                SocketManager.LeaveInstance(gameServerId, instanceId);
-                QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
-            };
-            OnUserLoaded += usersBeforeMe.Add;
-            OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user =>
-            {
-                usersBeforeMe.Remove(user);
-                if (usersBeforeMe.Count <= 0 && !ConnectedUsers.Contains(host))
-                    isHost = true;
-                PlayerManagement.PlayerLeave(this, user);
-            };
-            OnDisconnect += Dispose;
-            PlayerManagement.CreateGameInstance(this);
-            isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
-            if (isHost)
-                host = APIPlayer.APIUser;
+            SetupClient(ip, port, instanceProtocol);
         }
 
         private GameInstance(InstanceOpened instanceOpened, WorldMeta worldMeta)
@@ -127,14 +101,24 @@ namespace Hypernex.Game
             instanceId = instanceOpened.instanceId;
             userIdToken = instanceOpened.tempUserToken;
             this.worldMeta = worldMeta;
+            hostId = APIPlayer.APIUser.Id;
+            isHost = true;
             string[] s = instanceOpened.Uri.Split(':');
             string ip = s[0];
             int port = Convert.ToInt32(s[1]);
             InstanceProtocol instanceProtocol = instanceOpened.InstanceProtocol;
+            SetupClient(ip, port, instanceProtocol);
+        }
+
+        private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
+        {
             ClientSettings clientSettings = new ClientSettings(ip, port, true);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
-            client.OnConnect += () => QuickInvoke.InvokeActionOnMainThread(OnConnect);
+            client.OnConnect += () =>
+            {
+                QuickInvoke.InvokeActionOnMainThread(OnConnect);
+            };
             client.OnUserLoaded += user => QuickInvoke.InvokeActionOnMainThread(OnUserLoaded, user);
             client.OnClientConnect += user => QuickInvoke.InvokeActionOnMainThread(OnClientConnect, user);
             client.OnMessage += (message, meta) => QuickInvoke.InvokeActionOnMainThread(OnMessage, message, meta);
@@ -147,17 +131,40 @@ namespace Hypernex.Game
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
+            OnUserLoaded += user =>
+            {
+                if (!isHost)
+                    usersBeforeMe.Add(user);
+            };
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
+            OnClientDisconnect += user =>
+            {
+                if (!isHost)
+                {
+                    usersBeforeMe.Remove(user);
+                    if (usersBeforeMe.Count <= 0 && !ConnectedUsers.Contains(host))
+                        isHost = true;
+                }
+                PlayerManagement.PlayerLeave(this, user);
+            };
             OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
-            host = APIPlayer.APIUser;
-            isHost = true;
+            if(isHost)
+                host = APIPlayer.APIUser;
+            APIPlayer.UserSocket.OnOpen += () =>
+            {
+                // Socket probably reconnected, rejoin instance
+                SocketManager.JoinInstance(new SafeInstance
+                {
+                    GameServerId = gameServerId,
+                    InstanceId = instanceId
+                });
+            };
         }
 
         private void OnUser(CallbackResult<GetUserResult> r, string hostId)
         {
-            if (GameInstance.FocusedInstance != this)
+            if (FocusedInstance != this)
                 return;
             if (!r.success)
             {
@@ -177,6 +184,8 @@ namespace Hypernex.Game
                 client.Open();
             if(isHost)
                 DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
+            else
+                APIPlayer.APIObject.GetUser(r => OnUser(r, hostId), hostId, isUserId: true);
         }
         public void Close()
         {

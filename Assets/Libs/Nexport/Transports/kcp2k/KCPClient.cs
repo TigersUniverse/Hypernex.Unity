@@ -39,7 +39,9 @@ namespace Nexport.Transports.kcp2k
                 SendWindowSize = 8192,
                 ReceiveWindowSize = 8192,
                 Interval = 10,
-                NoDelay = true
+                NoDelay = true,
+                CongestionWindow = false,
+                MaxRetransmits = Kcp.DEADLINK * 2
             });
             _client.Connect(Settings.Ip, (ushort) Settings.Port);
         }

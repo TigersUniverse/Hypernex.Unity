@@ -14,7 +14,7 @@ namespace Hypernex.Tools
     {
         internal static string DownloadsPath;
         private static readonly Dictionary<string, byte[]> Cache = new();
-        private static readonly List<DownloadMeta> Queue = new();
+        private static readonly Queue<DownloadMeta> Queue = new();
         private static readonly Dictionary<DownloadMeta, Thread> RunningThreads = new();
 
         public static void DownloadBytes(string url, Action<byte[]> OnDownload, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool skipCache = false)
@@ -36,7 +36,7 @@ namespace Hypernex.Tools
             };
             if (DownloadProgress != null)
                 meta.progress = DownloadProgress;
-            Queue.Add(meta);
+            Queue.Enqueue(meta);
             Logger.CurrentLogger.Log("Added " + url + " to download queue!");
             Check();
         }
@@ -80,12 +80,10 @@ namespace Hypernex.Tools
                     },
                     skipCache = true
                 };
-                Queue.Add(meta);
+                Queue.Enqueue(meta);
                 Logger.CurrentLogger.Log("Added " + url + " to download queue!");
                 Check();
             }
-            
-            
         }
 
         public static void ClearCache() => Cache.Clear();
@@ -94,33 +92,28 @@ namespace Hypernex.Tools
         {
             if (Queue.Count <= 0 || RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
                 return;
-            foreach (DownloadMeta downloadMeta in new List<DownloadMeta>(Queue))
+            if(RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
+                return;
+            DownloadMeta downloadMeta = Queue.Dequeue();
+            Logger.CurrentLogger.Log("Beginning Download for " + downloadMeta.url);
+            Thread t = new Thread(async () =>
             {
-                if(RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
-                    return;
-                Logger.CurrentLogger.Log("Beginning Download for " + downloadMeta.url);
-                Queue.Remove(downloadMeta);
-                Thread t = new Thread(() =>
+                using WebClient wc = new WebClient();
+                if(downloadMeta.progress != null)
+                    wc.DownloadProgressChanged += (sender, args) =>
+                        QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
+                wc.DownloadDataCompleted += (sender, args) =>
                 {
-                    using WebClient wc = new WebClient();
-                    if(downloadMeta.progress != null)
-                        wc.DownloadProgressChanged += (sender, args) =>
-                            QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
-                    wc.DownloadDataCompleted += (sender, args) =>
-                    {
-                        Logger.CurrentLogger.Log("Finished download for " + downloadMeta.url);
-                        if(!downloadMeta.skipCache)
-                            AttemptAddToCache(downloadMeta.url, args.Result);
-                        QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, args.Result);
-                        Check();
-                        RunningThreads.Remove(downloadMeta);
-                    };
-                    wc.DownloadDataAsync(new Uri(downloadMeta.url));
-                
-                });
-                RunningThreads.Add(downloadMeta, t);
-                t.Start();
-            }
+                    Logger.CurrentLogger.Log("Finished download for " + downloadMeta.url);
+                    if(!downloadMeta.skipCache)
+                        AttemptAddToCache(downloadMeta.url, args.Result);
+                    QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, args.Result);
+                    RunningThreads.Remove(downloadMeta);
+                };
+                await wc.DownloadDataTaskAsync(new Uri(downloadMeta.url));
+            });
+            RunningThreads.Add(downloadMeta, t);
+            t.Start();
         }
 
         private static void AttemptAddToCache(string url, byte[] data)

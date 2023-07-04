@@ -65,7 +65,7 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            Pfp.texture = ImageTools.BytesToTexture2D(bytes);
+                            Pfp.texture = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes);
                     });
             else
                 Pfp.texture = DefaultPfp;
@@ -79,7 +79,7 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            Banner.texture = ImageTools.BytesToTexture2D(bytes);
+                            Banner.texture = ImageTools.BytesToTexture2D(user.Bio.BannerURL, bytes);
                     });
             else
                 Banner.texture = DefaultBanner;

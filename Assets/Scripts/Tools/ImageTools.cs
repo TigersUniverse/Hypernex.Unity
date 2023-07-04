@@ -1,14 +1,18 @@
-﻿using System.Drawing;
-using System.IO;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hypernex.Tools
 {
     public static class ImageTools
     {
-        public static Texture2D BytesToTexture2D(byte[] bytes)
+        private static Dictionary<string, Texture2D> CachedImages = new();
+
+        public static Texture2D BytesToTexture2D(string id, byte[] bytes, bool ignoreCache = false)
         {
-            Bitmap b = new Bitmap(new MemoryStream(bytes));
+            if (!ignoreCache && CachedImages.ContainsKey(id))
+                return CachedImages[id];
+            /*MemoryStream ms = new MemoryStream(bytes);
+            Bitmap b = new Bitmap(ms);
             Texture2D t = new Texture2D(b.Width, b.Height);
             for (int x = 0; x < b.Width; x++)
             {
@@ -21,7 +25,12 @@ namespace Hypernex.Tools
                     t.SetPixel(x, b.Height - y, unity_pixelColor);
                 }
             }
+            b.Dispose();
+            ms.Dispose();*/
+            Texture2D t = new Texture2D(1,1);
+            t.LoadImage(bytes);
             t.Apply();
+            CachedImages.Add(id, t);
             return t;
         }
     }

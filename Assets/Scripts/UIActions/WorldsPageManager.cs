@@ -94,10 +94,7 @@ namespace Hypernex.UIActions
                     isSearching = false;
                     if (!result.success) return;
                     foreach (string worldIds in result.result.Candidates)
-                    {
-                        Logger.CurrentLogger.Log("Got World Meta of " + worldIds);
                         WorldTemplate.GetWorldMeta(worldIds, CreateWorldSearchTemplate);
-                    }
                 }));
 
         private void Start()
