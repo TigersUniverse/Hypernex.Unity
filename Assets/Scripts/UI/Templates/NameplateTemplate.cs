@@ -18,6 +18,7 @@ namespace Hypernex.UI.Templates
         public Texture2D DefaultBanner;
 
         public Camera MainCamera;
+        public Transform FollowTransform;
         
         private TMP_Text pronounText;
 
@@ -89,6 +90,8 @@ namespace Hypernex.UI.Templates
         {
             transform.rotation =
                 Quaternion.LookRotation((transform.position - MainCamera.transform.position).normalized);
+            if(FollowTransform != null)
+                transform.position = FollowTransform.position;
         }
     }
 }

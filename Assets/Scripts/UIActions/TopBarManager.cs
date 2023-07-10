@@ -9,7 +9,7 @@ namespace Hypernex.UIActions
 {
     public class TopBarManager : MonoBehaviour
     {
-        public GameObject LoggedInObject;
+        public List<GameObject> LoggedInObjects;
         public TMP_Text WelcomeText;
         public Button SignoutButton;
 
@@ -24,9 +24,9 @@ namespace Hypernex.UIActions
             {
                 int i = new System.Random().Next(greetings.Count);
                 WelcomeText.text = greetings[i] + ", " + user.Username;
-                LoggedInObject.SetActive(true);
+                LoggedInObjects.ForEach(x => x.SetActive(true));
             };
-            APIPlayer.OnLogout += () => LoggedInObject.SetActive(false);
+            APIPlayer.OnLogout += () => LoggedInObjects.ForEach(x => x.SetActive(false));
             SignoutButton.onClick.AddListener(() =>
             {
                 if (!isLoggingOut)

@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Networking;
+using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
@@ -21,7 +22,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.UI;
-using Logger = Hypernex.CCK.Logger;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Game
@@ -61,6 +61,35 @@ namespace Hypernex.Game
 
         public bool IsOpen => client?.IsOpen ?? false;
         public List<User> ConnectedUsers => client.ConnectedUsers;
+        
+        public bool CanInvite
+        {
+            get
+            {
+                if (instanceCreatorId == APIPlayer.APIUser.Id)
+                    return true;
+                switch (Publicity)
+                {
+                    case InstancePublicity.Anyone:
+                        return true;
+                    case InstancePublicity.Acquaintances:
+                    case InstancePublicity.Friends:
+                    case InstancePublicity.OpenRequest:
+                        if (host == null)
+                            return false;
+                        return host.Friends.Contains(APIPlayer.APIUser.Id);
+                    case InstancePublicity.ModeratorRequest:
+                        return Moderators.Contains(APIPlayer.APIUser.Id);
+                }
+                return false;
+            }
+        }
+
+        public bool IsModerator => Moderators.Contains(APIPlayer.APIUser.Id);
+
+        public List<string> Moderators = new();
+        public List<string> BannedUsers = new();
+        public List<string> SocketConnectedUsers = new();
 
         public string gameServerId;
         public string instanceId;
@@ -68,12 +97,15 @@ namespace Hypernex.Game
         public WorldMeta worldMeta;
         public World World;
         public User host;
+        public Texture2D Thumbnail;
+        public InstancePublicity Publicity;
 
         private HypernexInstanceClient client;
         internal Scene loadedScene;
         internal bool authed;
         private List<Sandbox> sandboxes = new ();
         private string hostId;
+        public readonly string instanceCreatorId;
         internal bool isHost { get; private set; }
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
@@ -87,6 +119,10 @@ namespace Hypernex.Game
             this.worldMeta = worldMeta;
             hostId = joinInstance.instanceCreatorId;
             isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
+            instanceCreatorId = joinInstance.instanceCreatorId;
+            Publicity = joinInstance.InstancePublicity;
+            Moderators = joinInstance.Moderators;
+            BannedUsers = joinInstance.BannedUsers;
             string[] s = joinInstance.Uri.Split(':');
             string ip = s[0];
             int port = Convert.ToInt32(s[1]);
@@ -103,6 +139,10 @@ namespace Hypernex.Game
             this.worldMeta = worldMeta;
             hostId = APIPlayer.APIUser.Id;
             isHost = true;
+            instanceCreatorId = APIPlayer.APIUser.Id;
+            Publicity = instanceOpened.InstancePublicity;
+            Moderators = instanceOpened.Moderators;
+            BannedUsers = instanceOpened.BannedUsers;
             string[] s = instanceOpened.Uri.Split(':');
             string ip = s[0];
             int port = Convert.ToInt32(s[1]);
@@ -112,7 +152,7 @@ namespace Hypernex.Game
 
         private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
         {
-            ClientSettings clientSettings = new ClientSettings(ip, port, true);
+            ClientSettings clientSettings = new ClientSettings(ip, port, false, 1);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
             client.OnConnect += () =>
@@ -160,6 +200,7 @@ namespace Hypernex.Game
                     InstanceId = instanceId
                 });
             };
+            APIPlayer.OnLogout += Dispose;
         }
 
         private void OnUser(CallbackResult<GetUserResult> r, string hostId)
@@ -212,10 +253,123 @@ namespace Hypernex.Game
                 client.SendMessage(message, messageChannel);
         }
 
+        public void InviteUser(User user)
+        {
+            if (!CanInvite)
+                return;
+            SocketManager.InviteUser(this, user);
+        }
+
+        public void WarnUser(User user, string message)
+        {
+            if(!IsModerator)
+                return;
+            WarnPlayer warnPlayer = new WarnPlayer
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id,
+                message = message
+            };
+            SendMessage(Msg.Serialize(warnPlayer));
+        }
+
+        public void KickUser(User user, string message)
+        {
+            if (!IsModerator)
+                return;
+            KickPlayer kickPlayer = new KickPlayer
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id,
+                message = message
+            };
+            SendMessage(Msg.Serialize(kickPlayer));
+        }
+
+        public void BanUser(User user, string message)
+        {
+            if (!IsModerator)
+                return;
+            BanPlayer banPlayer = new BanPlayer
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id,
+                message = message
+            };
+            SendMessage(Msg.Serialize(banPlayer));
+        }
+
+        public void UnbanUser(User user)
+        {
+            if (!IsModerator)
+                return;
+            UnbanPlayer unbanPlayer = new UnbanPlayer
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id
+            };
+            SendMessage(Msg.Serialize(unbanPlayer));
+        }
+
+        public void AddModerator(User user)
+        {
+            if (!IsModerator)
+                return;
+            AddModerator addModerator = new AddModerator
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id
+            };
+            SendMessage(Msg.Serialize(addModerator));
+        }
+        
+        public void RemoveModerator(User user)
+        {
+            if (!IsModerator)
+                return;
+            RemoveModerator removeModerator = new RemoveModerator
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = userIdToken
+                },
+                targetUserId = user.Id
+            };
+            SendMessage(Msg.Serialize(removeModerator));
+        }
+
         internal void __SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
         {
             if(IsOpen)
                 client.SendMessage(message, messageChannel);
+        }
+
+        internal void UpdateInstanceMeta(UpdatedInstance updatedInstance)
+        {
+            Moderators = new List<string>(updatedInstance.instanceMeta.Moderators);
+            BannedUsers = new List<string>(updatedInstance.instanceMeta.BannedUsers);
+            SocketConnectedUsers = new List<string>(updatedInstance.instanceMeta.ConnectedUsers);
         }
 
         private void LoadScene(bool open, string s) => CoroutineRunner.Instance.Run(
@@ -299,6 +453,15 @@ namespace Hypernex.Game
                 {
                     loadedScene = currentScene;
                     FocusedInstance = this;
+                    if(string.IsNullOrEmpty(worldMeta.ThumbnailURL))
+                        CurrentInstanceBanner.Instance.Render(this, Array.Empty<byte>());
+                    else
+                        DownloadTools.DownloadBytes(worldMeta.ThumbnailURL,
+                            bytes =>
+                            {
+                                Thumbnail = ImageTools.BytesToTexture2D(worldMeta.ThumbnailURL, bytes);
+                                CurrentInstanceBanner.Instance.Render(this, bytes);
+                            });
                     if (open)
                         Open();
                     foreach (NexboxScript worldLocalScript in World.LocalScripts)

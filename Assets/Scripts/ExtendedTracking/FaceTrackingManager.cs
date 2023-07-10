@@ -59,6 +59,9 @@ namespace Hypernex.ExtendedTracking
                 callback?.Invoke();
             });
 
+        public static T GetSettings<T>(string key) => settings.ReadSettingAsync<T>(key).Result;
+        public static void SetSettings<T>(string key, T value) => settings.SaveSettingAsync(key, value);
+
         public static Dictionary<FaceExpressions, float> GetFaceWeights()
         {
             Dictionary<FaceExpressions, float> weights = new();

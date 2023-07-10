@@ -20,6 +20,8 @@ namespace Hypernex.Configuration.ConfigMeta
 
         public int EmojiType;
 
+        public Dictionary<string, float> UserVolumes = new();
+
         public void Clone(ConfigUser c)
         {
             Server = c.Server;
@@ -33,6 +35,7 @@ namespace Hypernex.Configuration.ConfigMeta
             UseFacialTracking = c.UseFacialTracking;
             FacialTrackingSettings = c.FacialTrackingSettings;
             EmojiType = c.EmojiType;
+            UserVolumes = c.UserVolumes;
         }
     }
 }

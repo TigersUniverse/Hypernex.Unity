@@ -84,6 +84,85 @@ namespace Hypernex.UI
                         colorMultiplier = 1
                     };
                 }
+                Slider slider = GetComponent<Slider>();
+                if (slider != null)
+                {
+                    slider.colors = new ColorBlock
+                    {
+                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
+                            ? theme.PrimaryColor
+                            : theme.SecondaryColor,
+                        colorMultiplier = 1
+                    };
+                }
+            }
+            else if (ThemeType is UIThemeObjectType.PrimaryColorVector)
+            {
+                Image img = GetComponent<Image>();
+                if (img != null)
+                    img.color = theme.PrimaryVectorColor;
+                RawImage rawimg = GetComponent<RawImage>();
+                if(rawimg != null)
+                    rawimg.color = theme.PrimaryVectorColor;
+                TMP_Dropdown dropdown = GetComponent<TMP_Dropdown>();
+                if (dropdown != null)
+                {
+                    dropdown.colors = new ColorBlock
+                    {
+                        normalColor = theme.PrimaryVectorColor,
+                        selectedColor = theme.PrimaryVectorColor,
+                        highlightedColor = theme.PrimaryVectorColor,
+                        pressedColor = theme.PrimaryVectorColor,
+                        colorMultiplier = 1
+                    };
+                    dropdown.itemText.color = theme.PrimaryLabelColor;
+                    dropdown.captionText.color = theme.PrimaryLabelColor;
+                }
+                Toggle toggle = GetComponent<Toggle>();
+                if (toggle != null)
+                {
+                    toggle.colors = new ColorBlock
+                    {
+                        normalColor = theme.PrimaryVectorColor,
+                        selectedColor = theme.PrimaryVectorColor,
+                        highlightedColor = theme.PrimaryVectorColor,
+                        pressedColor = theme.PrimaryVectorColor,
+                        colorMultiplier = 1
+                    };
+                }
+                Scrollbar scrollbar = GetComponent<Scrollbar>();
+                if (scrollbar != null)
+                {
+                    scrollbar.colors = new ColorBlock
+                    {
+                        normalColor = theme.PrimaryVectorColor,
+                        selectedColor = theme.PrimaryVectorColor,
+                        highlightedColor = theme.PrimaryVectorColor,
+                        pressedColor = theme.PrimaryVectorColor,
+                        colorMultiplier = 1
+                    };
+                }
+                Slider slider = GetComponent<Slider>();
+                if (slider != null)
+                {
+                    slider.colors = new ColorBlock
+                    {
+                        normalColor = theme.PrimaryVectorColor,
+                        selectedColor = theme.PrimaryVectorColor,
+                        highlightedColor = theme.PrimaryVectorColor,
+                        pressedColor = theme.PrimaryVectorColor,
+                        colorMultiplier = 1
+                    };
+                }
             }
             else if (ThemeType is UIThemeObjectType.InverseVector)
             {
@@ -180,6 +259,7 @@ namespace Hypernex.UI
         ButtonText,
         InverseVector,
         PrimaryInput,
-        SecondaryInput
+        SecondaryInput,
+        PrimaryColorVector
     }
 }

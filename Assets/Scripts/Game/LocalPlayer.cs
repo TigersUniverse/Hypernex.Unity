@@ -24,6 +24,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
+using UnityEngine.XR.Interaction.Toolkit;
 using CommonUsages = UnityEngine.XR.CommonUsages;
 using InputDevice = UnityEngine.XR.InputDevice;
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
@@ -88,6 +89,7 @@ namespace Hypernex.Game
         public Transform RightHandVRIKTarget;
         public PlayerInput vrPlayerInput;
         public List<string> LastPlayerAssignedTags = new();
+        public List<XRInteractorLineVisual> XRRays = new ();
         public Dictionary<string, object> LastExtraneousObjects = new();
         public VRInputListener VRInputListener;
         public Vector3 LowestPoint;
@@ -138,7 +140,12 @@ namespace Hypernex.Game
         }
         
         // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
-        public void RefreshAvatar() => OnAvatarDownload(avatarFile, avatarMeta);
+        public void RefreshAvatar()
+        {
+            transform.localScale = new Vector3(1, 1, 1);
+            Dashboard.PositionDashboard(this);
+            OnAvatarDownload(avatarFile, avatarMeta);
+        }
 
         public void Respawn(Scene? s = null)
         {
@@ -192,13 +199,14 @@ namespace Hypernex.Game
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = gameInstance.userIdToken
                 },
-                AvatarId = avatarMeta.Id,
                 IsPlayerVR = IsVR,
                 IsSpeaking = MicrophoneEnabled,
                 PlayerAssignedTags = new List<string>(),
                 ExtraneousData = new Dictionary<string, object>(),
                 WeightedObjects = new Dictionary<string, float>()
             };
+            if (avatarMeta != null)
+                playerUpdate.AvatarId = avatarMeta.Id;
             if(avatar != null)
                 foreach (var animatorWeight in avatar.GetAnimatorWeights())
                     if(!playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key))
@@ -308,7 +316,7 @@ namespace Hypernex.Game
                 Bytes = pcmBytes,
                 EncodeLength = pcmLength
             };
-            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice), MessageChannel.Unreliable);
         }
 
         private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
@@ -474,7 +482,7 @@ namespace Hypernex.Game
                         mutex.ReleaseMutex();
                     }
                 }
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(0.075f);
             }
         }
 
@@ -672,6 +680,8 @@ namespace Hypernex.Game
                 trackedPoseDriver.enabled = vr;
             LeftHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
             RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
+            foreach (XRInteractorLineVisual lineVisual in XRRays)
+                lineVisual.enabled = vr;
             if (vr)
             {
                 trackers.Clear();

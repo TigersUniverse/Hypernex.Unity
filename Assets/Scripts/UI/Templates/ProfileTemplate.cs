@@ -1,4 +1,6 @@
 ﻿using System;
+using Hypernex.Configuration;
+using Hypernex.Game;
 using Hypernex.Player;
 using HypernexSharp.APIObjects;
 using TMPro;
@@ -12,6 +14,7 @@ namespace Hypernex.UI.Templates
     public class ProfileTemplate : MonoBehaviour
     {
         public LoginPageTopBarButton ProfilePage;
+        public MessageOverlayTemplate MessageOverlayTemplate;
     
         public RawImage Banner;
         public RawImage Pfp;
@@ -28,8 +31,17 @@ namespace Hypernex.UI.Templates
         public Button UnblockButton;
         public Button FollowButton;
         public Button UnfollowButton;
+        public Button InviteButton;
+        public Button WarnButton;
+        public Button KickButton;
+        public Button BanButton;
+        public Button UnbanButton;
+        public Button AddModeratorButton;
+        public Button RemoveModeratorButton;
+        public Slider VolumeSlider;
 
         private TMP_Text pronounText;
+        private User lastUser;
 
         private void SetButtonVisibility(User UserBeingViewed)
         {
@@ -51,6 +63,36 @@ namespace Hypernex.UI.Templates
                 UnfollowButton.gameObject.SetActive(true);
             else
                 FollowButton.gameObject.SetActive(true);
+            if (GameInstance.FocusedInstance != null)
+            {
+                InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite);
+                WarnButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
+                KickButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
+                BanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                               !GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
+                UnbanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                                 GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
+                AddModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                                        !GameInstance.FocusedInstance.Moderators.Contains(
+                                                            UserBeingViewed.Id));
+                RemoveModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.instanceCreatorId ==
+                    APIPlayer.APIUser.Id && GameInstance.FocusedInstance.Moderators.Contains(UserBeingViewed.Id));
+            }
+            else
+            {
+                InviteButton.gameObject.SetActive(false);
+                WarnButton.gameObject.SetActive(false);
+                KickButton.gameObject.SetActive(false);
+                BanButton.gameObject.SetActive(false);
+                UnbanButton.gameObject.SetActive(false);
+                AddModeratorButton.gameObject.SetActive(false);
+                RemoveModeratorButton.gameObject.SetActive(false);
+            }
+            if (ConfigManager.SelectedConfigUser != null &&
+                ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
+                VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
+            else
+                VolumeSlider.value = 1f;
         }
         
         private void RegisterButtonEvents(User UserBeingViewed)
@@ -121,6 +163,46 @@ namespace Hypernex.UI.Templates
                         APIPlayer.RefreshUser();
                     }, APIPlayer.APIUser, APIPlayer.CurrentToken, UserBeingViewed.Id);
             });
+            InviteButton.onClick.AddListener(() => GameInstance.FocusedInstance.InviteUser(lastUser));
+            WarnButton.onClick.AddListener(() => MessageOverlayTemplate.Render("Warn", lastUser.Username,
+                message => GameInstance.FocusedInstance.WarnUser(lastUser, message)));
+            KickButton.onClick.AddListener(() => MessageOverlayTemplate.Render("Kick", lastUser.Username,
+                message => GameInstance.FocusedInstance.KickUser(lastUser, message)));
+            BanButton.onClick.AddListener(() => MessageOverlayTemplate.Render("Ban", lastUser.Username, message =>
+            {
+                GameInstance.FocusedInstance.BanUser(lastUser, message);
+                UnbanButton.gameObject.SetActive(true);
+                BanButton.gameObject.SetActive(false);
+            }));
+            UnbanButton.onClick.AddListener(() =>
+            {
+                GameInstance.FocusedInstance.UnbanUser(lastUser);
+                BanButton.gameObject.SetActive(true);
+                UnbanButton.gameObject.SetActive(false);
+            });
+            AddModeratorButton.onClick.AddListener(() =>
+            {
+                GameInstance.FocusedInstance.AddModerator(lastUser);
+                RemoveModeratorButton.gameObject.SetActive(true);
+                AddModeratorButton.gameObject.SetActive(false);
+            });
+            RemoveModeratorButton.onClick.AddListener(() =>
+            {
+                GameInstance.FocusedInstance.RemoveModerator(lastUser);
+                AddModeratorButton.gameObject.SetActive(true);
+                RemoveModeratorButton.gameObject.SetActive(false);
+            });
+            VolumeSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                if (ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(lastUser.Id))
+                {
+                    ConfigManager.SelectedConfigUser.UserVolumes[lastUser.Id] = v;
+                    return;
+                }
+                ConfigManager.SelectedConfigUser.UserVolumes.Add(lastUser.Id, v);
+            });
         }
 
         private void DeregisterButtonEvents()
@@ -131,6 +213,14 @@ namespace Hypernex.UI.Templates
             UnblockButton.onClick.RemoveAllListeners();
             FollowButton.onClick.RemoveAllListeners();
             UnfollowButton.onClick.RemoveAllListeners();
+            InviteButton.onClick.RemoveAllListeners();
+            WarnButton.onClick.RemoveAllListeners();
+            KickButton.onClick.RemoveAllListeners();
+            BanButton.onClick.RemoveAllListeners();
+            UnbanButton.onClick.RemoveAllListeners();
+            AddModeratorButton.onClick.RemoveAllListeners();
+            RemoveModeratorButton.onClick.RemoveAllListeners();
+            VolumeSlider.onValueChanged.RemoveAllListeners();
         }
     
         public void Render(User user, bool skipShow = false)
@@ -203,6 +293,7 @@ namespace Hypernex.UI.Templates
                 Banner.texture = DefaultBanner;
             if(!skipShow)
                 ProfilePage.Show();
+            lastUser = user;
         }
 
         private void Start()

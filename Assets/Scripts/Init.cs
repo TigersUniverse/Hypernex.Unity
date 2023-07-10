@@ -14,6 +14,7 @@ using Hypernex.Tools;
 using Nexbox;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
 using Material = UnityEngine.Material;
@@ -28,6 +29,7 @@ public class Init : MonoBehaviour
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
     public Material OutlineMaterial;
     public List<TMP_SpriteAsset> EmojiSprites = new ();
+    public AudioMixerGroup VoiceGroup;
 
     private string GetPluginLocation() =>
 #if UNITY_EDITOR
@@ -59,10 +61,10 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
-        kcp2k.Log.Info = s => unityLogger.Log(s);
+        kcp2k.Log.Info = s => unityLogger.Debug(s);
         kcp2k.Log.Warning = s => unityLogger.Warn(s);
         kcp2k.Log.Error = s => unityLogger.Error(s);
-        Telepathy.Log.Info = s => unityLogger.Log(s);
+        Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
         Application.backgroundLoadingPriority = ThreadPriority.Low;

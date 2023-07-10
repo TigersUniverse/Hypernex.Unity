@@ -74,6 +74,12 @@ namespace Hypernex.Player
                             OnAvatarToken.Invoke(sharedAvatarToken);
                         }));
                         break;
+                    case "updatedinstance":
+                        UpdatedInstance updatedInstance = (UpdatedInstance) response;
+                        if (GameInstance.FocusedInstance.gameServerId == updatedInstance.instanceMeta.GameServerId &&
+                            GameInstance.FocusedInstance.instanceId == updatedInstance.instanceMeta.InstanceId)
+                            GameInstance.FocusedInstance.UpdateInstanceMeta(updatedInstance);
+                        break;
                     // TODO: Implement other messages
                 }
             };
@@ -86,23 +92,25 @@ namespace Hypernex.Player
             InstanceProtocol instanceProtocol = InstanceProtocol.KCP)
         {
             if (APIPlayer.IsFullReady)
-            {
                 APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol);
-            }
         }
         
         public static void JoinInstance(SafeInstance instance)
         {
             if (APIPlayer.IsFullReady)
-            {
                 APIPlayer.UserSocket.JoinInstance(instance.GameServerId, instance.InstanceId);
-            }
         }
 
         public static void LeaveInstance(string gameServerId, string instanceId)
         {
             if(APIPlayer.IsFullReady)
                 APIPlayer.UserSocket.LeaveInstance(gameServerId, instanceId);
+        }
+
+        public static void InviteUser(GameInstance instance, User user)
+        {
+            if(APIPlayer.IsFullReady)
+                APIPlayer.UserSocket.SendInvite(user, instance.gameServerId, instance.instanceId);
         }
     }
 }

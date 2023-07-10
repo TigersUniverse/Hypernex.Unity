@@ -22,7 +22,7 @@ namespace Hypernex.UI
             switch (Direction)
             {
                 case ScrollDirection.Vertical:
-                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, 0);
+                    /*scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, 0);
                     sizeUntilScale += scrollRect.content.rect.size.y;
                     foreach (RectTransform rectTransform in Items)
                     {
@@ -32,7 +32,11 @@ namespace Hypernex.UI
                     }
                     if (size < scrollRect.content.sizeDelta.y)
                         break;
-                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, size - sizeUntilScale);
+                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, size - sizeUntilScale);*/
+                    float minimumSize = 0f;
+                    foreach (RectTransform item in Items)
+                        minimumSize += item.sizeDelta.y + Spacing;
+                    scrollRect.content.sizeDelta = new Vector2(scrollRect.content.sizeDelta.x, minimumSize);
                     break;
                 case ScrollDirection.Horizontal:
                     scrollRect.content.sizeDelta = new Vector2(0, scrollRect.content.sizeDelta.y);
@@ -65,8 +69,8 @@ namespace Hypernex.UI
                     {
                         if(i > 0)
                         {
-                            sizes += item.rect.height;
-                            sizes += Spacing;
+                            sizes -= item.rect.height;
+                            sizes -= Spacing;
                         }
                         item.anchoredPosition3D = new Vector3(0, sizes, 0);
                         item.rotation = new Quaternion(0, 0, 0, 0);

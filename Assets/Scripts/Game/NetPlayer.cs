@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
+using Hypernex.Configuration;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
@@ -26,17 +27,28 @@ namespace Hypernex.Game
         private Scene scene;
         public User User;
         public AvatarCreator Avatar;
+        public Transform MainCameraTransform;
 
         private string AvatarId;
         private SharedAvatarToken avatarFileToken;
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
-        private NameplateTemplate nameplateTemplate;
+        internal NameplateTemplate nameplateTemplate;
 
         public int interpolationFramesCount = 120;
         private int elapsedFrames;
 
-        public float volume = 1f;
+        public float volume
+        {
+            get
+            {
+                if (ConfigManager.SelectedConfigUser == null)
+                    return 1.0f;
+                if (!ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserId))
+                    return 1.0f;
+                return ConfigManager.SelectedConfigUser.UserVolumes[UserId];
+            }
+        }
         private AudioClip voice;
 
         [HideInInspector] public List<string> LastPlayerTags = new();
@@ -181,16 +193,20 @@ namespace Hypernex.Game
                         User = instanceConnectedUser;
                 }
             }
-            if (nameplateTemplate != null && Avatar != null)
+            if (nameplateTemplate != null && Avatar != null && Avatar.nametagAlign != null)
             {
-                Transform bone = Avatar.GetBoneFromHumanoid(HumanBodyBones.Head);
+                /*Transform bone = Avatar.GetBoneFromHumanoid(HumanBodyBones.Head);
                 if (bone != null)
                 {
                     Vector3 newPos = bone.position;
                     newPos.y += 0.9f;
                     nameplateTemplate.transform.position = newPos;
-                }
+                }*/
+                nameplateTemplate.FollowTransform = Avatar.nametagAlign;
+                nameplateTemplate.transform.localScale = new Vector3(0.003f, 0.003f, 0.003f);
             }
+            else if (nameplateTemplate != null && (Avatar == null || Avatar.nametagAlign == null))
+                nameplateTemplate.FollowTransform = MainCameraTransform;
             foreach (string key in new List<string>(avatarUpdates.Keys))
                 UpdatePlayerObjectUpdate(key, interpolationRatio);
             elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);

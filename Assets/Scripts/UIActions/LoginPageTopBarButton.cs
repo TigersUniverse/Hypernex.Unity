@@ -9,6 +9,7 @@ namespace Hypernex.UIActions
     {
         private static readonly List<LoginPageTopBarButton> Pages = new();
         public static Action<LoginPageTopBarButton> OnPageChanged = page => { };
+        public static LoginPageTopBarButton VisiblePage;
 
         public string PageName;
         public GameObject CorrespondingPage;
@@ -24,7 +25,10 @@ namespace Hypernex.UIActions
                 if(page.ButtonHighlight != null)
                     page.ButtonHighlight.SetActive(match);
                 if(match)
+                {
+                    VisiblePage = page;
                     OnPageChanged.Invoke(page);
+                }
             }
         }
 
@@ -39,6 +43,7 @@ namespace Hypernex.UIActions
             CorrespondingPage.SetActive(true);
             if(ButtonHighlight != null)
                 ButtonHighlight.SetActive(true);
+            VisiblePage = this;
             OnPageChanged.Invoke(this);
         }
 

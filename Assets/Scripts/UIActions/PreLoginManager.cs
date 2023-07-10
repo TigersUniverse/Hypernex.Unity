@@ -70,6 +70,7 @@ namespace Hypernex.UIActions
 
         public void Start()
         {
+            ServerDropdown.ClearOptions();
             JoinSavedButton.onClick.AddListener(() =>
             {
                 if(ServerDropdown.options.Count > 0)

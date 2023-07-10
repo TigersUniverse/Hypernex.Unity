@@ -7,6 +7,7 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -23,13 +24,13 @@ namespace Hypernex.Game
         public Avatar Avatar;
         public Animator MainAnimator;
         public FaceTrackingDescriptor FaceTrackingDescriptor;
-        
+        public List<AnimatorPlayable> AnimatorPlayables => new (PlayableAnimators);
+
         private List<AnimatorPlayable> PlayableAnimators = new ();
         internal List<Sandbox> localAvatarSandboxes = new();
         private VRIK vrik;
         private bool isCalibrating;
         private bool calibrated;
-        // TODO: Find a way to rotate controllers towards center
         private VRIKCalibrator.Settings vrikSettings = new()
         {
             scaleMlp = 1f,
@@ -37,6 +38,7 @@ namespace Hypernex.Game
             handTrackerUp = Vector3.back
         };
         private GameObject headAlign;
+        internal Transform nametagAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
         internal OpusHandler opusHandler;
@@ -74,7 +76,7 @@ namespace Hypernex.Game
                 if (customPlayableAnimator.AnimatorOverrideController != null)
                     customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
                         customPlayableAnimator.AnimatorController;
-                PlayableGraph playableGraph = PlayableGraph.Create();
+                PlayableGraph playableGraph = PlayableGraph.Create(customPlayableAnimator.AnimatorController.name);
                 AnimatorControllerPlayable animatorControllerPlayable =
                     AnimatorControllerPlayable.Create(playableGraph, customPlayableAnimator.AnimatorController);
                 PlayableOutput playableOutput = AnimationPlayableOutput.Create(playableGraph,
@@ -118,6 +120,15 @@ namespace Hypernex.Game
             calibrated = false;
             foreach (Transform child in GetBoneFromHumanoid(HumanBodyBones.Head).GetComponentsInChildren<Transform>())
                 child.gameObject.layer = 7;
+            foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
+                         .GetComponentsInChildren<SkinnedMeshRenderer>())
+                skinnedMeshRenderer.updateWhenOffscreen = true;
+            MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            if (string.IsNullOrEmpty(LocalPlayer.Instance.avatarMeta.ImageURL))
+                CurrentAvatarBanner.Instance.Render(this, Array.Empty<byte>());
+            else
+                DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
+                    bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
         }
 
@@ -140,6 +151,19 @@ namespace Hypernex.Game
             audioSource.rolloffMode = AudioRolloffMode.Linear;
             audioSource.minDistance = 0;
             audioSource.maxDistance = 10;
+            audioSource.outputAudioMixerGroup = Init.Instance.VoiceGroup;
+            nametagAlign = new GameObject("nametagalign_" + Guid.NewGuid()).transform;
+            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
+            if (head != null)
+            {
+                nametagAlign.transform.parent = head;
+                nametagAlign.transform.localPosition = new Vector3(0,
+                    head.localPosition.y + 1.6f, 0);
+                nametagAlign.transform.SetParent(netPlayer.transform, false);
+                netPlayer.nameplateTemplate.FollowTransform = nametagAlign.transform;
+            }
+            else
+                Object.Destroy(nametagAlign.gameObject);
             a.transform.SetParent(netPlayer.transform);
             a.gameObject.name = "avatar";
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
@@ -148,7 +172,7 @@ namespace Hypernex.Game
                 if (customPlayableAnimator.AnimatorOverrideController != null)
                     customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
                         customPlayableAnimator.AnimatorController;
-                PlayableGraph playableGraph = PlayableGraph.Create();
+                PlayableGraph playableGraph = PlayableGraph.Create(customPlayableAnimator.AnimatorController.name);
                 AnimatorControllerPlayable animatorControllerPlayable =
                     AnimatorControllerPlayable.Create(playableGraph, customPlayableAnimator.AnimatorController);
                 PlayableOutput playableOutput = AnimationPlayableOutput.Create(playableGraph,
@@ -290,7 +314,7 @@ namespace Hypernex.Game
                         default:
                             if(typeof(T) == typeof(float))
                                 return (T) Convert.ChangeType(
-                                    animatorPlayable.Value.AnimatorControllerPlayable.GetInteger(parameterName), typeof(T));
+                                    animatorPlayable.Value.AnimatorControllerPlayable.GetFloat(parameterName), typeof(T));
                             return default;
                     }
                 }
@@ -314,7 +338,7 @@ namespace Hypernex.Game
                         default:
                             if(typeof(T) == typeof(float))
                                 return (T) Convert.ChangeType(
-                                    playableAnimator.AnimatorControllerPlayable.GetInteger(parameterName), typeof(T));
+                                    playableAnimator.AnimatorControllerPlayable.GetFloat(parameterName), typeof(T));
                             return default;
                     }
                 }
@@ -365,8 +389,36 @@ namespace Hypernex.Game
             return default;
         }
 
-        public void SetParameter<T>(string parameterName, T value)
+        public void SetParameter<T>(string parameterName, T value, CustomPlayableAnimator target = null)
         {
+            if (target != null)
+            {
+                AnimatorPlayable? animatorPlayable = GetPlayable(target);
+                if (animatorPlayable != null)
+                {
+                    AnimatorControllerParameter animatorControllerParameter =
+                        GetParameterByName(parameterName, animatorPlayable.Value);
+                    if (animatorControllerParameter != null)
+                    {
+                        switch (animatorControllerParameter.type)
+                        {
+                            case AnimatorControllerParameterType.Bool:
+                                animatorPlayable.Value.AnimatorControllerPlayable.SetBool(parameterName,
+                                    (bool) Convert.ChangeType(value, typeof(bool)));
+                                break;
+                            case AnimatorControllerParameterType.Int:
+                                animatorPlayable.Value.AnimatorControllerPlayable.SetInteger(parameterName,
+                                    (int) Convert.ChangeType(value, typeof(int)));
+                                break;
+                            case AnimatorControllerParameterType.Float:
+                                animatorPlayable.Value.AnimatorControllerPlayable.SetFloat(parameterName,
+                                    (float) Convert.ChangeType(value, typeof(float)));
+                                break;
+                        }
+                    }
+                }
+                return;
+            }
             foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
             {
                 if (playableAnimator.AnimatorControllerParameters.Count(x => x.name == parameterName) > 0)

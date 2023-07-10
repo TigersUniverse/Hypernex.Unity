@@ -1,4 +1,5 @@
 ﻿using System;
+using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
@@ -53,6 +54,10 @@ namespace Hypernex.UI.Templates
         {
             JoinButton.onClick.AddListener(() =>
             {
+                if (GameInstance.FocusedInstance != null &&
+                    GameInstance.FocusedInstance.gameServerId == Instance.GameServerId &&
+                    GameInstance.FocusedInstance.instanceId == Instance.InstanceId)
+                    return;
                 gameObject.SetActive(false);
                 SocketManager.JoinInstance(Instance);
                 Users.Clear();

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Discord.GameSDK;
 using Discord.GameSDK.Activities;
-using Hypernex.CCK;
 using Hypernex.Player;
 using HypernexSharp.APIObjects;
 
@@ -12,7 +11,7 @@ namespace Hypernex.Tools
     internal static class DiscordTools
     {
         private const long DiscordApplicationId = 1101618498062516254;
-        private static readonly Discord.GameSDK.Discord discord = new (DiscordApplicationId, CreateFlags.Default);
+        private static readonly Discord.GameSDK.Discord discord = new (DiscordApplicationId, CreateFlags.NoRequireDiscord);
         private static readonly long startTime = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
 
         private static bool ignoreUserRefresh;
@@ -37,83 +36,96 @@ namespace Hypernex.Tools
 
         private static void DefaultActivity(User user)
         {
-            string status = user.Bio.Status.ToString();
-            string statusSpaced = GetSpacedStatus(user.Bio.Status);
-            discord.GetActivityManager().UpdateActivity(new Activity
+            try
             {
-                Name = "Hypernex",
-                Details = $"Playing as {user.Username}",
-                Timestamps = new ActivityTimestamps {Start = startTime},
-                Assets = new ActivityAssets
+                string status = user.Bio.Status.ToString();
+                string statusSpaced = GetSpacedStatus(user.Bio.Status);
+                discord.GetActivityManager().UpdateActivity(new Activity
                 {
-                    LargeImage = "logo",
-                    SmallImage = status.ToLower(),
-                    SmallText = statusSpaced
-                }
-            }, result => { });
+                    Name = "Hypernex",
+                    Details = $"Playing as {user.Username}",
+                    Timestamps = new ActivityTimestamps {Start = startTime},
+                    Assets = new ActivityAssets
+                    {
+                        LargeImage = "logo",
+                        SmallImage = status.ToLower(),
+                        SmallText = string.IsNullOrEmpty(APIPlayer.APIUser.Bio.StatusText)
+                            ? statusSpaced
+                            : APIPlayer.APIUser.Bio.StatusText
+                    }
+                }, result => { });
+            } catch(Exception){}
         }
 
         public static void StartDiscord()
         {
-            if (Discord.GameSDK.Discord.IsInitialized)
-                return;
-            discord.Init();
-            discord.GetActivityManager().UpdateActivity(new Activity
+            try
             {
-                Name = "Hypernex",
-                Details = "Logging In",
-                Timestamps = new ActivityTimestamps {Start = startTime},
-                Assets = new ActivityAssets {LargeImage = "logo"}
-            }, result => {});
-            APIPlayer.OnUserRefresh += user =>
-            {
-                if (ignoreUserRefresh)
+                if (Discord.GameSDK.Discord.IsInitialized)
                     return;
-                DefaultActivity(user);
-            };
-            APIPlayer.OnLogout += () =>
-            {
-                ignoreUserRefresh = false;
-                InstanceDateTimes.Clear();
+                discord.Init();
                 discord.GetActivityManager().UpdateActivity(new Activity
                 {
                     Name = "Hypernex",
                     Details = "Logging In",
                     Timestamps = new ActivityTimestamps {Start = startTime},
                     Assets = new ActivityAssets {LargeImage = "logo"}
-                }, result => { });
-            };
+                }, result => {});
+                APIPlayer.OnUserRefresh += user =>
+                {
+                    if (ignoreUserRefresh)
+                        return;
+                    DefaultActivity(user);
+                };
+                APIPlayer.OnLogout += () =>
+                {
+                    ignoreUserRefresh = false;
+                    InstanceDateTimes.Clear();
+                    discord.GetActivityManager().UpdateActivity(new Activity
+                    {
+                        Name = "Hypernex",
+                        Details = "Logging In",
+                        Timestamps = new ActivityTimestamps {Start = startTime},
+                        Assets = new ActivityAssets {LargeImage = "logo"}
+                    }, result => { });
+                };
+            } catch(Exception){}
         }
 
         internal static void FocusInstance(WorldMeta worldMeta, string id, User host)
         {
-            if (!Discord.GameSDK.Discord.IsInitialized)
-                return;
-            ignoreUserRefresh = true;
-            long time;
-            if (InstanceDateTimes.ContainsKey(id))
-                time = InstanceDateTimes[id];
-            else
+            try
             {
-                time = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
-                InstanceDateTimes.Add(id, time);
-            }
-            string status = APIPlayer.APIUser.Bio.Status.ToString();
-            string statusSpaced = GetSpacedStatus(APIPlayer.APIUser.Bio.Status);
-            discord.GetActivityManager().UpdateActivity(new Activity
-            {
-                Name = "Hypernex",
-                Details = $"Playing as {APIPlayer.APIUser.Username}",
-                Timestamps = new ActivityTimestamps {Start = time},
-                State = "Visiting " + worldMeta.Name,
-                Assets = new ActivityAssets
+                if (!Discord.GameSDK.Discord.IsInitialized)
+                    return;
+                ignoreUserRefresh = true;
+                long time;
+                if (InstanceDateTimes.ContainsKey(id))
+                    time = InstanceDateTimes[id];
+                else
                 {
-                    LargeImage = string.IsNullOrEmpty(worldMeta.ThumbnailURL) ? "logo" : worldMeta.ThumbnailURL,
-                    LargeText = $"Hosted By {host.Username}",
-                    SmallImage = status.ToLower(),
-                    SmallText = statusSpaced
+                    time = new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds();
+                    InstanceDateTimes.Add(id, time);
                 }
-            }, result => { });
+                string status = APIPlayer.APIUser.Bio.Status.ToString();
+                string statusSpaced = GetSpacedStatus(APIPlayer.APIUser.Bio.Status);
+                discord.GetActivityManager().UpdateActivity(new Activity
+                {
+                    Name = "Hypernex",
+                    Details = $"Playing as {APIPlayer.APIUser.Username}",
+                    Timestamps = new ActivityTimestamps {Start = time},
+                    State = "Visiting " + worldMeta.Name,
+                    Assets = new ActivityAssets
+                    {
+                        LargeImage = string.IsNullOrEmpty(worldMeta.ThumbnailURL) ? "logo" : worldMeta.ThumbnailURL,
+                        LargeText = $"Hosted By {host.Username}",
+                        SmallImage = status.ToLower(),
+                        SmallText = string.IsNullOrEmpty(APIPlayer.APIUser.Bio.StatusText)
+                            ? statusSpaced
+                            : APIPlayer.APIUser.Bio.StatusText
+                    }
+                }, result => { });
+            } catch(Exception){}
         }
 
         internal static void UnfocusInstance(string id)
@@ -126,14 +138,20 @@ namespace Hypernex.Tools
 
         internal static void RunCallbacks()
         {
-            if(Discord.GameSDK.Discord.IsInitialized)
-                discord.RunCallbacks();
+            try
+            {
+                if(Discord.GameSDK.Discord.IsInitialized)
+                    discord.RunCallbacks();
+            } catch(Exception){}
         }
 
         internal static void Stop()
         {
-            if(Discord.GameSDK.Discord.IsInitialized)
-                discord.Dispose();
+            try
+            {
+                if(Discord.GameSDK.Discord.IsInitialized)
+                    discord.Dispose();
+            } catch(Exception){}
         }
     }
 }
