@@ -38,7 +38,7 @@ public class Init : MonoBehaviour
         Path.Combine(Application.dataPath, "Plugins");
 #endif
 
-    private void StartVR()
+    internal void StartVR()
     {
         if (LocalPlayer.IsVR) return;
         XRGeneralSettings.Instance.Manager.InitializeLoaderSync();
@@ -47,7 +47,7 @@ public class Init : MonoBehaviour
         LocalPlayer.Instance.StartVR();
     }
 
-    private void StopVR()
+    internal void StopVR()
     {
         if (!LocalPlayer.IsVR) return;
         XRGeneralSettings.Instance.Manager.StopSubsystems();
@@ -85,9 +85,15 @@ public class Init : MonoBehaviour
             ConfigUser configUser = ConfigManager.SelectedConfigUser;
             if (configUser == null)
                 ConfigManager.LoadedConfig.GetConfigUserFromUserId(user.Id);
-            if (configUser != null && configUser.UseFacialTracking)
-                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                    FaceTrackingManager.Init(Application.streamingAssetsPath)));
+            if (configUser != null)
+            {
+                UITheme userTheme = UITheme.GetUIThemeByName(configUser.Theme);
+                if(userTheme != null)
+                    userTheme.ApplyThemeToUI();
+                if(configUser.UseFacialTracking)
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        FaceTrackingManager.Init(Application.streamingAssetsPath)));
+            }
         };
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
@@ -102,6 +108,8 @@ public class Init : MonoBehaviour
     private void Update()
     {
         DiscordTools.RunCallbacks();
+        if (ConfigManager.SelectedConfigUser != null)
+            VoiceGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.VoicesBoost);
         foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
             try
             {
@@ -125,47 +133,6 @@ public class Init : MonoBehaviour
                 Logger.CurrentLogger.Error(e);
             }
     }
-
-    /*private string worldId;
-
-    private void OnGUI()
-    {
-        worldId = GUILayout.TextField(worldId);
-        if (GUILayout.Button("Create Instance From WorldId"))
-        {
-            if (!APIPlayer.IsFullReady)
-                return;
-            APIPlayer.APIObject.GetWorldMeta(result =>
-            {
-                if (!result.success)
-                    return;
-                APIPlayer.UserSocket.RequestNewInstance(result.result.Meta, InstancePublicity.Anyone, InstanceProtocol.UDP);
-            }, worldId);
-        }
-        if (FaceTrackingManager.HasInitialized)
-        {
-            GUILayout.Label("Left Eye", new GUIStyle{fontStyle = FontStyle.Bold});
-            GUILayout.Label("Gaze: (" + UnifiedTracking.Data.Eye.Left.Gaze.x + "," + UnifiedTracking.Data.Eye.Left.Gaze.y + ")");
-            GUILayout.Label("Pupil Diameter: " + UnifiedTracking.Data.Eye.Left.PupilDiameter_MM);
-            GUILayout.Label("Openness: " + UnifiedTracking.Data.Eye.Left.Openness);
-            GUILayout.Label("Right Eye", new GUIStyle{fontStyle = FontStyle.Bold});
-            GUILayout.Label("Gaze: (" + UnifiedTracking.Data.Eye.Right.Gaze.x + "," + UnifiedTracking.Data.Eye.Right.Gaze.y + ")");
-            GUILayout.Label("Pupil Diameter: " + UnifiedTracking.Data.Eye.Right.PupilDiameter_MM);
-            GUILayout.Label("Openness: " + UnifiedTracking.Data.Eye.Right.Openness);
-            GUILayout.Label("Face", new GUIStyle{fontStyle = FontStyle.Bold});
-            int i = 0;
-            foreach (UnifiedExpressionShape unifiedExpressionShape in UnifiedTracking.Data.Shapes)
-            {
-                try
-                {
-                    UnifiedExpressions unifiedExpressions = (UnifiedExpressions) i;
-                    GUILayout.Label(unifiedExpressions + ": " + unifiedExpressionShape.Weight);
-                }
-                catch(Exception){}
-                i++;
-            }
-        }
-    }*/
 
     private void OnApplicationQuit()
     {

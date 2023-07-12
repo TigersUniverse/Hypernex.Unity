@@ -38,7 +38,8 @@ namespace Hypernex.UI.Templates
                         AnimatorPlayable.Value.CustomPlayableAnimator);
                     break;
                 case AnimatorControllerParameterType.Float:
-                    LocalPlayer.Instance.avatar.SetParameter(ParameterName, ParameterValueSlider.value,
+                    float floatValue = (float) Math.Round(ParameterValueSlider.value, 2);
+                    LocalPlayer.Instance.avatar.SetParameter(ParameterName, floatValue,
                         AnimatorPlayable.Value.CustomPlayableAnimator);
                     break;
             }

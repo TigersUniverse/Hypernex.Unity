@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using Hypernex.Tools;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
@@ -7,7 +8,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     {
         private DateTime d = DateTime.Now;
 
-        public bool Is24HourClock() => DateTimeFormatInfo.CurrentInfo.ShortTimePattern.Contains("H");
+        public bool Is24HourClock() => TimeCounter.Is24H;
 
         public string GetDayOfWeek() => d.DayOfWeek.ToString();
         public string GetMonthName() => d.ToString("MM");

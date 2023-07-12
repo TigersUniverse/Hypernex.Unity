@@ -8,6 +8,7 @@ using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
+using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -59,7 +60,9 @@ namespace Hypernex.Game
             voiceAlign.transform.SetParent(a.SpeechPosition.transform);
             voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
             audioSource = voiceAlign.AddComponent<AudioSource>();
-            vrikSettings.headOffset = GetBoneFromHumanoid(HumanBodyBones.Head).position - headAlign.transform.position;
+            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
+            if(head != null)
+                vrikSettings.headOffset = head.position - headAlign.transform.position;
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform);
             if(isVR)
@@ -72,7 +75,7 @@ namespace Hypernex.Game
             MainAnimator.SetFloat("MotionSpeed", 1f);
             foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
             {
-                if (customPlayableAnimator == null) continue;
+                if (customPlayableAnimator == null || customPlayableAnimator.AnimatorController == null) continue;
                 if (customPlayableAnimator.AnimatorOverrideController != null)
                     customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
                         customPlayableAnimator.AnimatorController;
@@ -118,8 +121,6 @@ namespace Hypernex.Game
             }
             isCalibrating = false;
             calibrated = false;
-            foreach (Transform child in GetBoneFromHumanoid(HumanBodyBones.Head).GetComponentsInChildren<Transform>())
-                child.gameObject.layer = 7;
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
                 skinnedMeshRenderer.updateWhenOffscreen = true;
@@ -130,6 +131,7 @@ namespace Hypernex.Game
                 DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
                     bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
+            InitMaterialDescriptors(a.transform);
         }
 
         public AvatarCreator(NetPlayer netPlayer, Avatar a)
@@ -169,6 +171,7 @@ namespace Hypernex.Game
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
             foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
             {
+                if (customPlayableAnimator == null || customPlayableAnimator.AnimatorController == null) continue;
                 if (customPlayableAnimator.AnimatorOverrideController != null)
                     customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
                         customPlayableAnimator.AnimatorController;
@@ -189,6 +192,7 @@ namespace Hypernex.Game
                 playableGraph.Play();
             }
             SetupLipSyncNetPlayer();
+            InitMaterialDescriptors(a.transform);
         }
 
         private OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(
@@ -205,6 +209,12 @@ namespace Hypernex.Game
             m.skinnedMeshRenderer = skinnedMeshRenderer;
             morphTargets.Add(m);
             return m;
+        }
+
+        private void InitMaterialDescriptors(Transform av)
+        {
+            foreach (MaterialDescriptor materialDescriptor in av.GetComponentsInChildren<MaterialDescriptor>())
+                materialDescriptor.SetMaterials(AssetBundleTools.Platform);
         }
 
         private void SetVisemeAsBlendshape(ref OVRLipSyncContextMorphTarget morphTarget, Viseme viseme,
@@ -521,6 +531,8 @@ namespace Hypernex.Game
         private void RelaxWrists(Transform leftLowerArm, Transform rightLowerArm, Transform leftHand,
             Transform rightHand)
         {
+            if (leftLowerArm == null || rightLowerArm == null || leftHand == null || rightHand == null)
+                return;
             TwistRelaxer twistRelaxer = Avatar.gameObject.AddComponent<TwistRelaxer>();
             twistRelaxer.ik = vrik;
             TwistSolver leftSolver = new TwistSolver { transform = leftLowerArm, children = new []{leftHand} };
@@ -556,11 +568,11 @@ namespace Hypernex.Game
         private bool a;
 
         internal void Update(bool areTwoTriggersClicked, Dictionary<InputDevice, GameObject> WorldTrackers,
-            Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
+            Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference, bool isMoving)
         {
             if(MainAnimator != null)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
-            if (vrik != null && !calibrated)
+            if (vrik != null && vrik.solver.initiated && !calibrated)
             {
                 if (WorldTrackers.Count == 3)
                 {
@@ -596,6 +608,17 @@ namespace Hypernex.Game
                             MainAnimator.SetBool("isCalibrating", false);
                         }
                     }
+                }
+            }
+            else if (calibrated)
+            {
+                vrik.solver.locomotion.weight = isMoving || WorldTrackers.Count == 3 ? 0f : 1f;
+                if (WorldTrackers.Count != 3)
+                {
+                    float scale = LocalPlayer.Instance.transform.localScale.y;
+                    float height = LocalPlayer.Instance.CharacterController.height;
+                    vrik.solver.locomotion.footDistance = 0.1f * scale * height;
+                    vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
                 }
             }
             if (!a)
@@ -637,9 +660,9 @@ namespace Hypernex.Game
             }
         }
 
-        internal void LateUpdate(bool isVR, Transform cameraTransform)
+        internal void LateUpdate(bool isVR, Transform cameraTransform, bool lockCamera)
         {
-            if (!isVR && headAlign != null)
+            if (!isVR && headAlign != null && !lockCamera)
             {
                 cameraTransform.position = headAlign.transform.position;
                 Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
@@ -729,6 +752,11 @@ namespace Hypernex.Game
             }
             if(opusHandler != null)
                 opusHandler.OnDecoded -= opusHandler.PlayDecodedToVoice;
+            if(nametagAlign != null)
+            {
+                Object.Destroy(nametagAlign);
+                nametagAlign = null;
+            }
             Object.Destroy(Avatar.gameObject);
         }
     }

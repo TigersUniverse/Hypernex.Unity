@@ -319,6 +319,25 @@ namespace Hypernex.Game
             GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice), MessageChannel.Unreliable);
         }
 
+        private void OnAudioRAW(float[] data, int length)
+        {
+            PlayerVoice playerVoice = new PlayerVoice
+            {
+                Auth = new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = GameInstance.FocusedInstance.userIdToken
+                },
+                Bitrate = OpusHandler.BITRATE,
+                SampleRate = (int) Mic.Frequency,
+                Channels = (int) Mic.NumChannels,
+                Encoder = "raw",
+                Bytes = DataConversion.ConvertFloatToByte(data),
+                EncodeLength = length
+            };
+            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+        }
+
         private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
         {
             // Share AvatarToken with unblocked users
@@ -464,7 +483,7 @@ namespace Hypernex.Game
                 {
                     PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
                     gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-                    if (mutex.WaitOne(1))
+                    if (msgs.Count <= 0 && mutex.WaitOne(1))
                     {
                         try
                         {
@@ -501,14 +520,14 @@ namespace Hypernex.Game
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
-            Bindings.Add(new Keyboard()
-                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
-            Bindings.Add(new Mouse());
-            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+            CreateDesktopBindings();
             Mic.OnClipReady += samples =>
             {
-                if (GameInstance.FocusedInstance != null && opusHandler != null)
+                if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null &&
+                    ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.Opus && opusHandler != null)
                     opusHandler.EncodeMicrophone(samples);
+                else if(ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.RAW)
+                    OnAudioRAW(samples, samples.Length);
                 avatar?.ApplyAudioClipToLipSync(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
@@ -562,6 +581,30 @@ namespace Hypernex.Game
             }).Start();
         }
 
+        private void SwitchVR()
+        {
+            if(IsVR)
+            {
+                Init.Instance.StopVR();
+                CharacterController.center = Vector3.zero;
+                CharacterController.height = 1.36144f;
+                foreach (Camera allCamera in Camera.allCameras)
+                    allCamera.fieldOfView = 60f;
+            }
+            else
+                Init.Instance.StartVR();
+            if(avatar != null)
+                RefreshAvatar();
+        }
+
+        private void CreateDesktopBindings()
+        {
+            Bindings.Add(new Keyboard()
+                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
+            Bindings.Add(new Mouse());
+            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+        }
+
         internal void StartVR()
         {
             AlignVR();
@@ -587,15 +630,15 @@ namespace Hypernex.Game
                     Bindings.Remove(binding);
             }
             vrPlayerInput.DeactivateInput();
-            Bindings.Add(new Keyboard()
-                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
-            Bindings.Add(new Mouse());
-            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+            VRInputListener.Clear();
+            CreateDesktopBindings();
             Logger.CurrentLogger.Log("Removed VR Bindings");
         }
 
         public void AlignVR()
         {
+            if (!IsVR)
+                return;
             // Align the character controller
             vrHeight = Mathf.Clamp(XROrigin.CameraInOriginSpaceHeight, 0, Single.PositiveInfinity);
             Vector3 center = XROrigin.CameraInOriginSpacePos;
@@ -610,7 +653,7 @@ namespace Hypernex.Game
         private (Vector3, bool, bool)? HandleLeftBinding(IBinding binding)
         {
             // Left-Hand
-            Vector3 move = transform.forward * (binding.Up + binding.Down * -1) + transform.right * (binding.Left * -1 + binding.Right);
+            Vector3 move = Camera.transform.forward * (binding.Up + binding.Down * -1) + Camera.transform.right * (binding.Left * -1 + binding.Right);
             s_ = binding.Button2 ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
@@ -633,7 +676,7 @@ namespace Hypernex.Game
             if (!LockCamera)
             {
                 // Right-Hand
-                if (VRInputListener.UseSnapTurn)
+                if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseSnapTurn)
                 {
                     float amountTurn = binding.Left * -1 + binding.Right;
                     if (!didSnapTurn && (amountTurn > 0.1f || amountTurn < -0.1f))
@@ -641,14 +684,22 @@ namespace Hypernex.Game
                         float val = 1f;
                         if (amountTurn < 0)
                             val = -1f;
-                        transform.Rotate(0, VRInputListener.TurnDegree * val, 0);
+                        float turnDegree = 45f;
+                        if (ConfigManager.SelectedConfigUser != null)
+                            turnDegree = ConfigManager.SelectedConfigUser.SnapTurnAngle;
+                        transform.Rotate(0, turnDegree * val, 0);
                         didSnapTurn = true;
                     }
                     else if (didSnapTurn && (amountTurn < 0.1f && amountTurn > -0.1f))
                         didSnapTurn = false;
                 }
                 else
-                    transform.Rotate(0, (binding.Left * -1 + binding.Right) * 1, 0);
+                {
+                    float turnSpeed = 1;
+                    if (ConfigManager.SelectedConfigUser != null)
+                        turnSpeed = ConfigManager.SelectedConfigUser.SmoothTurnSpeed;
+                    transform.Rotate(0, (binding.Left * -1 + binding.Right) * turnSpeed, 0);
+                }
                 if (LockMovement)
                     return null;
                 return (Vector3.zero, binding.Button, false);
@@ -762,8 +813,9 @@ namespace Hypernex.Game
                 avatar?.SetSpeed(0.0f);
                 avatar?.SetIsGrounded(true);
             }
+            bool isMoving = left_m?.Item3 ?? false;
             avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
-                Camera.transform, LeftHandVRIKTarget, RightHandVRIKTarget);
+                Camera.transform, LeftHandVRIKTarget, RightHandVRIKTarget, isMoving);
             if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
                 FaceTrackingManager.HasInitialized)
             {
@@ -781,11 +833,13 @@ namespace Hypernex.Game
                 }));
             if(transform.position.y < LowestPoint.y - Mathf.Abs(LowestPointRespawnThreshold))
                 Respawn(scene);
+            if (Input.GetKeyDown(KeyCode.F5))
+                SwitchVR();
         }
 
         private void LateUpdate()
         {
-            avatar?.LateUpdate(IsVR, Camera.transform);
+            avatar?.LateUpdate(IsVR, Camera.transform, LockCamera);
         }
 
         private void OnDestroy() => Dispose();

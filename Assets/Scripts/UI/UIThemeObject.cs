@@ -4,6 +4,7 @@ using Hypernex.UI.Templates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit;
 
 namespace Hypernex.UI
 {
@@ -239,6 +240,55 @@ namespace Hypernex.UI
                     });
                 }
             }
+            else if (ThemeType == UIThemeObjectType.BackgroundImage)
+            {
+                Image img = GetComponent<Image>();
+                if (img != null)
+                {
+                    if (theme.BackgroundImage == null)
+                        img.color = theme.PrimaryColor;
+                    else
+                    {
+                        img.color = new Color(1, 1, 1, theme.PrimaryColor.a);
+                        img.sprite = theme.BackgroundImage;
+                    }
+                }
+                RawImage rawimg = GetComponent<RawImage>();
+                if(rawimg != null)
+                {
+                    if (theme.BackgroundImage == null)
+                        rawimg.color = theme.PrimaryColor;
+                    else
+                    {
+                        rawimg.color = new Color(1, 1, 1, theme.PrimaryColor.a);
+                        rawimg.texture = theme.BackgroundImage.texture;
+                    }
+                }
+            }
+            else if (ThemeType == UIThemeObjectType.LineRenderer)
+            {
+                LineRenderer lineRenderer = GetComponent<LineRenderer>();
+                if(lineRenderer != null)
+                {
+                    lineRenderer.startColor = theme.PrimaryVectorColor;
+                    lineRenderer.endColor = theme.PrimaryVectorColor;
+                }
+                XRInteractorLineVisual lineVisual = GetComponent<XRInteractorLineVisual>();
+                if (lineVisual != null)
+                {
+                    GradientColorKey[] gradientColorKeys =
+                    {
+                        new GradientColorKey(theme.PrimaryVectorColor, 0),
+                        new GradientColorKey(theme.PrimaryColor, 0)
+                    };
+                    GradientAlphaKey[] gradientAlphaKeys =
+                    {
+                        new GradientAlphaKey(1, 0),
+                        new GradientAlphaKey(1, 0)
+                    };
+                    lineVisual.validColorGradient.SetKeys(gradientColorKeys, gradientAlphaKeys);
+                }
+            }
         }
 
         private void OnEnable()
@@ -260,6 +310,8 @@ namespace Hypernex.UI
         InverseVector,
         PrimaryInput,
         SecondaryInput,
-        PrimaryColorVector
+        PrimaryColorVector,
+        BackgroundImage,
+        LineRenderer
     }
 }

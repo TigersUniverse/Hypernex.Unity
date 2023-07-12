@@ -91,7 +91,8 @@ namespace Hypernex.UI.Templates
             if (lastHoster != null)
             {
                 // Direct to an Instance Screen
-                JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator);
+                JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator,
+                    JoinInstanceTemplate.gameObject);
                 JoinInstanceTemplate.gameObject.SetActive(true);
             }
             else if (lastCreator != null)

@@ -7,9 +7,25 @@ namespace Hypernex.UI
 {
     public class UITheme : MonoBehaviour
     {
+        public static List<UITheme> UIThemes = new();
         public static UITheme SelectedTheme;
+
+        public static UITheme GetUIThemeByName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+            foreach (UITheme uiTheme in new List<UITheme>(UIThemes))
+            {
+                if (uiTheme.ThemeName.ToLower() == name.ToLower())
+                    return uiTheme;
+            }
+            return null;
+        }
+        
         public string ThemeName;
 
+        public Sprite BackgroundImage;
+        
         public Color PrimaryColor;
         public Color SecondaryColor;
         public Color PrimaryVectorColor;
@@ -40,5 +56,7 @@ namespace Hypernex.UI
 
         public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>
             ButtonThemes.FirstOrDefault(x => x.ButtonType == type);
+
+        private void Start() => UIThemes.Add(this);
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using Logger = Hypernex.CCK.Logger;
 
 [ExecuteInEditMode]
 public class Mirror : MonoBehaviour
@@ -57,7 +58,7 @@ public class Mirror : MonoBehaviour
         RTHandles.Initialize(Screen.width, Screen.height);
         oldRenderScale = renderScale;
         oldRenderSize = renderSize;
-        RenderPipelineManager.beginCameraRendering += OnCameraRender;
+        RenderPipelineManager.endCameraRendering += OnCameraRender;
     #if UNITY_EDITOR
         UnityEditor.EditorApplication.update += EditorUpdate;
     #endif
@@ -88,7 +89,7 @@ public class Mirror : MonoBehaviour
 
     private void OnCameraRender(ScriptableRenderContext arg1, Camera arg2)
     {
-        if (IsVisible(arg2, mr.bounds))
+        if (mr != null && IsVisible(arg2, mr.bounds))
         {
             OnWillRenderObjectWCam(arg2, true);
         }

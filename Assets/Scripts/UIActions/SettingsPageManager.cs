@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
@@ -24,6 +25,20 @@ namespace Hypernex.UIActions
         public TMP_Dropdown AudioDeviceSelection;
         public TMP_InputField DownloadThreadsInput;
         public TMP_InputField MMSCInput;
+
+        public GameObject UserPanel;
+        public TMP_Dropdown ThemeSelection;
+        public TMP_Dropdown EmojiTypeSelection;
+        public TMP_Dropdown AudioCompressionSelection;
+        public Slider VoicesBoostSlider;
+        public TMP_Text VoicesBoostSliderValueText;
+
+        public GameObject VRPanel;
+        public TMP_Text UseSnapTurnValue;
+        public Slider SnapTurnDegreeSlider;
+        public TMP_Text SnapTurnDegreeValue;
+        public Slider SmoothTurnSpeedSlider;
+        public TMP_Text SmoothTurnSpeedValue;
 
         public GameObject FaceTrackingPanel;
         public Toggle FaceTrackingToggle;
@@ -68,6 +83,56 @@ namespace Hypernex.UIActions
                 ConfigManager.LoadedConfig.MaxMemoryStorageCache = mmscv;
             } catch(Exception){}
             ConfigManager.SaveConfigToFile();
+        }
+
+        public void OnUserSettings()
+        {
+            if(ConfigManager.SelectedConfigUser != null)
+            {
+                ThemeSelection.ClearOptions();
+                List<TMP_Dropdown.OptionData> optionDatas = new();
+                foreach (UITheme uiTheme in new List<UITheme>(UITheme.UIThemes))
+                    optionDatas.Add(new TMP_Dropdown.OptionData(uiTheme.ThemeName));
+                ThemeSelection.options = optionDatas;
+                for (int i = 0; i < ThemeSelection.options.Count; i++)
+                {
+                    TMP_Dropdown.OptionData optionData = ThemeSelection.options[i];
+                    if (optionData.text.ToLower() == UITheme.SelectedTheme.ThemeName.ToLower())
+                        ThemeSelection.value = i;
+                }
+                EmojiTypeSelection.value = ConfigManager.SelectedConfigUser.EmojiType;
+                AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
+                float vbRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.VoicesBoost, 2);
+                VoicesBoostSlider.value = vbRounded;
+                VoicesBoostSliderValueText.text = vbRounded.ToString(CultureInfo.InvariantCulture) + " dB";
+            }
+            AllPanels.ForEach(x => x.SetActive(false));
+            UserPanel.SetActive(true);
+        }
+
+        public void OnVRSettings()
+        {
+            if (ConfigManager.SelectedConfigUser != null)
+            {
+                bool ust = ConfigManager.SelectedConfigUser.UseSnapTurn;
+                UseSnapTurnValue.text = ust ? "Enabled" : "Disabled";
+                float tdRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.SnapTurnAngle, 2);
+                SnapTurnDegreeValue.text = tdRounded.ToString(CultureInfo.InvariantCulture);
+                SnapTurnDegreeSlider.value = tdRounded;
+                float tsRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.SmoothTurnSpeed, 2);
+                SmoothTurnSpeedValue.text = tsRounded.ToString(CultureInfo.InvariantCulture);
+                SmoothTurnSpeedSlider.value = tsRounded;
+            }
+            AllPanels.ForEach(x => x.SetActive(false));
+            VRPanel.SetActive(true);
+        }
+        
+        public void SetSnapTurn(bool value)
+        {
+            if (ConfigManager.SelectedConfigUser == null)
+                return;
+            ConfigManager.SelectedConfigUser.UseSnapTurn = value;
+            UseSnapTurnValue.text = ConfigManager.SelectedConfigUser.UseSnapTurn ? "Enabled" : "Disabled";
         }
 
         private UnifiedMutationConfig Mutations;
@@ -160,6 +225,59 @@ namespace Hypernex.UIActions
                     ConfigManager.SaveConfigToFile();
                 }
                 LocalPlayer.Instance.MicrophoneEnabled = v;
+            });
+            ThemeSelection.onValueChanged.RemoveAllListeners();
+            ThemeSelection.onValueChanged.AddListener(i =>
+            {
+                if (ConfigManager.SelectedConfigUser == null)
+                    return;
+                string n = ThemeSelection.options.ElementAt(i).text;
+                UITheme uiTheme = UITheme.GetUIThemeByName(n);
+                if(uiTheme == null)
+                    return;
+                uiTheme.ApplyThemeToUI();
+                ConfigManager.SelectedConfigUser.Theme = n;
+            });
+            EmojiTypeSelection.onValueChanged.RemoveAllListeners();
+            EmojiTypeSelection.onValueChanged.AddListener(i =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                ConfigManager.SelectedConfigUser.EmojiType = i;
+            });
+            AudioCompressionSelection.onValueChanged.RemoveAllListeners();
+            AudioCompressionSelection.onValueChanged.AddListener(i =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                ConfigManager.SelectedConfigUser.AudioCompression = (AudioCompression) i;
+            });
+            VoicesBoostSlider.onValueChanged.RemoveAllListeners();
+            VoicesBoostSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                float rounded = (float) Math.Round(v, 2);
+                ConfigManager.SelectedConfigUser.VoicesBoost = rounded;
+                VoicesBoostSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture) + " dB";
+            });
+            SnapTurnDegreeSlider.onValueChanged.RemoveAllListeners();
+            SnapTurnDegreeSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                float rounded = (float) Math.Round(v, 2);
+                ConfigManager.SelectedConfigUser.SnapTurnAngle = rounded;
+                SnapTurnDegreeValue.text = rounded.ToString(CultureInfo.InvariantCulture);
+            });
+            SmoothTurnSpeedSlider.onValueChanged.RemoveAllListeners();
+            SmoothTurnSpeedSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                float rounded = (float) Math.Round(v, 2);
+                ConfigManager.SelectedConfigUser.SmoothTurnSpeed = rounded;
+                SmoothTurnSpeedValue.text = rounded.ToString(CultureInfo.InvariantCulture);
             });
             FaceTrackingToggle.onValueChanged.RemoveAllListeners();
             FaceTrackingToggle.onValueChanged.AddListener(b =>

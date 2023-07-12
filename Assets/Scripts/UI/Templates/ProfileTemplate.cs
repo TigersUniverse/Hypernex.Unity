@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
@@ -39,47 +40,73 @@ namespace Hypernex.UI.Templates
         public Button AddModeratorButton;
         public Button RemoveModeratorButton;
         public Slider VolumeSlider;
+        public List<GameObject> ExtraRemovals = new();
 
         private TMP_Text pronounText;
         private User lastUser;
 
         private void SetButtonVisibility(User UserBeingViewed)
         {
-            AddFriendButton.gameObject.SetActive(false);
-            RemoveFriendButton.gameObject.SetActive(false);
-            BlockButton.gameObject.SetActive(false);
-            UnblockButton.gameObject.SetActive(false);
-            FollowButton.gameObject.SetActive(false);
-            UnfollowButton.gameObject.SetActive(false);
-            if(APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id))
-                RemoveFriendButton.gameObject.SetActive(true);
-            else
-                AddFriendButton.gameObject.SetActive(true);
-            if(APIPlayer.APIUser.BlockedUsers.Contains(UserBeingViewed.Id))
-                UnblockButton.gameObject.SetActive(true);
-            else
-                BlockButton.gameObject.SetActive(true);
-            if(APIPlayer.APIUser.Following.Contains(UserBeingViewed.Id))
-                UnfollowButton.gameObject.SetActive(true);
-            else
-                FollowButton.gameObject.SetActive(true);
-            if (GameInstance.FocusedInstance != null)
+            if (UserBeingViewed.Id != APIPlayer.APIUser.Id)
             {
-                InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite);
-                WarnButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
-                KickButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
-                BanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
-                                               !GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
-                UnbanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
-                                                 GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
-                AddModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
-                                                        !GameInstance.FocusedInstance.Moderators.Contains(
-                                                            UserBeingViewed.Id));
-                RemoveModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.instanceCreatorId ==
-                    APIPlayer.APIUser.Id && GameInstance.FocusedInstance.Moderators.Contains(UserBeingViewed.Id));
+                AddFriendButton.gameObject.SetActive(false);
+                RemoveFriendButton.gameObject.SetActive(false);
+                BlockButton.gameObject.SetActive(false);
+                UnblockButton.gameObject.SetActive(false);
+                FollowButton.gameObject.SetActive(false);
+                UnfollowButton.gameObject.SetActive(false);
+                if(APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id))
+                    RemoveFriendButton.gameObject.SetActive(true);
+                else
+                    AddFriendButton.gameObject.SetActive(true);
+                if(APIPlayer.APIUser.BlockedUsers.Contains(UserBeingViewed.Id))
+                    UnblockButton.gameObject.SetActive(true);
+                else
+                    BlockButton.gameObject.SetActive(true);
+                if(APIPlayer.APIUser.Following.Contains(UserBeingViewed.Id))
+                    UnfollowButton.gameObject.SetActive(true);
+                else
+                    FollowButton.gameObject.SetActive(true);
+                if (GameInstance.FocusedInstance != null)
+                {
+                    InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite);
+                    WarnButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
+                    KickButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
+                    BanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                                   !GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
+                    UnbanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                                     GameInstance.FocusedInstance.BannedUsers.Contains(UserBeingViewed.Id));
+                    AddModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
+                                                            !GameInstance.FocusedInstance.Moderators.Contains(
+                                                                UserBeingViewed.Id));
+                    RemoveModeratorButton.gameObject.SetActive(GameInstance.FocusedInstance.instanceCreatorId ==
+                        APIPlayer.APIUser.Id && GameInstance.FocusedInstance.Moderators.Contains(UserBeingViewed.Id));
+                }
+                else
+                {
+                    InviteButton.gameObject.SetActive(false);
+                    WarnButton.gameObject.SetActive(false);
+                    KickButton.gameObject.SetActive(false);
+                    BanButton.gameObject.SetActive(false);
+                    UnbanButton.gameObject.SetActive(false);
+                    AddModeratorButton.gameObject.SetActive(false);
+                    RemoveModeratorButton.gameObject.SetActive(false);
+                }
+                if (ConfigManager.SelectedConfigUser != null &&
+                    ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
+                    VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
+                else
+                    VolumeSlider.value = 1f;
+                ExtraRemovals.ForEach(x => x.SetActive(true));
             }
             else
             {
+                AddFriendButton.gameObject.SetActive(false);
+                RemoveFriendButton.gameObject.SetActive(false);
+                BlockButton.gameObject.SetActive(false);
+                UnblockButton.gameObject.SetActive(false);
+                FollowButton.gameObject.SetActive(false);
+                UnfollowButton.gameObject.SetActive(false);
                 InviteButton.gameObject.SetActive(false);
                 WarnButton.gameObject.SetActive(false);
                 KickButton.gameObject.SetActive(false);
@@ -87,12 +114,9 @@ namespace Hypernex.UI.Templates
                 UnbanButton.gameObject.SetActive(false);
                 AddModeratorButton.gameObject.SetActive(false);
                 RemoveModeratorButton.gameObject.SetActive(false);
+                VolumeSlider.gameObject.SetActive(false);
+                ExtraRemovals.ForEach(x => x.SetActive(false));
             }
-            if (ConfigManager.SelectedConfigUser != null &&
-                ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
-                VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
-            else
-                VolumeSlider.value = 1f;
         }
         
         private void RegisterButtonEvents(User UserBeingViewed)

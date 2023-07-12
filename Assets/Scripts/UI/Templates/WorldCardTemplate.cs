@@ -74,15 +74,35 @@ namespace Hypernex.UI.Templates
                     QuickInvoke.InvokeActionOnMainThread(new Action(() => GetAllInstanceHosts(callback, instances, temp)));
                 else
                     QuickInvoke.InvokeActionOnMainThread(callback, temp);
-            }, sharedInstance.InstanceCreatorId);
+            }, sharedInstance.InstanceCreatorId, isUserId: true);
         }
     
         private void Start() => NavigateButton.onClick.AddListener(() =>
         {
-            GetAllInstanceHosts(instances =>
+            List<SafeInstance> safeInstances = new List<SafeInstance>();
+            foreach (SafeInstance safeInstance in new List<SafeInstance>(APIPlayer.SharedInstances))
+                if(safeInstance.WorldId == lastWorldMeta.Id)
+                    safeInstances.Add(safeInstance);
+            APIPlayer.APIObject.GetPublicInstancesOfWorld(instanceResults =>
             {
-                worldTemplate.Render(lastWorldMeta, lastCreator, instances, PreviousPage);
-            }, APIPlayer.SharedInstances);
+                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                {
+                    if (instanceResults.success)
+                    {
+                        foreach (SafeInstance resultSafeInstance in instanceResults.result.SafeInstances)
+                        {
+                            if (safeInstances.Count(x =>
+                                    x.GameServerId == resultSafeInstance.GameServerId &&
+                                    x.InstanceId == resultSafeInstance.InstanceId) <= 0)
+                                safeInstances.Add(resultSafeInstance);
+                        }
+                    }
+                    GetAllInstanceHosts(instances =>
+                    {
+                        worldTemplate.Render(lastWorldMeta, lastCreator, instances, PreviousPage);
+                    }, safeInstances);
+                }));
+            }, lastWorldMeta.Id);
         });
     }
 }

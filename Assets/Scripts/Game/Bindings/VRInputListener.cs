@@ -8,10 +8,9 @@ namespace Hypernex.Game.Bindings
     {
         private List<XRBinding> xrBindings = new ();
         public List<XRBinding> XRBindings => new (xrBindings);
-        public bool UseSnapTurn = true;
-        public float TurnDegree = 45f;
 
         internal void AddXRBinding(XRBinding x) => xrBindings.Add(x);
+        internal void Clear() => xrBindings.Clear();
 
         private XRBinding LeftController => XRBindings[1];
         private XRBinding RightController => XRBindings[0];

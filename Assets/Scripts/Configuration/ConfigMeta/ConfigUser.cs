@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Tomlet.Models;
+using Hypernex.Tools;
 
 namespace Hypernex.Configuration.ConfigMeta
 {
@@ -18,7 +18,14 @@ namespace Hypernex.Configuration.ConfigMeta
         public bool UseFacialTracking;
         public Dictionary<string, string> FacialTrackingSettings = new();
 
+        public string Theme;
         public int EmojiType;
+        public AudioCompression AudioCompression;
+        public float VoicesBoost = 0f;
+
+        public bool UseSnapTurn;
+        public float SnapTurnAngle = 45f;
+        public float SmoothTurnSpeed = 1f;
 
         public Dictionary<string, float> UserVolumes = new();
 

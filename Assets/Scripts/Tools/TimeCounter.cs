@@ -19,7 +19,7 @@ namespace Hypernex.Tools
         public static string GetDate(DateTime dateTime) =>
             dateTime.ToString(DateTimeFormatInfo.CurrentInfo.LongDatePattern);
         
-        private static bool Is24H => DateTimeFormatInfo.CurrentInfo.ShortTimePattern.Contains("H");
+        public static bool Is24H => DateTimeFormatInfo.CurrentInfo.ShortTimePattern.Contains("H");
         
         private TMP_Text text;
 

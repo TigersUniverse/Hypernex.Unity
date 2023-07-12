@@ -89,7 +89,7 @@ namespace Hypernex.UI
                             sizes += item.rect.width;
                             sizes += Spacing;
                         }
-                        item.anchoredPosition3D = new Vector3(sizes, item.rect.height/2 - (20 + (float) Math.PI * 2), 0);
+                        item.anchoredPosition3D = new Vector3(sizes, -item.rect.height/2, 0);
                         item.rotation = new Quaternion(0, 0, 0, 0);
                         i++;
                     }
@@ -126,6 +126,8 @@ namespace Hypernex.UI
         }
 
         private void OnEnable() => scrollRect = gameObject.GetComponent<ScrollRect>();
+
+        private void Update() => Refresh();
     }
 
     public enum ScrollDirection

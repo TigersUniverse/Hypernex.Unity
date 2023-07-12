@@ -42,7 +42,7 @@ namespace Nexport.Transports.Telepathy
                 ServerClientChange serverClientChange = new ServerClientChange(ConnectedClients);
                 BroadcastMessage(Msg.Serialize(serverClientChange));
             };
-            _server = new global::Telepathy.Server(6144000);
+            _server = new global::Telepathy.Server(4096);
             _server.OnConnected += i =>
             {
                 TelepathyClientIdentifier kcpClientIdentifier = new TelepathyClientIdentifier(i);

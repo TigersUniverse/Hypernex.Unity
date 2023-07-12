@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
 using Hypernex.Configuration;
 using Hypernex.Networking.Messages;
-using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
@@ -34,6 +32,8 @@ namespace Hypernex.Game
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
         internal NameplateTemplate nameplateTemplate;
+        private Transform MainCamera;
+        private Transform MainCameraNametagAlign;
 
         public int interpolationFramesCount = 120;
         private int elapsedFrames;
@@ -180,6 +180,13 @@ namespace Hypernex.Game
                         avatarFileToken.avatarToken);
                 }
             };
+            GameObject co = new GameObject("Camera Offset");
+            co.transform.parent = transform;
+            MainCamera = new GameObject("Main Camera").transform;
+            MainCamera.parent = co.transform;
+            MainCameraNametagAlign = new GameObject("nametagalign_" + Guid.NewGuid()).transform;
+            MainCameraNametagAlign.localPosition = new Vector3(MainCameraNametagAlign.localPosition.x,
+                MainCameraNametagAlign.localPosition.y + 1.6f, MainCameraNametagAlign.localPosition.z);
         }
 
         public void Update()
@@ -193,7 +200,7 @@ namespace Hypernex.Game
                         User = instanceConnectedUser;
                 }
             }
-            if (nameplateTemplate != null && Avatar != null && Avatar.nametagAlign != null)
+            if (nameplateTemplate != null)
             {
                 /*Transform bone = Avatar.GetBoneFromHumanoid(HumanBodyBones.Head);
                 if (bone != null)
@@ -202,7 +209,10 @@ namespace Hypernex.Game
                     newPos.y += 0.9f;
                     nameplateTemplate.transform.position = newPos;
                 }*/
-                nameplateTemplate.FollowTransform = Avatar.nametagAlign;
+                if (Avatar != null && Avatar.nametagAlign != null)
+                    nameplateTemplate.FollowTransform = Avatar.nametagAlign;
+                else
+                    nameplateTemplate.FollowTransform = MainCameraNametagAlign;
                 nameplateTemplate.transform.localScale = new Vector3(0.003f, 0.003f, 0.003f);
             }
             else if (nameplateTemplate != null && (Avatar == null || Avatar.nametagAlign == null))

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Networking.Messages;
 using UnityEngine;
 using UnityOpus;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Tools
 {
@@ -57,13 +59,22 @@ namespace Hypernex.Tools
 
         public void DecodeFromVoice(PlayerVoice playerVoice)
         {
-            decoder ??= new Decoder(GetClosestFrequency(playerVoice.SampleRate), NumChannels.Mono);
             if (source.clip == null)
             {
                 source.clip = AudioClip.Create(playerVoice.Auth.UserId + "_voice", AUDIO_CLIP_LENGTH,
                     playerVoice.Channels, playerVoice.SampleRate, false);
             }
-            e(playerVoice.Bytes, playerVoice.EncodeLength);
+            switch (playerVoice.Encoder.ToLower())
+            {
+                case "raw":
+                    float[] d = DataConversion.ConvertByteToFloat(playerVoice.Bytes);
+                    PlayDecodedToVoice(d, playerVoice.EncodeLength);
+                    break;
+                case "opus":
+                    decoder ??= new Decoder(GetClosestFrequency(playerVoice.SampleRate), NumChannels.Mono);
+                    e(playerVoice.Bytes, playerVoice.EncodeLength);
+                    break;
+            }
         }
 
         public void PlayDecodedToVoice(float[] pcm, int pcmLength) {

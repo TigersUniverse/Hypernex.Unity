@@ -8,12 +8,23 @@ namespace Hypernex.UI.Templates
 {
     public class UserInstanceCardTemplate : MonoBehaviour
     {
+        public ProfileTemplate ProfileTemplate;
         public RawImage Pfp;
         public TMP_Text Username;
 
         public Texture2D DefaultPfp;
 
-        public void Render(User user)
+        private User User;
+        private GameObject Overlay;
+
+        public void OnNavigate()
+        {
+            if(Overlay != null)
+                Overlay.SetActive(false);
+            ProfileTemplate.Render(User);
+        }
+
+        public void Render(User user, GameObject overlay = null)
         {
             Username.text = user.Username;
             if (!string.IsNullOrEmpty(user.Bio.PfpURL))
@@ -30,6 +41,8 @@ namespace Hypernex.UI.Templates
                     });
             else
                 Pfp.texture = DefaultPfp;
+            User = user;
+            Overlay = overlay;
         }
     }
 }

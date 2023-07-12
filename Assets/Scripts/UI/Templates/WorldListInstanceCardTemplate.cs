@@ -31,7 +31,8 @@ namespace Hypernex.UI.Templates
     
         private void Start() => NavigateButton.onClick.AddListener(() =>
         {
-            JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator);
+            JoinInstanceTemplate.Render(lastRenderedSafeInstance, lastWorldMeta, lastHoster, lastCreator,
+                JoinInstanceTemplate.gameObject);
             JoinInstanceTemplate.gameObject.SetActive(true);
         });
     }

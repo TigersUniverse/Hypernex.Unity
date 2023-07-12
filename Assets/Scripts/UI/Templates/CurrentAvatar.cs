@@ -42,16 +42,14 @@ namespace Hypernex.UI.Templates
             }
         }
 
-        public void OnAvatarSlider()
+        private bool IsVRTriggerPressed()
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
-                return;
-            float lv = LocalPlayer.Instance.transform.localScale.y;
-            float v = (float) Math.Round(AvatarScaleSlider.value, 1);
-            LocalPlayer.Instance.transform.localScale = new Vector3(v, v, v);
-            Vector3 lp = LocalPlayer.Instance.transform.position;
-            LocalPlayer.Instance.transform.position = new Vector3(lp.x, lp.y + (v - lv), lp.z);
-            LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+            foreach (IBinding binding in LocalPlayer.Instance.Bindings)
+            {
+                if (binding.Trigger > 0.9f)
+                    return true;
+            }
+            return false;
         }
 
         public void RefreshAvatar()
@@ -97,7 +95,18 @@ namespace Hypernex.UI.Templates
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return;
             // Doesn't matter which dimension, they should always be uniform
-            AvatarScaleLabel.text = "Avatar Scale: " + Math.Round(LocalPlayer.Instance.transform.localScale.y, 1);
+            AvatarScaleLabel.text = "Avatar Scale: " + Math.Round(AvatarScaleSlider.value, 1);
+            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                return;
+            float lv = LocalPlayer.Instance.transform.localScale.y;
+            float v = (float) Math.Round(AvatarScaleSlider.value, 1);
+            if(!LocalPlayer.IsVR || !IsVRTriggerPressed() && v != (float) Math.Round(lv, 1))
+            {
+                LocalPlayer.Instance.transform.localScale = new Vector3(v, v, v);
+                Vector3 lp = LocalPlayer.Instance.transform.position;
+                LocalPlayer.Instance.transform.position = new Vector3(lp.x, lp.y + (v - lv), lp.z);
+                LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+            }
         }
     }
 }

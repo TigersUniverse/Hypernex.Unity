@@ -22,17 +22,17 @@ namespace Hypernex.UI.Templates
         private SafeInstance Instance;
         private WorldMeta WorldMeta;
 
-        private void CreateUserInstanceCard(User user)
+        private void CreateUserInstanceCard(User user, GameObject overlay)
         {
             GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find("UserInstanceCard").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<UserInstanceCardTemplate>().Render(user);
+            newInstanceCard.GetComponent<UserInstanceCardTemplate>().Render(user, overlay);
             Users.AddItem(c);
         }
 
-        public void Render(SafeInstance instance, WorldMeta worldMeta, User host, User creator)
+        public void Render(SafeInstance instance, WorldMeta worldMeta, User host, User creator, GameObject overlay)
         {
             Users.Clear();
             WorldName.text = worldMeta.Name;
@@ -46,7 +46,7 @@ namespace Hypernex.UI.Templates
                 {
                     if (result.success)
                         QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                            CreateUserInstanceCard(result.result.UserData)));
+                            CreateUserInstanceCard(result.result.UserData, overlay)));
                 }, userId, isUserId: true);
         }
 
