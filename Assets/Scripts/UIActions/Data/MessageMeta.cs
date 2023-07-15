@@ -11,14 +11,16 @@ namespace Hypernex.UIActions.Data
         public string Header;
         public string SubHeader;
         public string Description;
+        public MessageUrgency MessageUrgency { get; }
         public MessageButtons Buttons { get; }
         public string OKText;
         public string CancelText;
         public string YesText;
         public string NoText;
         public Action<bool> Result;
+        public float TimeToDisplay;
 
-        public MessageMeta(MessageButtons buttons, Action<bool> OnSubmit = null)
+        public MessageMeta(MessageUrgency urgency, MessageButtons buttons, Action<bool> OnSubmit = null, float t = 3.0f)
         {
             Received = DateTime.Now;
             LargeImage = null;
@@ -26,12 +28,14 @@ namespace Hypernex.UIActions.Data
             Header = String.Empty;
             SubHeader = String.Empty;
             Description = String.Empty;
+            MessageUrgency = urgency;
             Buttons = buttons;
             OKText = "OK";
             CancelText = "CancelText";
             YesText = "Yes";
             NoText = "No";
             Result = OnSubmit ?? (_ => { });
+            TimeToDisplay = t;
         }
     }
 }

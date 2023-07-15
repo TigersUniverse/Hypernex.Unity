@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Hypernex.CCK;
 using Hypernex.Game;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -17,12 +18,18 @@ namespace Hypernex.Player
         public static List<SharedAvatarToken> SharedAvatarTokens => new(avatarTokens);
         public static Action<SharedAvatarToken> OnAvatarToken { get; set; } = token => { };
 
+        private static Dictionary<string, string> assetTokens = new();
+        public static Dictionary<string, string> AssetTokens => new(assetTokens);
+        public static Action<string, string> OnAssetToken { get; set; } = (fileId, tokenContent) => { };
+
         public static Action<InstanceOpened, WorldMeta> OnInstanceOpened { get; set; } =
             (openedInstance, worldMeta) => { };
         public static Action<JoinedInstance, WorldMeta> OnInstanceJoined { get; set; } =
             (joinedInstance, worldMeta) => { };
         public static Action<LeftInstance> OnInstanceLeft { get; set; } = instanceLeft => { };
         public static Action<GotInvite> OnInvite { get; set; } = invite => { };
+
+        public static Dictionary<string, string> DownloadedWorlds = new();
 
         public static void InitSocket()
         {
@@ -55,6 +62,13 @@ namespace Hypernex.Player
                         break;
                     case "gotinvite":
                         GotInvite gotInvite = (GotInvite) response;
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        {
+                            if (AssetTokens.ContainsKey(gotInvite.worldId))
+                                assetTokens.Remove(gotInvite.worldId);
+                            assetTokens.Add(gotInvite.worldId, gotInvite.assetToken);
+                            QuickInvoke.InvokeActionOnMainThread(OnAssetToken, gotInvite.worldId, gotInvite.assetToken);
+                        }));
                         QuickInvoke.InvokeActionOnMainThread(OnInvite, gotInvite);
                         break;
                     case "sharedavatartoken":
@@ -80,6 +94,14 @@ namespace Hypernex.Player
                             GameInstance.FocusedInstance.instanceId == updatedInstance.instanceMeta.InstanceId)
                             GameInstance.FocusedInstance.UpdateInstanceMeta(updatedInstance);
                         break;
+                    case "failedtojoininstance":
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            Logger.CurrentLogger.Error("Failed to join an instance!")));
+                        break;
+                    case "failedtocreatetemporaryinstance":
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            Logger.CurrentLogger.Error("Could not create instance!")));
+                        break;
                     // TODO: Implement other messages
                 }
             };
@@ -88,17 +110,151 @@ namespace Hypernex.Player
             GameInstance.Init();
         }
 
+        private static void ContinueCreateInstance(WorldMeta worldMeta, InstancePublicity instancePublicity,
+            InstanceProtocol instanceProtocol, string token)
+        {
+            Builds targetBuild = null;
+            foreach (Builds worldMetaBuild in worldMeta.Builds)
+            {
+                if(worldMetaBuild.BuildPlatform == AssetBundleTools.Platform)
+                {
+                    targetBuild = worldMetaBuild;
+                    break;
+                }
+            }
+            if (targetBuild == null)
+            {
+                Logger.CurrentLogger.Error("No Build supported for your Platform for world " + worldMeta.Name);
+                return;
+            }
+            string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{targetBuild.FileId}";
+            if (!string.IsNullOrEmpty(token))
+                fileURL += "/" + token;
+            APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
+            {
+                string knownHash = String.Empty;
+                if (fileMetaResult.success)
+                    knownHash = fileMetaResult.result.FileMeta.Hash;
+                DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
+                {
+                    if (DownloadedWorlds.ContainsKey(worldMeta.Id))
+                        DownloadedWorlds.Remove(worldMeta.Id);
+                    DownloadedWorlds.Add(worldMeta.Id, o);
+                    if (APIPlayer.IsFullReady)
+                        APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol);
+                }, knownHash);
+            }, worldMeta.OwnerId, targetBuild.FileId);
+        }
+
         public static void CreateInstance(WorldMeta worldMeta, InstancePublicity instancePublicity = InstancePublicity.Anyone,
             InstanceProtocol instanceProtocol = InstanceProtocol.KCP)
         {
-            if (APIPlayer.IsFullReady)
-                APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol);
+            if (worldMeta.Publicity == WorldPublicity.OwnerOnly)
+            {
+                if (worldMeta.OwnerId == APIPlayer.APIUser.Id)
+                {
+                    // Generate a token
+                    APIPlayer.APIObject.AddAssetToken(t =>
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        {
+                            if (!t.success)
+                                Logger.CurrentLogger.Error("No permission to join world " + worldMeta.Name);
+                            else
+                            {
+                                if (AssetTokens.ContainsKey(worldMeta.Id))
+                                    assetTokens.Remove(worldMeta.Id);
+                                assetTokens.Add(worldMeta.Id, t.result.token.content);
+                                OnAssetToken.Invoke(worldMeta.Id, t.result.token.content);
+                                // Force ClosedRequest because only the Owner can distribute AssetTokens
+                                ContinueCreateInstance(worldMeta, InstancePublicity.ClosedRequest, instanceProtocol,
+                                    t.result.token.content);
+                            }
+                        })), APIPlayer.APIUser, APIPlayer.CurrentToken, worldMeta.Id);
+                }
+                else
+                    Logger.CurrentLogger.Error("No permission to join world " + worldMeta.Name);
+            }
+            else
+                ContinueCreateInstance(worldMeta, instancePublicity, instanceProtocol, String.Empty);
+        }
+
+        private static void ContinueJoinInstance(SafeInstance instance, WorldMeta worldMeta, string token)
+        {
+            Builds targetBuild = null;
+            foreach (Builds worldMetaBuild in worldMeta.Builds)
+            {
+                if(worldMetaBuild.BuildPlatform == AssetBundleTools.Platform)
+                {
+                    targetBuild = worldMetaBuild;
+                    break;
+                }
+            }
+            if (targetBuild == null)
+            {
+                Logger.CurrentLogger.Error("No Build supported for your Platform for world " + worldMeta.Name);
+                return;
+            }
+            string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{targetBuild.FileId}";
+            if (!string.IsNullOrEmpty(token))
+                fileURL += "/" + token;
+            APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
+            {
+                string knownHash = String.Empty;
+                if (fileMetaResult.success)
+                    knownHash = fileMetaResult.result.FileMeta.Hash;
+                DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
+                {
+                    if (DownloadedWorlds.ContainsKey(worldMeta.Id))
+                        DownloadedWorlds.Remove(worldMeta.Id);
+                    DownloadedWorlds.Add(worldMeta.Id, o);
+                    if (APIPlayer.IsFullReady)
+                        APIPlayer.UserSocket.JoinInstance(instance.GameServerId, instance.InstanceId);
+                }, knownHash);
+            }, worldMeta.OwnerId, targetBuild.FileId);
         }
         
         public static void JoinInstance(SafeInstance instance)
         {
-            if (APIPlayer.IsFullReady)
-                APIPlayer.UserSocket.JoinInstance(instance.GameServerId, instance.InstanceId);
+            WorldTemplate.GetWorldMeta(instance.WorldId, worldMeta =>
+            {
+                if (worldMeta.Publicity == WorldPublicity.OwnerOnly)
+                {
+                    if (worldMeta.OwnerId == APIPlayer.APIUser.Id)
+                    {
+                        // Generate a token
+                        APIPlayer.APIObject.AddAssetToken(t =>
+                            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            {
+                                if(!t.success)
+                                    Logger.CurrentLogger.Error("No permission to join world " + worldMeta.Name);
+                                else
+                                {
+                                    if (AssetTokens.ContainsKey(worldMeta.Id))
+                                        assetTokens.Remove(worldMeta.Id);
+                                    assetTokens.Add(worldMeta.Id, t.result.token.content);
+                                    OnAssetToken.Invoke(worldMeta.Id, t.result.token.content);
+                                    ContinueJoinInstance(instance, worldMeta, t.result.token.content);
+                                }
+                            })), APIPlayer.APIUser, APIPlayer.CurrentToken, worldMeta.Id);
+                    }
+                    else
+                    {
+                        foreach (KeyValuePair<string,string> assetToken in AssetTokens)
+                        {
+                            if (assetToken.Key == worldMeta.Id)
+                            {
+                                ContinueJoinInstance(instance, worldMeta, assetToken.Value);
+                                return;
+                            }
+                        }
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            Logger.CurrentLogger.Error("Cannot join world " + worldMeta.Name +
+                                                       " because you don't have permission!")));
+                    }
+                }
+                else
+                    ContinueJoinInstance(instance, worldMeta, String.Empty);
+            });
         }
 
         public static void LeaveInstance(string gameServerId, string instanceId)
@@ -109,8 +265,22 @@ namespace Hypernex.Player
 
         public static void InviteUser(GameInstance instance, User user)
         {
-            if(APIPlayer.IsFullReady)
-                APIPlayer.UserSocket.SendInvite(user, instance.gameServerId, instance.instanceId);
+            if (instance.worldMeta.Publicity == WorldPublicity.OwnerOnly)
+            {
+                if (instance.worldMeta.OwnerId != APIPlayer.APIUser.Id)
+                    return;
+                APIPlayer.APIObject.AddAssetToken(result =>
+                {
+                    if (result.success && APIPlayer.IsFullReady)
+                        APIPlayer.UserSocket.SendInvite(user, instance.gameServerId, instance.instanceId,
+                            result.result.token.content);
+                }, APIPlayer.APIUser, APIPlayer.CurrentToken, instance.worldMeta.Id);
+            }
+            else
+            {
+                if (APIPlayer.IsFullReady)
+                    APIPlayer.UserSocket.SendInvite(user, instance.gameServerId, instance.instanceId);
+            }
         }
     }
 }

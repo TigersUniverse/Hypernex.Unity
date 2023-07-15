@@ -39,7 +39,7 @@ namespace Hypernex.Configuration
                     string text = File.ReadAllText(ConfigLocation);
                     LoadedConfig = TomletMain.To<Config>(text);
                     OnConfigLoaded.Invoke(LoadedConfig);
-                    Logger.CurrentLogger.Log("Loaded Config");
+                    Logger.CurrentLogger.Debug("Loaded Config");
                 }
                 catch (Exception e)
                 {
@@ -70,7 +70,7 @@ namespace Hypernex.Configuration
             string text = document.SerializedValue;
             File.WriteAllText(ConfigLocation, text);
             OnConfigSaved.Invoke(config);
-            Logger.CurrentLogger.Log("Saved Config");
+            Logger.CurrentLogger.Debug("Saved Config");
         }
     }
 }

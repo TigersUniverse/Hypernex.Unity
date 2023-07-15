@@ -48,7 +48,7 @@ namespace Hypernex.Game
             if (netPlayer != null)
                 netPlayer.NetworkUpdate(playerUpdate);
             else
-                Logger.CurrentLogger.Log(
+                Logger.CurrentLogger.Debug(
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerUpdate.Auth.UserId}");
         }
 
@@ -60,7 +60,7 @@ namespace Hypernex.Game
             if (netPlayer != null)
                 netPlayer.NetworkObjectUpdate(playerObjectUpdate);
             else
-                Logger.CurrentLogger.Log(
+                Logger.CurrentLogger.Debug(
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerObjectUpdate.Auth.UserId}");
         }
 
@@ -72,7 +72,7 @@ namespace Hypernex.Game
             if (netPlayer != null)
                 netPlayer.VoiceUpdate(playerVoice);
             else
-                Logger.CurrentLogger.Log(
+                Logger.CurrentLogger.Debug(
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerVoice.Auth.UserId}");
         }
 

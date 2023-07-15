@@ -63,6 +63,11 @@ namespace Hypernex.UI.Templates
             Description.text = messageMeta.Description;
             switch (messageMeta.Buttons)
             {
+                case MessageButtons.None:
+                    OK.gameObject.SetActive(false);
+                    Yes.gameObject.SetActive(false);
+                    No.gameObject.SetActive(false);
+                    break;
                 case MessageButtons.OK:
                     OK.gameObject.SetActive(true);
                     OK.transform.GetChild(0).GetComponent<TMP_Text>().text = messageMeta.OKText;

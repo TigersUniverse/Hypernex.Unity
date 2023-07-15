@@ -95,6 +95,16 @@ public class Mirror : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (linkedCam == null)
+            return;
+        Camera main = Camera.main;
+        if (main == null)
+            return;
+        linkedCam.fieldOfView = main.fieldOfView;
+    }
+
     private void LateUpdate()
     {
         if (oldRenderScale != renderScale || oldRenderSize != renderSize)

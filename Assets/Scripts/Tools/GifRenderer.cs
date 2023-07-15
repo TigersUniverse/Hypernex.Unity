@@ -4,12 +4,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
-using MG.GIF;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+using Decoder = MG.GIF.Decoder;
 using Image = MG.GIF.Image;
 
 namespace Hypernex.Tools
@@ -17,7 +15,20 @@ namespace Hypernex.Tools
     [RequireComponent(typeof(RawImage))]
     public class GifRenderer : MonoBehaviour
     {
-        public static bool IsGif(byte[] data) => new Bitmap(new MemoryStream(data)).RawFormat.Equals(ImageFormat.Gif);
+        //public static bool IsGif(byte[] data) => new Bitmap(new MemoryStream(data)).RawFormat.Equals(ImageFormat.Gif);
+        //public static bool IsGif(byte[] data) => SixLabors.ImageSharp.Image.DetectFormat(data).Name == "GIF";
+        public static bool IsGif(byte[] data)
+        {
+            if (data.Length < 3)
+                return false;
+            byte[] r = {
+                data[0],
+                data[1],
+                data[2]
+            };
+            string s = Encoding.Default.GetString(r);
+            return s.ToLower() == "gif";
+        }
         
         private RawImage rawImage;
         private byte[] d = Array.Empty<byte>();

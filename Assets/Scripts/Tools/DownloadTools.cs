@@ -37,7 +37,7 @@ namespace Hypernex.Tools
             if (DownloadProgress != null)
                 meta.progress = DownloadProgress;
             Queue.Enqueue(meta);
-            Logger.CurrentLogger.Log("Added " + url + " to download queue!");
+            Logger.CurrentLogger.Debug("Added " + url + " to download queue!");
             Check();
         }
 
@@ -81,7 +81,7 @@ namespace Hypernex.Tools
                     skipCache = true
                 };
                 Queue.Enqueue(meta);
-                Logger.CurrentLogger.Log("Added " + url + " to download queue!");
+                Logger.CurrentLogger.Debug("Added " + url + " to download queue!");
                 Check();
             }
         }
@@ -95,7 +95,7 @@ namespace Hypernex.Tools
             if(RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
                 return;
             DownloadMeta downloadMeta = Queue.Dequeue();
-            Logger.CurrentLogger.Log("Beginning Download for " + downloadMeta.url);
+            Logger.CurrentLogger.Debug("Beginning Download for " + downloadMeta.url);
             Thread t = new Thread(async () =>
             {
                 using WebClient wc = new WebClient();
@@ -104,7 +104,7 @@ namespace Hypernex.Tools
                         QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
                 wc.DownloadDataCompleted += (sender, args) =>
                 {
-                    Logger.CurrentLogger.Log("Finished download for " + downloadMeta.url);
+                    Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);
                     if(!downloadMeta.skipCache)
                         AttemptAddToCache(downloadMeta.url, args.Result);
                     QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, args.Result);
@@ -136,7 +136,8 @@ namespace Hypernex.Tools
                         s += d.Length / (1024.0 * 1024.0);
                 }
             }
-            Cache.Add(url, data);
+            if(!Cache.ContainsKey(url))
+                Cache.Add(url, data);
         }
     }
 

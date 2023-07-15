@@ -9,6 +9,7 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Templates
 {
@@ -65,7 +66,9 @@ namespace Hypernex.UI.Templates
         {
             if (CachedWorldMeta.Count(x => x.Id == worldId) > 0)
             {
-                callback.Invoke(CachedWorldMeta.First(x => x.Id == worldId));
+                WorldMeta worldMeta = CachedWorldMeta.First(x => x.Id == worldId);
+                Logger.CurrentLogger.Debug(worldMeta.Id);
+                callback.Invoke(worldMeta);
                 return;
             }
             APIPlayer.APIObject.GetWorldMeta(result =>
@@ -137,8 +140,6 @@ namespace Hypernex.UI.Templates
             }
             WorldCreator.text = $"Created By {creator.Username}";
             DescriptionText.text = worldMeta.Description;
-            foreach ((SafeInstance, User) instance in instances)
-                CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2, creator);
             lastWorldMeta = worldMeta;
             lastCreator = creator;
             FavoriteButtonText.text = ConfigManager.SelectedConfigUser.SavedWorlds.Contains(worldMeta.Id)
@@ -167,6 +168,8 @@ namespace Hypernex.UI.Templates
                 previousPage.Show();
             });
             WorldPage.Show();
+            foreach ((SafeInstance, User) instance in instances)
+                CreateWorldListInstanceCard(instance.Item1, worldMeta, instance.Item2, creator);
         }
 
         public void Start()

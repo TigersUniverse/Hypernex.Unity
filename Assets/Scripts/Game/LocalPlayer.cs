@@ -19,6 +19,7 @@ using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Nexport;
+using RNNoise.NET;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -81,6 +82,7 @@ namespace Hypernex.Game
         public DashboardManager Dashboard;
         public XROrigin XROrigin;
         public Camera Camera;
+        public Camera UICamera;
         public List<TrackedPoseDriver> TrackedPoseDriver;
         public CharacterController CharacterController;
         public Transform LeftHandReference;
@@ -95,6 +97,7 @@ namespace Hypernex.Game
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
 
+        private Denoiser denoiser;
         private float verticalVelocity;
         private float groundedTimer;
         internal AvatarMeta avatarMeta;
@@ -138,7 +141,7 @@ namespace Hypernex.Game
                 onDone.Invoke(currentScene);
             LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
         }
-        
+
         // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
         public void RefreshAvatar()
         {
@@ -258,6 +261,24 @@ namespace Hypernex.Game
                     Position = NetworkConversionTools.Vector3Tofloat3(r.position),
                     Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(rea.x, rea.y, rea.z, 0)),
                     Size = NetworkConversionTools.Vector3Tofloat3(r.localScale)
+                },
+                new NetworkedObject
+                {
+                    ObjectLocation = "Camera Offset",
+                    Position = NetworkConversionTools.Vector3Tofloat3(Camera.transform.parent.localPosition),
+                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
+                        Camera.transform.parent.localEulerAngles.x, Camera.transform.parent.localEulerAngles.y,
+                        Camera.transform.parent.localEulerAngles.z, 0)),
+                    Size = NetworkConversionTools.Vector3Tofloat3(Camera.transform.parent.localScale)
+                },
+                new NetworkedObject
+                {
+                    ObjectLocation = "Camera Offset/Main Camera",
+                    Position = NetworkConversionTools.Vector3Tofloat3(Camera.transform.localPosition),
+                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
+                        Camera.transform.localEulerAngles.x, Camera.transform.localEulerAngles.y,
+                        Camera.transform.localEulerAngles.z, 0)),
+                    Size = NetworkConversionTools.Vector3Tofloat3(Camera.transform.localScale)
                 }
             };
             /*foreach (PathDescriptor child in new List<PathDescriptor>(pathsWaiting.Dequeue()))
@@ -390,16 +411,13 @@ namespace Hypernex.Game
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
-                foreach (Transform child in transform.GetComponentsInChildren<Transform>())
+                children.Clear();
+                foreach (Transform child in avatar.Avatar.transform.GetComponentsInChildren<Transform>())
                 {
-                    if(child.Equals(transform)) continue;
-                    //child.gameObject.layer = 7;
                     PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
                     if (pathDescriptor == null)
                         pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
                     pathDescriptor.root = transform;
-                    if (AnimationUtility.IsChildOfTransform(child, avatar.Avatar.transform))
-                        child.gameObject.layer = 7;
                     SavedTransforms.Add(pathDescriptor);
                 }
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
@@ -521,8 +539,17 @@ namespace Hypernex.Game
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
             CreateDesktopBindings();
-            Mic.OnClipReady += samples =>
+            Mic.OnClipReady += s =>
             {
+                float[] samples = s;
+                if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.NoiseSuppression)
+                {
+                    Span<float> values = new Span<float>(samples);
+                    if (denoiser == null)
+                        denoiser = new Denoiser();
+                    denoiser.Denoise(values, false);
+                    samples = values.ToArray();
+                }
                 if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null &&
                     ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.Opus && opusHandler != null)
                     opusHandler.EncodeMicrophone(samples);
@@ -607,7 +634,14 @@ namespace Hypernex.Game
 
         internal void StartVR()
         {
-            AlignVR();
+            AlignVR(true);
+            Bindings.ForEach(x =>
+            {
+                if(x.GetType() == typeof(Keyboard))
+                    ((Keyboard) x).Dispose();
+                else if(x.GetType() == typeof(Mouse))
+                    ((Mouse) x).Dispose();
+            });
             Bindings.Clear();
             // Create Bindings
             vrPlayerInput.ActivateInput();
@@ -635,25 +669,44 @@ namespace Hypernex.Game
             Logger.CurrentLogger.Log("Removed VR Bindings");
         }
 
-        public void AlignVR()
+        public void AlignVR(bool useConfig)
         {
             if (!IsVR)
                 return;
             // Align the character controller
-            vrHeight = Mathf.Clamp(XROrigin.CameraInOriginSpaceHeight, 0, Single.PositiveInfinity);
+            if (useConfig && ConfigManager.SelectedConfigUser != null)
+            {
+                if (ConfigManager.SelectedConfigUser.VRPlayerHeight == 0f)
+                    return;
+                vrHeight = ConfigManager.SelectedConfigUser.VRPlayerHeight;
+            }
+            else
+            {
+                vrHeight = Mathf.Clamp(XROrigin.CameraInOriginSpaceHeight, 0, Single.PositiveInfinity);
+                if(ConfigManager.SelectedConfigUser != null)
+                    ConfigManager.SelectedConfigUser.VRPlayerHeight = vrHeight;
+            }
             Vector3 center = XROrigin.CameraInOriginSpacePos;
             center.y = vrHeight / 2f + CharacterController.skinWidth;
             CharacterController.height = vrHeight;
             CharacterController.center = center;
+            if(avatar != null)
+                RefreshAvatar();
         }
 
         private float rotx;
         private float s_;
 
-        private (Vector3, bool, bool)? HandleLeftBinding(IBinding binding)
+        private (Vector3, bool, bool)? HandleLeftBinding(IBinding binding, bool vr)
         {
             // Left-Hand
-            Vector3 move = Camera.transform.forward * (binding.Up + binding.Down * -1) + Camera.transform.right * (binding.Left * -1 + binding.Right);
+            Vector3 move;
+            if (vr)
+                move = Camera.transform.forward * (binding.Up + binding.Down * -1) +
+                       Camera.transform.right * (binding.Left * -1 + binding.Right);
+            else
+                move = transform.forward * (binding.Up + binding.Down * -1) +
+                       transform.right * (binding.Left * -1 + binding.Right);
             s_ = binding.Button2 ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
@@ -776,7 +829,7 @@ namespace Hypernex.Game
                     g = binding.IsLook;
                 if (g)
                 {
-                    (Vector3, bool, bool)? r = HandleLeftBinding(binding);
+                    (Vector3, bool, bool)? r = HandleLeftBinding(binding, vr);
                     if (r != null)
                         left_m = r.Value;
                 }
@@ -835,6 +888,15 @@ namespace Hypernex.Game
                 Respawn(scene);
             if (Input.GetKeyDown(KeyCode.F5))
                 SwitchVR();
+            if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null)
+            {
+                foreach (KeyValuePair<AudioSource, float> keyValuePair in new Dictionary<AudioSource, float>(
+                             GameInstance.FocusedInstance.worldAudios))
+                {
+                    keyValuePair.Key.volume =
+                        ConfigManager.SelectedConfigUser.WorldAudioVolume * keyValuePair.Value;
+                }
+            }
         }
 
         private void LateUpdate()
@@ -863,6 +925,7 @@ namespace Hypernex.Game
                 StopCoroutine(lastCoroutine);
                 lastCoroutine = null;
             }
+            denoiser?.Dispose();
             if(opusHandler != null)
                 opusHandler.OnEncoded -= OnOpusEncoded;
             if(cts != null && !cts.IsCancellationRequested)

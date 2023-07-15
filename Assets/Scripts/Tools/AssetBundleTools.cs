@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using Avatar = Hypernex.CCK.Unity.Avatar;
+using Logger = Hypernex.CCK.Logger;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Tools
@@ -47,35 +48,14 @@ namespace Hypernex.Tools
             }
         }
 
-        public static string LoadSceneFromFile(string file)
-        {
-            bool a = false;
-            AssetBundle loadedAssetBundle;
-            if (cachedAssetBundles.ContainsKey(file))
-            {
-                loadedAssetBundle = cachedAssetBundles[file];
-                a = true;
-            }
-            else
-                loadedAssetBundle = AssetBundle.LoadFromFile(file);
-            if (loadedAssetBundle != null)
-            {
-                if(!a)
-                    cachedAssetBundles.Add(file, loadedAssetBundle);
-                string scenePath = loadedAssetBundle.GetAllScenePaths()[0];
-                //loadedAssetBundle.UnloadAsync(false);
-                return scenePath;
-            }
-            return null;
-        }
-
         public static IEnumerator LoadAvatarFromFile(string file, Action<Avatar> r)
         {
             bool invoked = false;
             if (cachedAssetBundles.ContainsKey(file))
             {
-                Object[] loadedAssets = cachedAssetBundles[file].LoadAllAssets();
-                foreach (Object loadedAsset in loadedAssets)
+                AssetBundleRequest assetBundleRequest = cachedAssetBundles[file].LoadAllAssetsAsync<Object>();
+                yield return new WaitUntil(() => assetBundleRequest.isDone);
+                foreach (Object loadedAsset in assetBundleRequest.allAssets)
                 {
                     if (loadedAsset is GameObject obj)
                     {
@@ -96,8 +76,10 @@ namespace Hypernex.Tools
                 if (loadedAssetBundle != null)
                 {
                     cachedAssetBundles.Add(file, loadedAssetBundle);
-                    Object[] loadedAssets = loadedAssetBundle.LoadAllAssets();
-                    foreach (Object loadedAsset in loadedAssets)
+                    AssetBundleRequest assetBundleRequest = loadedAssetBundle.LoadAllAssetsAsync<Object>();
+                    yield return new WaitUntil(() => assetBundleRequest.isDone);
+                    Logger.CurrentLogger.Debug(assetBundleRequest.allAssets.Length);
+                    foreach (Object loadedAsset in assetBundleRequest.allAssets)
                     {
                         if (loadedAsset is GameObject obj)
                         {

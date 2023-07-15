@@ -32,11 +32,13 @@ namespace Hypernex.UIActions
         private void PushInvite(GotInvite invite, WorldMeta worldMeta, User from,
             (Texture2D, (string, byte[])?) worldBanner, (Texture2D, (string, byte[])?) userIcon)
         {
-            UnreadMessages.Enqueue(new MessageMeta(MessageButtons.OK, _ => SocketManager.JoinInstance(new SafeInstance
-            {
-                GameServerId = invite.toGameServerId,
-                InstanceId = invite.toInstanceId
-            }))
+            MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
+                SocketManager.JoinInstance(new SafeInstance
+                {
+                    GameServerId = invite.toGameServerId,
+                    InstanceId = invite.toInstanceId,
+                    WorldId = invite.worldId
+                }), 5f)
             {
                 LargeImage = worldBanner,
                 SmallImage = userIcon,
@@ -44,10 +46,15 @@ namespace Hypernex.UIActions
                 SubHeader = string.IsNullOrEmpty(from.Bio.DisplayName)
                     ? from.Username
                     : $"{from.Bio.DisplayName} <size=15>@{from.Username}</size>",
-                Description = String.Empty,
+                Description = string.IsNullOrEmpty(from.Bio.DisplayName)
+                    ? from.Username
+                    : $"{from.Bio.DisplayName} <size=15>@{from.Username}</size>" + " would like you to join " +
+                      $"them in {worldMeta.Name}",
                 OKText = "Join"
-            });
+            };
+            UnreadMessages.Enqueue(messageMeta);
             ShowNotification();
+            OverlayManager.AddMessageToQueue(messageMeta);
         }
 
         private void GetUserIcon(GotInvite gotInvite, WorldMeta worldMeta, (Texture2D, (string, byte[])?) worldBanner)
@@ -69,7 +76,7 @@ namespace Hypernex.UIActions
         {
             SocketManager.OnInvite += invite =>
             {
-                Logger.CurrentLogger.Log("Got Invite from " + invite.fromUserId);
+                Logger.CurrentLogger.Debug("Got Invite from " + invite.fromUserId);
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
                     WorldTemplate.GetWorldMeta(invite.worldId, meta =>

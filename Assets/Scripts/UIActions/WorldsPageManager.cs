@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.Player;
 using Hypernex.Tools;
@@ -53,13 +54,22 @@ namespace Hypernex.UIActions
             MyWorlds.Clear();
             FavoritedWorlds.Clear();
             foreach (string worldId in APIPlayer.APIUser.Worlds)
-                WorldTemplate.GetWorldMeta(worldId, meta => CreateWorldCardTemplate(meta, APIPlayer.APIUser, MyWorlds));
+                WorldTemplate.GetWorldMeta(worldId, meta =>
+                {
+                    if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                        CreateWorldCardTemplate(meta, APIPlayer.APIUser, MyWorlds);
+                });
             foreach (string worldId in ConfigManager.SelectedConfigUser.SavedWorlds)
                 WorldTemplate.GetWorldMeta(worldId,
-                    meta => APIPlayer.APIObject.GetUser(
-                        userResult => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                            CreateWorldCardTemplate(meta, userResult.result.UserData, FavoritedWorlds))), meta.OwnerId,
-                        isUserId: true));
+                    meta =>
+                    {
+                        if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                            APIPlayer.APIObject.GetUser(
+                                userResult => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                    CreateWorldCardTemplate(meta, userResult.result.UserData, FavoritedWorlds))),
+                                meta.OwnerId,
+                                isUserId: true);
+                    });
         }
         
         private void CreateWorldCardTemplate(WorldMeta worldMeta, User creator, DynamicScroll scroll)
@@ -94,7 +104,11 @@ namespace Hypernex.UIActions
                     isSearching = false;
                     if (!result.success) return;
                     foreach (string worldIds in result.result.Candidates)
-                        WorldTemplate.GetWorldMeta(worldIds, CreateWorldSearchTemplate);
+                        WorldTemplate.GetWorldMeta(worldIds, meta =>
+                        {
+                            if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                                CreateWorldSearchTemplate(meta);
+                        });
                 }));
 
         private void Start()

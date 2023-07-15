@@ -21,8 +21,12 @@ namespace Hypernex.Configuration.ConfigMeta
         public string Theme;
         public int EmojiType;
         public AudioCompression AudioCompression;
-        public float VoicesBoost = 0f;
 
+        public float VoicesBoost = 0f;
+        public float WorldAudioVolume = 1f;
+        public bool NoiseSuppression;
+
+        public float VRPlayerHeight;
         public bool UseSnapTurn;
         public float SnapTurnAngle = 45f;
         public float SmoothTurnSpeed = 1f;

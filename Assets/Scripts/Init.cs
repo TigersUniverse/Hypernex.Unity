@@ -11,9 +11,12 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UIActions;
+using HypernexSharp.APIObjects;
 using Nexbox;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.Audio;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
@@ -22,17 +25,20 @@ using Material = UnityEngine.Material;
 public class Init : MonoBehaviour
 {
     public static Init Instance;
+    public static bool IsQuitting { get; private set; }
     
     public UITheme DefaultTheme;
-    public bool ForceVR;
     public bool UseHTTP;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
     public Material OutlineMaterial;
     public List<TMP_SpriteAsset> EmojiSprites = new ();
     public AudioMixerGroup VoiceGroup;
+    public OverlayManager OverlayManager;
 
     private string GetPluginLocation() =>
 #if UNITY_EDITOR
+        Path.Combine(Application.persistentDataPath, "Plugins");
+#elif UNITY_ANDROID
         Path.Combine(Application.persistentDataPath, "Plugins");
 #else
         Path.Combine(Application.dataPath, "Plugins");
@@ -61,17 +67,42 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
+        OverlayManager.Begin();
+        Application.wantsToQuit += () => IsQuitting = true;
         kcp2k.Log.Info = s => unityLogger.Debug(s);
         kcp2k.Log.Warning = s => unityLogger.Warn(s);
         kcp2k.Log.Error = s => unityLogger.Error(s);
         Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
+#if UNITY_ANDROID
+        Application.backgroundLoadingPriority = ThreadPriority.High;
+        try
+        {
+            if(!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
+                Permission.RequestUserPermission(Permission.ExternalStorageRead);
+            if(!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
+                Permission.RequestUserPermission(Permission.ExternalStorageWrite);
+        }
+        catch(Exception){}
+#else
         Application.backgroundLoadingPriority = ThreadPriority.Low;
+#endif
         string[] args = Environment.GetCommandLineArgs();
-        if(ForceVR || args.Contains("-xr"))
+        if(args.Contains("-xr"))
             StartVR();
-        DownloadTools.DownloadsPath = Path.Combine(Application.streamingAssetsPath, "Downloads");
+        string targetStreamingPath;
+        switch (AssetBundleTools.Platform)
+        {
+            case BuildPlatform.Android:
+                DownloadTools.DownloadsPath = Path.Combine(Application.persistentDataPath, "Downloads");
+                targetStreamingPath = Application.persistentDataPath;
+                break;
+            default:
+                DownloadTools.DownloadsPath = Path.Combine(Application.streamingAssetsPath, "Downloads");
+                targetStreamingPath = Application.streamingAssetsPath;
+                break;
+        }
         DefaultTheme.ApplyThemeToUI();
         DiscordTools.StartDiscord();
         
@@ -92,7 +123,7 @@ public class Init : MonoBehaviour
                     userTheme.ApplyThemeToUI();
                 if(configUser.UseFacialTracking)
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        FaceTrackingManager.Init(Application.streamingAssetsPath)));
+                        FaceTrackingManager.Init(targetStreamingPath)));
             }
         };
         GetComponent<CoroutineRunner>()
@@ -141,13 +172,14 @@ public class Init : MonoBehaviour
                 avatarIdToken.Value);
         if(LocalPlayer.Instance != null)
             LocalPlayer.Instance.Dispose();
-        FaceTrackingManager.Destroy();
         if(GameInstance.FocusedInstance != null)
             GameInstance.FocusedInstance.Dispose();
-        DiscordTools.Stop();
         if (APIPlayer.UserSocket != null && APIPlayer.UserSocket.IsOpen)
             APIPlayer.UserSocket.Close();
-        AssetBundleTools.UnloadAllAssetBundles();
+        OverlayManager.Dispose();
+        DiscordTools.Stop();
+        FaceTrackingManager.Destroy();
         StopVR();
+        AssetBundleTools.UnloadAllAssetBundles();
     }
 }

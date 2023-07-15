@@ -26,12 +26,17 @@ namespace Hypernex.UIActions
         public TMP_InputField DownloadThreadsInput;
         public TMP_InputField MMSCInput;
 
+        public GameObject AudioPanel;
+        public Slider VoicesBoostSlider;
+        public TMP_Text VoicesBoostSliderValueText;
+        public Slider WorldAudioSlider;
+        public TMP_Text WorldAudioSliderValueText;
+        public Toggle NoiseSuppressionToggle;
+
         public GameObject UserPanel;
         public TMP_Dropdown ThemeSelection;
         public TMP_Dropdown EmojiTypeSelection;
         public TMP_Dropdown AudioCompressionSelection;
-        public Slider VoicesBoostSlider;
-        public TMP_Text VoicesBoostSliderValueText;
 
         public GameObject VRPanel;
         public TMP_Text UseSnapTurnValue;
@@ -85,6 +90,22 @@ namespace Hypernex.UIActions
             ConfigManager.SaveConfigToFile();
         }
 
+        public void OnAudioSettings()
+        {
+            if (ConfigManager.SelectedConfigUser != null)
+            {
+                float vbRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.VoicesBoost, 2);
+                VoicesBoostSlider.value = vbRounded;
+                VoicesBoostSliderValueText.text = vbRounded.ToString(CultureInfo.InvariantCulture) + " dB";
+                float waRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.WorldAudioVolume, 2);
+                WorldAudioSlider.value = waRounded;
+                WorldAudioSliderValueText.text = waRounded.ToString(CultureInfo.InvariantCulture);
+                NoiseSuppressionToggle.isOn = ConfigManager.SelectedConfigUser.NoiseSuppression;
+            }
+            AllPanels.ForEach(x => x.SetActive(false));
+            AudioPanel.SetActive(true);
+        }
+
         public void OnUserSettings()
         {
             if(ConfigManager.SelectedConfigUser != null)
@@ -102,9 +123,6 @@ namespace Hypernex.UIActions
                 }
                 EmojiTypeSelection.value = ConfigManager.SelectedConfigUser.EmojiType;
                 AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
-                float vbRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.VoicesBoost, 2);
-                VoicesBoostSlider.value = vbRounded;
-                VoicesBoostSliderValueText.text = vbRounded.ToString(CultureInfo.InvariantCulture) + " dB";
             }
             AllPanels.ForEach(x => x.SetActive(false));
             UserPanel.SetActive(true);
@@ -260,6 +278,22 @@ namespace Hypernex.UIActions
                 float rounded = (float) Math.Round(v, 2);
                 ConfigManager.SelectedConfigUser.VoicesBoost = rounded;
                 VoicesBoostSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture) + " dB";
+            });
+            WorldAudioSlider.onValueChanged.RemoveAllListeners();
+            WorldAudioSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                float rounded = (float) Math.Round(v, 2);
+                ConfigManager.SelectedConfigUser.WorldAudioVolume = rounded;
+                WorldAudioSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture);
+            });
+            NoiseSuppressionToggle.onValueChanged.RemoveAllListeners();
+            NoiseSuppressionToggle.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                ConfigManager.SelectedConfigUser.NoiseSuppression = v;
             });
             SnapTurnDegreeSlider.onValueChanged.RemoveAllListeners();
             SnapTurnDegreeSlider.onValueChanged.AddListener(v =>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.Player;
 using Hypernex.Tools;
@@ -54,13 +55,20 @@ namespace Hypernex.UIActions
             MyAvatars.Clear();
             FavoritedAvatars.Clear();
             foreach (string worldId in APIPlayer.APIUser.Avatars)
-                AvatarTemplate.GetAvatarMeta(worldId, meta => CreateAvatarCardTemplate(meta, APIPlayer.APIUser, MyAvatars));
+                AvatarTemplate.GetAvatarMeta(worldId, meta =>
+                {
+                    if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                        CreateAvatarCardTemplate(meta, APIPlayer.APIUser, MyAvatars);
+                });
             foreach (string worldId in ConfigManager.SelectedConfigUser.SavedAvatars)
-                AvatarTemplate.GetAvatarMeta(worldId,
-                    meta => APIPlayer.APIObject.GetUser(
-                        userResult => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                            CreateAvatarCardTemplate(meta, userResult.result.UserData, FavoritedAvatars))), meta.OwnerId,
-                        isUserId: true));
+                AvatarTemplate.GetAvatarMeta(worldId, meta =>
+                {
+                    if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                        APIPlayer.APIObject.GetUser(
+                            userResult => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                CreateAvatarCardTemplate(meta, userResult.result.UserData, FavoritedAvatars)
+                            )), meta.OwnerId, isUserId: true);
+                });
         }
         
         private void CreateAvatarCardTemplate(AvatarMeta avatarMeta, User creator, DynamicScroll scroll)
@@ -95,7 +103,11 @@ namespace Hypernex.UIActions
                     isSearching = false;
                     if (!result.success) return;
                     foreach (string avatarIds in result.result.Candidates)
-                        AvatarTemplate.GetAvatarMeta(avatarIds, CreateAvatarSearchTemplate);
+                        AvatarTemplate.GetAvatarMeta(avatarIds, meta =>
+                        {
+                            if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
+                                CreateAvatarSearchTemplate(meta);
+                        });
                 }));
 
         private void Start()

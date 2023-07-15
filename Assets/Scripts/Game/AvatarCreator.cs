@@ -8,7 +8,6 @@ using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
-using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -35,17 +34,17 @@ namespace Hypernex.Game
         private VRIKCalibrator.Settings vrikSettings = new()
         {
             scaleMlp = 1f,
-            handOffset = new Vector3(0, 0, -0.1f),
-            handTrackerUp = Vector3.back
+            handOffset = new Vector3(0, 0.01f, -0.1f)
         };
         private GameObject headAlign;
         internal Transform nametagAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
         internal OpusHandler opusHandler;
+        private List<AvatarNearClip> avatarNearClips = new();
         private OVRLipSyncContext lipSyncContext;
         private List<OVRLipSyncContextMorphTarget> morphTargets = new ();
-        
+
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
             a = Object.Instantiate(a.gameObject).GetComponent<Avatar>();
@@ -60,6 +59,15 @@ namespace Hypernex.Game
             voiceAlign.transform.SetParent(a.SpeechPosition.transform);
             voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
             audioSource = voiceAlign.AddComponent<AudioSource>();
+            foreach (SkinnedMeshRenderer skinnedMeshRenderer in
+                     a.transform.GetComponentsInChildren<SkinnedMeshRenderer>())
+                if (!skinnedMeshRenderer.name.Contains("shadowclone_"))
+                {
+                    AvatarNearClip avatarNearClip = skinnedMeshRenderer.gameObject.AddComponent<AvatarNearClip>();
+                    if(avatarNearClip != null && avatarNearClip.Setup(this, localPlayer.Camera))
+                        avatarNearClips.Add(avatarNearClip);
+                }
+            avatarNearClips.ForEach(x => x.CreateShadows());
             Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
             if(head != null)
                 vrikSettings.headOffset = head.position - headAlign.transform.position;
@@ -754,7 +762,7 @@ namespace Hypernex.Game
                 opusHandler.OnDecoded -= opusHandler.PlayDecodedToVoice;
             if(nametagAlign != null)
             {
-                Object.Destroy(nametagAlign);
+                Object.Destroy(nametagAlign.gameObject);
                 nametagAlign = null;
             }
             Object.Destroy(Avatar.gameObject);

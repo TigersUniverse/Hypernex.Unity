@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
@@ -26,7 +27,7 @@ using Object = UnityEngine.Object;
 
 namespace Hypernex.Game
 {
-    public class GameInstance : IDisposable
+    public class GameInstance
     {
         public static GameInstance FocusedInstance { get; internal set; }
         public static Action<GameInstance, WorldMeta> OnGameInstanceLoaded { get; set; } = (instance, meta) => { };
@@ -99,6 +100,7 @@ namespace Hypernex.Game
         public User host;
         public Texture2D Thumbnail;
         public InstancePublicity Publicity;
+        public Dictionary<AudioSource, float> worldAudios = new();
 
         private HypernexInstanceClient client;
         internal Scene loadedScene;
@@ -152,7 +154,7 @@ namespace Hypernex.Game
 
         private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
         {
-            ClientSettings clientSettings = new ClientSettings(ip, port, false, 1);
+            ClientSettings clientSettings = new ClientSettings(ip, port, instanceProtocol == InstanceProtocol.UDP, 1);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
             client.OnConnect += () =>
@@ -230,12 +232,13 @@ namespace Hypernex.Game
         }
         public void Close()
         {
-            CoroutineRunner.Instance.Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
-                s =>
-                {
-                    LocalPlayer.Instance.Respawn(s);
-                    LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
-                }));
+            if(!global::Init.IsQuitting)
+                CoroutineRunner.Instance.Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
+                    s =>
+                    {
+                        LocalPlayer.Instance.Respawn(s);
+                        LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+                    }));
             DiscordTools.UnfocusInstance(gameServerId + "/" + instanceId);
             PlayerManagement.DestroyGameInstance(this);
             if(IsOpen)
@@ -375,8 +378,6 @@ namespace Hypernex.Game
         private void LoadScene(bool open, string s) => CoroutineRunner.Instance.Run(
             LocalPlayer.Instance.SafeSwitchScene(s, currentScene =>
             {
-                //SceneManager.MoveGameObjectToScene(
-                //DontDestroyMe.GetNotDestroyedObject("Physics").GetComponent<DontDestroyMe>().Clone(), currentScene);
                 foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
                 {
                     Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>(true);
@@ -426,7 +427,6 @@ namespace Hypernex.Game
                         {
                             Grabbable grabbable = grabbableDescriptor.gameObject.AddComponent<Grabbable>();
                             grabbable.ApplyVelocity = grabbableDescriptor.ApplyVelocity;
-                            grabbable.ApplyVelocity = false;
                             grabbable.VelocityAmount = grabbableDescriptor.VelocityAmount;
                             grabbable.VelocityThreshold = grabbableDescriptor.VelocityThreshold;
                             grabbable.GrabByLaser = grabbableDescriptor.GrabByLaser;
@@ -444,9 +444,18 @@ namespace Hypernex.Game
                         EventSystem eventSystem = transform.gameObject.GetComponent<EventSystem>();
                         if(eventSystem != null)
                             Object.Destroy(eventSystem.gameObject);
+                        AudioSource[] audios = transform.gameObject.GetComponents<AudioSource>();
+                        foreach (AudioSource audioSource in audios)
+                        {
+                            Transform root = AnimationUtility.GetRootOfChild(audioSource.transform);
+                            if (root != null && (root.GetComponent<NetPlayer>() != null ||
+                                                 root.GetComponent<LocalPlayer>() != null))
+                                continue;
+                            if (!worldAudios.ContainsKey(audioSource))
+                                worldAudios.Add(audioSource, audioSource.volume);
+                        }
                     }
                 }
-
                 if (World == null)
                     Dispose();
                 else
@@ -477,37 +486,52 @@ namespace Hypernex.Game
 
         private void Load(bool open = true)
         {
-            // Download World
-            string fileId;
-            try
+            if (SocketManager.DownloadedWorlds.ContainsKey(worldMeta.Id) &&
+                File.Exists(SocketManager.DownloadedWorlds[worldMeta.Id]))
             {
-                if (AssetBundleTools.Platform == BuildPlatform.Android)
-                    fileId = worldMeta.Builds.First(x => x.BuildPlatform == BuildPlatform.Android).FileId;
-                else
-                    fileId = worldMeta.Builds.First(x => x.BuildPlatform == BuildPlatform.Windows).FileId;
-            }
-            catch (InvalidOperationException)
-            {
-                Dispose();
-                return;
-            }
-            string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{fileId}";
-            APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
-            {
-                string knownHash = String.Empty;
-                if (fileMetaResult.success)
-                    knownHash = fileMetaResult.result.FileMeta.Hash;
-                DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
+                string o = SocketManager.DownloadedWorlds[worldMeta.Id];
+                CoroutineRunner.Instance.Run(AssetBundleTools.LoadSceneFromFile(o, s =>
                 {
-                    CoroutineRunner.Instance.Run(AssetBundleTools.LoadSceneFromFile(o, s =>
+                    if (!string.IsNullOrEmpty(s))
+                        LoadScene(open, s);
+                    else
+                        Dispose();
+                }));
+            }
+            else
+            {
+                // Download World
+                string fileId;
+                try
+                {
+                    if (AssetBundleTools.Platform == BuildPlatform.Android)
+                        fileId = worldMeta.Builds.First(x => x.BuildPlatform == BuildPlatform.Android).FileId;
+                    else
+                        fileId = worldMeta.Builds.First(x => x.BuildPlatform == BuildPlatform.Windows).FileId;
+                }
+                catch (InvalidOperationException)
+                {
+                    Dispose();
+                    return;
+                }
+                string fileURL = $"{APIPlayer.APIObject.Settings.APIURL}file/{worldMeta.OwnerId}/{fileId}";
+                APIPlayer.APIObject.GetFileMeta(fileMetaResult =>
+                {
+                    string knownHash = String.Empty;
+                    if (fileMetaResult.success)
+                        knownHash = fileMetaResult.result.FileMeta.Hash;
+                    DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                     {
-                        if (!string.IsNullOrEmpty(s))
-                            LoadScene(open, s);
-                        else
-                            Dispose();
-                    }));
-                }, knownHash);
-            }, worldMeta.OwnerId, fileId);
+                        CoroutineRunner.Instance.Run(AssetBundleTools.LoadSceneFromFile(o, s =>
+                        {
+                            if (!string.IsNullOrEmpty(s))
+                                LoadScene(open, s);
+                            else
+                                Dispose();
+                        }));
+                    }, knownHash);
+                }, worldMeta.OwnerId, fileId);
+            }
         }
 
         public void Dispose()

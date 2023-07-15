@@ -57,6 +57,7 @@ namespace Hypernex.UI.Templates
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return;
             LocalPlayer.Instance.RefreshAvatar();
+            AvatarScaleSlider.value = LocalPlayer.Instance.transform.localScale.y;
             LoginPageTopBarButton.Show("Home");
         }
         

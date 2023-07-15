@@ -2,6 +2,7 @@
 {
     public enum MessageButtons
     {
+        None,
         OK,
         YesNo
     }

@@ -185,6 +185,7 @@ namespace Hypernex.Game
             MainCamera = new GameObject("Main Camera").transform;
             MainCamera.parent = co.transform;
             MainCameraNametagAlign = new GameObject("nametagalign_" + Guid.NewGuid()).transform;
+            MainCameraNametagAlign.parent = MainCamera.transform;
             MainCameraNametagAlign.localPosition = new Vector3(MainCameraNametagAlign.localPosition.x,
                 MainCameraNametagAlign.localPosition.y + 1.6f, MainCameraNametagAlign.localPosition.z);
         }
