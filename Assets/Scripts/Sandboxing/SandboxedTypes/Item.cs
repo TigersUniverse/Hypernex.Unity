@@ -16,6 +16,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         internal Item(Transform t) => this.t = t;
 
+        public string Name => t.name;
+
         public bool Enabled
         {
             get => t.gameObject.activeSelf;

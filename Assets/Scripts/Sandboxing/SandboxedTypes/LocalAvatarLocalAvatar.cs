@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Hypernex.CCK.Unity;
 using Hypernex.Game;
 using Hypernex.Tools;
 using UnityEngine;
@@ -11,21 +13,21 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         internal static List<string> AssignedTags = new();
         internal static List<string> ExtraneousKeys = new();
 
-        private Transform avatarRoot;
+        private Transform playerRoot;
         private bool isLocalAvatar;
         private LocalPlayer localPlayer;
         private NetPlayer netPlayer;
 
         public LocalAvatarLocalAvatar() => throw new Exception("Cannot instantiate LocalAvatarLocalAvatar");
 
-        internal LocalAvatarLocalAvatar(Transform avatarRoot)
+        internal LocalAvatarLocalAvatar(Transform playerRoot)
         {
-            this.avatarRoot = avatarRoot;
-            isLocalAvatar = avatarRoot.GetComponent<LocalPlayer>() != null;
+            this.playerRoot = playerRoot;
+            isLocalAvatar = playerRoot.GetComponent<LocalPlayer>() != null;
             if (isLocalAvatar)
-                localPlayer = avatarRoot.GetComponent<LocalPlayer>();
+                localPlayer = playerRoot.GetComponent<LocalPlayer>();
             else
-                netPlayer = avatarRoot.GetComponent<NetPlayer>();
+                netPlayer = playerRoot.GetComponent<NetPlayer>();
         }
 
         private AvatarCreator GetAvatarCreator()
@@ -37,7 +39,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public Item GetAvatarObject(HumanBodyBones humanBodyBones)
         {
-            if (avatarRoot == null)
+            if (playerRoot == null)
                 return null;
             Transform bone = GetAvatarCreator().GetBoneFromHumanoid(humanBodyBones);
             if (bone == null)
@@ -47,7 +49,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public Item GetAvatarObjectByPath(string path)
         {
-            if (avatarRoot == null)
+            if (playerRoot == null)
                 return null;
             Transform bone = GetAvatarCreator().Avatar.transform.Find(path);
             if (bone == null)
@@ -55,31 +57,79 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return new Item(bone);
         }
 
-        public bool IsAvatarItem(Item item) => AnimationUtility.GetRootOfChild(item.t) == avatarRoot;
-        public bool IsAvatarItem(ReadonlyItem item) => AnimationUtility.GetRootOfChild(item.item.t) == avatarRoot;
-
-        public object GetParameter(string parameterName) =>
-            avatarRoot == null ? null : GetAvatarCreator().GetParameter(parameterName);
-
-        public void SetParameter(string name, bool value)
+        public ReadonlyItem GetPlayerRoot()
         {
-            if (!isLocalAvatar || localPlayer == null)
-                return;
-            localPlayer.avatar.SetParameter(name, value);
+            if (playerRoot == null)
+                return null;
+            return new ReadonlyItem(playerRoot);
         }
+
+        public bool IsAvatarItem(Item item) => AnimationUtility.GetRootOfChild(item.t) == playerRoot;
+        public bool IsAvatarItem(ReadonlyItem item) => AnimationUtility.GetRootOfChild(item.item.t) == playerRoot;
         
-        public void SetParameter(string name, int value)
+        public AvatarParameter[] GetAvatarParameters()
         {
-            if (!isLocalAvatar || localPlayer == null)
-                return;
-            localPlayer.avatar.SetParameter(name, value);
+            AvatarCreator ac = GetAvatarCreator();
+            if (ac == null)
+                return Array.Empty<AvatarParameter>();
+            List<AvatarParameter> parameterNames = new();
+            foreach (AnimatorPlayable avatarAnimatorPlayable in ac.AnimatorPlayables)
+            {
+                foreach (AnimatorControllerParameter parameter in avatarAnimatorPlayable.AnimatorControllerParameters)
+                {
+                    if (parameterNames.Count(x => x.Name == parameter.name) <= 0)
+                        parameterNames.Add(new AvatarParameter(ac, avatarAnimatorPlayable,
+                            parameter, true));
+                }
+            }
+            return parameterNames.ToArray();
         }
-        
-        public void SetParameter(string name, float value)
+
+        public AvatarParameter GetAvatarParameter(string parameterName)
         {
-            if (!isLocalAvatar || localPlayer == null)
-                return;
-            localPlayer.avatar.SetParameter(name, value);
+            AvatarCreator ac = GetAvatarCreator();
+            if (ac == null)
+                return null;
+            foreach (AnimatorPlayable animatorPlayable in ac.AnimatorPlayables)
+            {
+                foreach (AnimatorControllerParameter parameter in animatorPlayable.AnimatorControllerParameters)
+                {
+                    if (parameter.name == parameterName)
+                        return new AvatarParameter(ac, animatorPlayable, parameter, true);
+                }
+            }
+            return null;
+        }
+
+        public bool IsExtraneousObjectPresent(string key)
+        {
+            if (isLocalAvatar)
+            {
+                if (localPlayer == null)
+                    return false;
+                return localPlayer.LastExtraneousObjects.ContainsKey(key);
+            }
+            if (netPlayer == null)
+                return false;
+            return netPlayer.LastExtraneousObjects.ContainsKey(key);
+        }
+
+        public string[] GetExtraneousObjectKeys()
+        {
+            List<string> keys = new();
+            if (isLocalAvatar)
+            {
+                if (localPlayer == null)
+                    return Array.Empty<string>();
+                foreach (string key in localPlayer.LastExtraneousObjects.Keys)
+                    keys.Add(key);
+                return keys.ToArray();
+            }
+            if (netPlayer == null)
+                return Array.Empty<string>();
+            foreach (string key in netPlayer.LastExtraneousObjects.Keys)
+                keys.Add(key);
+            return keys.ToArray();
         }
         
         public object GetExtraneousObject(string key)
@@ -159,6 +209,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 AssignedTags.Remove(tag);
             if (LocalPlayer.MorePlayerAssignedTags.Contains(tag))
                 LocalPlayer.MorePlayerAssignedTags.Remove(tag);
+        }
+
+        public void Respawn()
+        {
+            if (LocalPlayer.Instance == null || GameInstance.FocusedInstance == null)
+                return;
+            if (!GameInstance.FocusedInstance.World.AllowRespawn)
+                return;
+            LocalPlayer.Instance.Respawn();
         }
     }
 }

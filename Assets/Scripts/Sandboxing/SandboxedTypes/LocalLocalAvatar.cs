@@ -1,4 +1,8 @@
-﻿using Hypernex.Game;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Hypernex.CCK.Unity;
+using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
@@ -31,6 +35,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return new ReadonlyItem(bone);
         }
 
+        public static Item GetPlayerRoot()
+        {
+            if (LocalPlayer.Instance == null)
+                return null;
+            return new Item(LocalPlayer.Instance.transform);
+        }
+
         public static bool IsAvatarItem(Item item) =>
             AnimationUtility.GetRootOfChild(item.t).gameObject.GetComponent<LocalPlayer>() != null;
         
@@ -50,12 +61,52 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return;
             LocalPlayer.Instance.transform.rotation = NetworkConversionTools.float4ToQuaternion(rotation);
         }
+
+        public static AvatarParameter[] GetAvatarParameters()
+        {
+            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+                return Array.Empty<AvatarParameter>();
+            List<AvatarParameter> parameterNames = new();
+            foreach (AnimatorPlayable avatarAnimatorPlayable in LocalPlayer.Instance.avatar.AnimatorPlayables)
+            {
+                foreach (AnimatorControllerParameter parameter in avatarAnimatorPlayable.AnimatorControllerParameters)
+                {
+                    if (parameterNames.Count(x => x.Name == parameter.name) <= 0)
+                        parameterNames.Add(new AvatarParameter(LocalPlayer.Instance.avatar, avatarAnimatorPlayable,
+                            parameter, false));
+                }
+            }
+            return parameterNames.ToArray();
+        }
         
-        public static object GetParameter(string parameterName)
+        public static AvatarParameter GetAvatarParameter(string parameterName)
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return null;
-            return LocalPlayer.Instance.avatar.GetParameter(parameterName);
+            foreach (AnimatorPlayable animatorPlayable in LocalPlayer.Instance.avatar.AnimatorPlayables)
+            {
+                foreach (AnimatorControllerParameter parameter in animatorPlayable.AnimatorControllerParameters)
+                {
+                    if (parameter.name == parameterName)
+                        return new AvatarParameter(LocalPlayer.Instance.avatar, animatorPlayable, parameter, false);
+                }
+            }
+            return null;
+        }
+
+        public static bool IsExtraneousObjectPresent(string key)
+        {
+            if (LocalPlayer.Instance == null)
+                return false;
+            return LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key);
+        }
+
+        public static string[] GetExtraneousObjectKeys()
+        {
+            List<string> keys = new();
+            foreach (string key in LocalPlayer.Instance.LastExtraneousObjects.Keys)
+                keys.Add(key);
+            return keys.ToArray();
         }
 
         public static object GetExtraneousObject(string key)

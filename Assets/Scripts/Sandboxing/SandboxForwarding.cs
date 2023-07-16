@@ -27,6 +27,7 @@ namespace Hypernex.Sandboxing
                 ["float4"] = typeof(float4),
                 ["Item"] = typeof(Item),
                 ["ReadonlyItem"] = typeof(ReadonlyItem),
+                ["AvatarParameterType"] = typeof(AvatarParameterType),
                 ["LocalAvatarLocalAvatar"] = typeof(LocalAvatarLocalAvatar),
                 ["Players"] = typeof(LocalAvatarNetAvatar),
                 ["Time"] = typeof(Time),
@@ -49,6 +50,7 @@ namespace Hypernex.Sandboxing
             ["float4"] = typeof(float4),
             ["Item"] = typeof(Item),
             ["ReadonlyItem"] = typeof(ReadonlyItem),
+            ["AvatarParameterType"] = typeof(AvatarParameterType),
             ["LocalAvatar"] = typeof(LocalLocalAvatar),
             ["NetAvatar"] = typeof(LocalNetAvatar),
             ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
@@ -69,7 +71,7 @@ namespace Hypernex.Sandboxing
             ["Interactables"] = typeof(Interactables)
         });
 
-        public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, Transform avatarRoot, 
+        public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, Transform playerRoot, 
             GameInstance gameInstance)
         {
             switch (restriction)
@@ -77,7 +79,7 @@ namespace Hypernex.Sandboxing
                 case SandboxRestriction.LocalAvatar:
                     foreach (KeyValuePair<string,Type> forwardingType in ForwardingLocalAvatarTypes)
                         interpreter.ForwardType(forwardingType.Key, forwardingType.Value);
-                    interpreter.CreateGlobal("LocalAvatar", new LocalAvatarLocalAvatar(avatarRoot));
+                    interpreter.CreateGlobal("LocalAvatar", new LocalAvatarLocalAvatar(playerRoot));
                     break;
                 case SandboxRestriction.Local:
                     // Pre-condition: gameInstance cannot be null

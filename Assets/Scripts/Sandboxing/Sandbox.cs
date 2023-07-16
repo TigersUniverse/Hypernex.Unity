@@ -30,7 +30,7 @@ namespace Hypernex.Sandboxing
             interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
         
-        public Sandbox(NexboxScript script, Transform avatarRoot)
+        public Sandbox(NexboxScript script, Transform playerRoot)
         {
             switch (script.Language)
             {
@@ -44,7 +44,7 @@ namespace Hypernex.Sandboxing
                     throw new Exception("Unknown NexboxScript language");
             }
             interpreter.StartSandbox(o => Logger.CurrentLogger.Log($"[{script.Name}{script.GetExtensionFromLanguage()}] {o}"));
-            SandboxForwarding.Forward(interpreter, SandboxRestriction.LocalAvatar, avatarRoot, null);
+            SandboxForwarding.Forward(interpreter, SandboxRestriction.LocalAvatar, playerRoot, null);
             interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
 

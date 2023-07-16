@@ -15,6 +15,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         internal ReadonlyItem(Transform transform) => item = new Item(transform);
 
+        public string Name => item.Name;
+
         public bool Enabled => item.Enabled;
         
         public float3 Position => item.Position;
