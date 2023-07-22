@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing.SandboxedTypes;
+using HypernexSharp.APIObjects;
 using Nexbox;
 using UnityEngine;
 using Bounds = Hypernex.Sandboxing.SandboxedTypes.Bounds;
@@ -40,7 +41,10 @@ namespace Hypernex.Sandboxing
                 ["Collider"] = typeof(Collider),
                 ["Colliders"] = typeof(Colliders),
                 ["PenetrationResult"] = typeof(PenetrationResult),
-                ["Physics"] = typeof(Physics)
+                ["Physics"] = typeof(Physics),
+                ["PronounObject"] = typeof(PronounObject),
+                ["PronounCases"] = typeof(PronounCases),
+                ["Pronouns"] = typeof(Pronouns)
             });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
@@ -68,7 +72,10 @@ namespace Hypernex.Sandboxing
             ["Colliders"] = typeof(Colliders),
             ["PenetrationResult"] = typeof(PenetrationResult),
             ["Physics"] = typeof(Physics),
-            ["Interactables"] = typeof(Interactables)
+            ["Interactables"] = typeof(Interactables),
+            ["PronounObject"] = typeof(PronounObject),
+            ["PronounCases"] = typeof(PronounCases),
+            ["Pronouns"] = typeof(Pronouns)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, Transform playerRoot, 

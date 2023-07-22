@@ -76,6 +76,7 @@ public class Init : MonoBehaviour
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
 #if UNITY_ANDROID
+        Caching.compressionEnabled = false;
         Application.backgroundLoadingPriority = ThreadPriority.High;
         try
         {
@@ -89,7 +90,7 @@ public class Init : MonoBehaviour
         Application.backgroundLoadingPriority = ThreadPriority.Low;
 #endif
         string[] args = Environment.GetCommandLineArgs();
-        if(args.Contains("-xr"))
+        if(args.Contains("-xr") || AssetBundleTools.Platform == BuildPlatform.Android)
             StartVR();
         string targetStreamingPath;
         switch (AssetBundleTools.Platform)

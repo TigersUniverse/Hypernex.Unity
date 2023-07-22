@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using Avatar = Hypernex.CCK.Unity.Avatar;
@@ -53,42 +54,44 @@ namespace Hypernex.Tools
             bool invoked = false;
             if (cachedAssetBundles.ContainsKey(file))
             {
-                AssetBundleRequest assetBundleRequest = cachedAssetBundles[file].LoadAllAssetsAsync<Object>();
-                yield return new WaitUntil(() => assetBundleRequest.isDone);
-                foreach (Object loadedAsset in assetBundleRequest.allAssets)
+                GameObject[] gameObjects = cachedAssetBundles[file].LoadAllAssets<GameObject>();
+                foreach (GameObject obj in gameObjects)
                 {
-                    if (loadedAsset is GameObject obj)
+                    Avatar avatar = obj.GetComponent<Avatar>();
+                    if (!invoked && avatar != null)
+                    {
+                        r.Invoke(avatar);
+                        invoked = true;
+                    }
+                }
+            }
+            else
+            {
+#if UNITY_ANDROID
+                MemoryStream ms = new MemoryStream();
+                FileStream fs = new FileStream(file, FileMode.Open, FileAccess.ReadWrite,
+                    FileShare.ReadWrite | FileShare.Delete);
+                fs.CopyTo(ms);
+                byte[] d = ms.ToArray();
+                ms.Dispose();
+                fs.Dispose();
+                AssetBundleCreateRequest request = AssetBundle.LoadFromMemoryAsync(d);
+#else
+                AssetBundleCreateRequest request = AssetBundle.LoadFromFileAsync(file);
+#endif
+                yield return new WaitUntil(() => request.isDone);
+                AssetBundle loadedAssetBundle = request.assetBundle;
+                if (loadedAssetBundle != null)
+                {
+                    cachedAssetBundles.Add(file, loadedAssetBundle);
+                    GameObject[] GameObjects = loadedAssetBundle.LoadAllAssets<GameObject>();
+                    foreach (GameObject obj in GameObjects)
                     {
                         Avatar avatar = obj.GetComponent<Avatar>();
                         if (!invoked && avatar != null)
                         {
                             r.Invoke(avatar);
                             invoked = true;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                AssetBundleCreateRequest request = AssetBundle.LoadFromFileAsync(file);
-                yield return new WaitUntil(() => request.isDone);
-                AssetBundle loadedAssetBundle = request.assetBundle;
-                if (loadedAssetBundle != null)
-                {
-                    cachedAssetBundles.Add(file, loadedAssetBundle);
-                    AssetBundleRequest assetBundleRequest = loadedAssetBundle.LoadAllAssetsAsync<Object>();
-                    yield return new WaitUntil(() => assetBundleRequest.isDone);
-                    Logger.CurrentLogger.Debug(assetBundleRequest.allAssets.Length);
-                    foreach (Object loadedAsset in assetBundleRequest.allAssets)
-                    {
-                        if (loadedAsset is GameObject obj)
-                        {
-                            Avatar avatar = obj.GetComponent<Avatar>();
-                            if (!invoked && avatar != null)
-                            {
-                                r.Invoke(avatar);
-                                invoked = true;
-                            }
                         }
                     }
                 }

@@ -44,6 +44,7 @@ namespace Hypernex.UI.Templates
                 return;
             }
             IsInUse = true;
+            Input.text = String.Empty;
             bool previous = Dashboard.IsVisible;
             if (!Dashboard.IsVisible)
                 Dashboard.ToggleDashboard(LocalPlayer.Instance);

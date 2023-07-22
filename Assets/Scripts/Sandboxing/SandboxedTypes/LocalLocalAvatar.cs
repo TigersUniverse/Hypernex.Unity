@@ -6,6 +6,7 @@ using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
+using HypernexSharp.APIObjects;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -130,6 +131,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (LocalPlayer.Instance == null)
                 return;
             LocalPlayer.Instance.Respawn();
+        }
+
+        public static Pronouns GetPronouns()
+        {
+            if (APIPlayer.APIUser == null)
+                return null;
+            return APIPlayer.APIUser.Bio.Pronouns;
         }
     }
 }

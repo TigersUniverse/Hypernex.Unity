@@ -111,7 +111,7 @@ namespace Hypernex.Player
         }
 
         private static void ContinueCreateInstance(WorldMeta worldMeta, InstancePublicity instancePublicity,
-            InstanceProtocol instanceProtocol, string token)
+            InstanceProtocol instanceProtocol, GameServer gameServer, string token)
         {
             Builds targetBuild = null;
             foreach (Builds worldMetaBuild in worldMeta.Builds)
@@ -141,13 +141,14 @@ namespace Hypernex.Player
                         DownloadedWorlds.Remove(worldMeta.Id);
                     DownloadedWorlds.Add(worldMeta.Id, o);
                     if (APIPlayer.IsFullReady)
-                        APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol);
+                        APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol,
+                            gameServer);
                 }, knownHash);
             }, worldMeta.OwnerId, targetBuild.FileId);
         }
 
         public static void CreateInstance(WorldMeta worldMeta, InstancePublicity instancePublicity = InstancePublicity.Anyone,
-            InstanceProtocol instanceProtocol = InstanceProtocol.KCP)
+            InstanceProtocol instanceProtocol = InstanceProtocol.KCP, GameServer gameServer = null)
         {
             if (worldMeta.Publicity == WorldPublicity.OwnerOnly)
             {
@@ -167,7 +168,7 @@ namespace Hypernex.Player
                                 OnAssetToken.Invoke(worldMeta.Id, t.result.token.content);
                                 // Force ClosedRequest because only the Owner can distribute AssetTokens
                                 ContinueCreateInstance(worldMeta, InstancePublicity.ClosedRequest, instanceProtocol,
-                                    t.result.token.content);
+                                    gameServer, t.result.token.content);
                             }
                         })), APIPlayer.APIUser, APIPlayer.CurrentToken, worldMeta.Id);
                 }
@@ -175,7 +176,7 @@ namespace Hypernex.Player
                     Logger.CurrentLogger.Error("No permission to join world " + worldMeta.Name);
             }
             else
-                ContinueCreateInstance(worldMeta, instancePublicity, instanceProtocol, String.Empty);
+                ContinueCreateInstance(worldMeta, instancePublicity, instanceProtocol, gameServer, String.Empty);
         }
 
         private static void ContinueJoinInstance(SafeInstance instance, WorldMeta worldMeta, string token)

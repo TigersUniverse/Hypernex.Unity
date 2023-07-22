@@ -168,5 +168,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return netPlayer.Avatar.GetParameter(parameterName);
         }
+
+        public static Pronouns GetPronouns(string userid)
+        {
+            if (userid == APIPlayer.APIUser.Id)
+                return APIPlayer.APIUser.Bio.Pronouns;
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return null;
+            return netPlayer.User.Bio.Pronouns;
+        }
     }
 }

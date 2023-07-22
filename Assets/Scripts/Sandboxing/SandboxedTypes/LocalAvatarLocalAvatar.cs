@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Game;
+using Hypernex.Player;
 using Hypernex.Tools;
+using HypernexSharp.APIObjects;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -218,6 +220,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (!GameInstance.FocusedInstance.World.AllowRespawn)
                 return;
             LocalPlayer.Instance.Respawn();
+        }
+
+        public Pronouns GetPronouns()
+        {
+            if (netPlayer != null)
+                return netPlayer.User.Bio.Pronouns;
+            return APIPlayer.APIUser.Bio.Pronouns;
         }
     }
 }

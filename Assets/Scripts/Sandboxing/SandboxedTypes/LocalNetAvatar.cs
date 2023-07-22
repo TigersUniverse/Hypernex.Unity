@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Hypernex.Game;
 using Hypernex.Tools;
+using HypernexSharp.APIObjects;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -94,6 +95,14 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (netPlayer.Avatar == null)
                 return null;
             return netPlayer.Avatar.GetParameter(parameterName);
+        }
+
+        public Pronouns GetUserPronouns(string userid)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return null;
+            return netPlayer.User.Bio.Pronouns;
         }
     }
 }
