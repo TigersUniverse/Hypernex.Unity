@@ -13,7 +13,10 @@ using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
+using MessagePack;
+using MessagePack.Resolvers;
 using Nexbox;
+using Nexport;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Android;
@@ -75,9 +78,9 @@ public class Init : MonoBehaviour
         Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
+        Application.backgroundLoadingPriority = ThreadPriority.Low;
 #if UNITY_ANDROID
-        Caching.compressionEnabled = false;
-        Application.backgroundLoadingPriority = ThreadPriority.High;
+        //Caching.compressionEnabled = false;
         try
         {
             if(!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
@@ -86,8 +89,6 @@ public class Init : MonoBehaviour
                 Permission.RequestUserPermission(Permission.ExternalStorageWrite);
         }
         catch(Exception){}
-#else
-        Application.backgroundLoadingPriority = ThreadPriority.Low;
 #endif
         string[] args = Environment.GetCommandLineArgs();
         if(args.Contains("-xr") || AssetBundleTools.Platform == BuildPlatform.Android)

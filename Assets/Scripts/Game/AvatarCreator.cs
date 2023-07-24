@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
@@ -14,6 +15,7 @@ using UnityEngine.Animations;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
+using VRCFaceTracking.Core.Params.Data;
 using Avatar = Hypernex.CCK.Unity.Avatar;
 using Object = UnityEngine.Object;
 
@@ -29,12 +31,11 @@ namespace Hypernex.Game
         private List<AnimatorPlayable> PlayableAnimators = new ();
         internal List<Sandbox> localAvatarSandboxes = new();
         private VRIK vrik;
-        private bool isCalibrating;
         private bool calibrated;
         private VRIKCalibrator.Settings vrikSettings = new()
         {
             scaleMlp = 1f,
-            handOffset = new Vector3(0, 0.01f, -0.1f)
+            handOffset = new Vector3(0, 0.01f, -0.1f),
         };
         private GameObject headAlign;
         internal Transform nametagAlign;
@@ -78,32 +79,6 @@ namespace Hypernex.Game
             else
                 a.transform.SetLocalPositionAndRotation(new Vector3(0, -(a.transform.localScale.y * 0.75f), 0), new Quaternion(0, 0, 0, 0));
             a.transform.localScale = Vector3.one;
-            MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
-            // MotionSpeed (4)
-            MainAnimator.SetFloat("MotionSpeed", 1f);
-            foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
-            {
-                if (customPlayableAnimator == null || customPlayableAnimator.AnimatorController == null) continue;
-                if (customPlayableAnimator.AnimatorOverrideController != null)
-                    customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
-                        customPlayableAnimator.AnimatorController;
-                PlayableGraph playableGraph = PlayableGraph.Create(customPlayableAnimator.AnimatorController.name);
-                AnimatorControllerPlayable animatorControllerPlayable =
-                    AnimatorControllerPlayable.Create(playableGraph, customPlayableAnimator.AnimatorController);
-                PlayableOutput playableOutput = AnimationPlayableOutput.Create(playableGraph,
-                    customPlayableAnimator.AnimatorController.name, MainAnimator);
-                playableOutput.SetSourcePlayable(animatorControllerPlayable);
-                PlayableAnimators.Add(new AnimatorPlayable
-                {
-                    CustomPlayableAnimator = customPlayableAnimator,
-                    PlayableGraph = playableGraph,
-                    AnimatorControllerPlayable = animatorControllerPlayable,
-                    PlayableOutput = playableOutput,
-                    AnimatorControllerParameters = GetAllParameters(animatorControllerPlayable)
-                });
-                playableGraph.Play();
-            }
-
             if (isVR)
             {
                 vrik = Avatar.gameObject.AddComponent<VRIK>();
@@ -123,16 +98,19 @@ namespace Hypernex.Game
                     Transform child = LocalPlayer.Instance.RightHandVRIKTarget.GetChild(i);
                     Object.Destroy(child.gameObject);
                 }
-                RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
-                    GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
-                    GetBoneFromHumanoid(HumanBodyBones.RightHand));
+                if (XRTracker.Trackers.Count(x => x.IsTracked) != 3)
+                {
+                    RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
+                        GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
+                        GetBoneFromHumanoid(HumanBodyBones.RightHand));
+                }
             }
-            isCalibrating = false;
+            else
+                SetupAnimators();
             calibrated = false;
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
                 skinnedMeshRenderer.updateWhenOffscreen = true;
-            MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (string.IsNullOrEmpty(LocalPlayer.Instance.avatarMeta.ImageURL))
                 CurrentAvatarBanner.Instance.Render(this, Array.Empty<byte>());
             else
@@ -201,6 +179,32 @@ namespace Hypernex.Game
             }
             SetupLipSyncNetPlayer();
             InitMaterialDescriptors(a.transform);
+        }
+
+        private void SetupAnimators()
+        {
+            foreach (CustomPlayableAnimator customPlayableAnimator in Avatar.Animators)
+            {
+                if (customPlayableAnimator == null || customPlayableAnimator.AnimatorController == null) continue;
+                if (customPlayableAnimator.AnimatorOverrideController != null)
+                    customPlayableAnimator.AnimatorOverrideController.runtimeAnimatorController =
+                        customPlayableAnimator.AnimatorController;
+                PlayableGraph playableGraph = PlayableGraph.Create(customPlayableAnimator.AnimatorController.name);
+                AnimatorControllerPlayable animatorControllerPlayable =
+                    AnimatorControllerPlayable.Create(playableGraph, customPlayableAnimator.AnimatorController);
+                PlayableOutput playableOutput = AnimationPlayableOutput.Create(playableGraph,
+                    customPlayableAnimator.AnimatorController.name, MainAnimator);
+                playableOutput.SetSourcePlayable(animatorControllerPlayable);
+                PlayableAnimators.Add(new AnimatorPlayable
+                {
+                    CustomPlayableAnimator = customPlayableAnimator,
+                    PlayableGraph = playableGraph,
+                    AnimatorControllerPlayable = animatorControllerPlayable,
+                    PlayableOutput = playableOutput,
+                    AnimatorControllerParameters = GetAllParameters(animatorControllerPlayable)
+                });
+                playableGraph.Play();
+            }
         }
 
         private OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(
@@ -554,53 +558,91 @@ namespace Hypernex.Game
         /// <returns>Sorted Tracker Transforms</returns>
         private Transform[] FindClosestTrackers(Transform body, Transform leftFoot, Transform rightFoot, GameObject[] ts)
         {
-            List<Transform> newTs = new();
-            foreach (GameObject o in ts)
+            Dictionary<Transform, (float, GameObject)?> distances = new Dictionary<Transform, (float, GameObject)?>
             {
-                float bodyDist = Vector3.Distance(body.position, o.transform.position);
-                float leftFootDist = Vector3.Distance(leftFoot.position, o.transform.position);
-                float rightFootDist = Vector3.Distance(rightFoot.position, o.transform.position);
-                Transform target;
-                if (leftFootDist < bodyDist)
-                    target = leftFoot;
-                else if (rightFootDist < bodyDist)
-                    target = rightFoot;
-                else
-                    target = body;
-                if(!newTs.Contains(target))
-                    newTs.Add(target);
+                [body] = null,
+                [leftFoot] = null,
+                [rightFoot] = null
+            };
+            foreach (GameObject tracker in ts)
+            {
+                Vector3 p = tracker.transform.position;
+                float bodyDistance = Vector3.Distance(body.position, p);
+                float leftFootDistance = Vector3.Distance(leftFoot.position, p);
+                float rightFootDistance = Vector3.Distance(rightFoot.position, p);
+                if (distances[body] == null || bodyDistance < distances[body].Value.Item1)
+                    distances[body] = (bodyDistance, tracker);
+                if (distances[leftFoot] == null || leftFootDistance < distances[leftFoot].Value.Item1)
+                    distances[leftFoot] = (leftFootDistance, tracker);
+                if (distances[rightFoot] == null || rightFootDistance < distances[rightFoot].Value.Item1)
+                    distances[rightFoot] = (rightFootDistance, tracker);
             }
+            List<Transform> newTs = new();
+            if(distances[body] == null)
+                newTs.Add(null);
+            else
+                newTs.Add(distances[body].Value.Item2.transform.GetChild(0));
+            if(distances[leftFoot] == null)
+                newTs.Add(null);
+            else
+                newTs.Add(distances[leftFoot].Value.Item2.transform.GetChild(0));
+            if(distances[rightFoot] == null)
+                newTs.Add(null);
+            else
+                newTs.Add(distances[rightFoot].Value.Item2.transform.GetChild(0));
             return newTs.ToArray();
         }
 
         private bool a;
 
-        internal void Update(bool areTwoTriggersClicked, Dictionary<InputDevice, GameObject> WorldTrackers,
-            Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference, bool isMoving)
+        internal void Update(bool areTwoTriggersClicked, Transform cameraTransform, Transform LeftHandReference, 
+            Transform RightHandReference, bool isMoving)
         {
-            if(MainAnimator != null)
+            if(MainAnimator != null && MainAnimator.isInitialized)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
-            if (vrik != null && vrik.solver.initiated && !calibrated)
+            switch (calibrated)
             {
-                if (WorldTrackers.Count == 3)
+                case false:
                 {
-                    isCalibrating = true;
-                    MainAnimator.SetBool("isCalibrating", true);
+                    Transform t = headAlign.transform;
+                    if (t == null)
+                        break;
+                    cameraTransform.position = t.position;
+                    cameraTransform.rotation = t.rotation;
+                    break;
                 }
-                else if (WorldTrackers.Count != 3)
+                case true:
                 {
-                    VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
-                        RightHandReference.transform);
-                    isCalibrating = false;
-                    MainAnimator.SetBool("isCalibrating", false);
-                    calibrated = true;
+                    Transform t = LocalPlayer.Instance.Camera.transform;
+                    cameraTransform.position = t.position;
+                    cameraTransform.rotation = t.rotation;
+                    break;
                 }
-                if (isCalibrating && areTwoTriggersClicked)
+            }
+            if (vrik != null && vrik.solver.initiated && XRTracker.Trackers.Count(x => x.IsTracked) != 3 && !calibrated)
+            {
+                VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
+                    RightHandReference.transform);
+                SetupAnimators();
+                calibrated = true;
+            }
+            else if (vrik != null && XRTracker.Trackers.Count(x => x.IsTracked) == 3 && !calibrated)
+            {
+                XRTracker.Trackers.ForEach(x =>
+                {
+                    Renderer r = x.renderer;
+                    if (r != null)
+                        r.enabled = true;
+                });
+                if (areTwoTriggersClicked)
                 {
                     GameObject[] ts = new GameObject[3];
                     int i = 0;
-                    foreach (KeyValuePair<InputDevice, GameObject> keyValuePair in WorldTrackers)
-                        ts[i] = keyValuePair.Value;
+                    foreach (XRTracker tracker in XRTracker.Trackers)
+                    {
+                        ts[i] = tracker.gameObject;
+                        i++;
+                    }
                     if (ts[0] != null && ts[1] != null && ts[2] != null)
                     {
                         Transform body = GetBoneFromHumanoid(HumanBodyBones.Hips);
@@ -609,25 +651,41 @@ namespace Hypernex.Game
                         if (body != null && leftFoot != null && rightFoot != null)
                         {
                             Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
-                            VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0].transform,
-                                LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
-                            calibrated = true;
-                            isCalibrating = false;
-                            MainAnimator.SetBool("isCalibrating", false);
+                            if (newTs[0] != null && newTs[1] != null && newTs[2] != null)
+                            {
+                                //vrik = Avatar.gameObject.AddComponent<VRIK>();
+                                VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0],
+                                    LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
+                                RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
+                                    GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
+                                    GetBoneFromHumanoid(HumanBodyBones.RightHand));
+                                SetupAnimators();
+                                calibrated = true;
+                                XRTracker.Trackers.ForEach(x =>
+                                {
+                                    Renderer r = x.renderer;
+                                    if (r != null)
+                                        r.enabled = false;
+                                });
+                            }
                         }
                     }
                 }
             }
             else if (calibrated)
             {
-                vrik.solver.locomotion.weight = isMoving || WorldTrackers.Count == 3 ? 0f : 1f;
-                if (WorldTrackers.Count != 3)
+                vrik.solver.locomotion.weight = isMoving || XRTracker.Trackers.Count(x => x.IsTracked) == 3 ? 0f : 1f;
+                if (XRTracker.Trackers.Count(x => x.IsTracked) != 3)
                 {
                     float scale = LocalPlayer.Instance.transform.localScale.y;
                     float height = LocalPlayer.Instance.CharacterController.height;
                     vrik.solver.locomotion.footDistance = 0.1f * scale * height;
                     vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
                 }
+                MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
+                // MotionSpeed (4)
+                MainAnimator.SetFloat("MotionSpeed", 1f);
+                MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }
             if (!a)
             {
@@ -706,14 +764,95 @@ namespace Hypernex.Game
         }
 
         // Speed (0)
-        internal void SetSpeed(float speed) => MainAnimator.SetFloat("Speed", speed);
+        internal void SetSpeed(float speed)
+        {
+            if (MainAnimator == null || !MainAnimator.isInitialized)
+                return;
+            MainAnimator.SetFloat("Speed", speed);
+        }
 
         internal void SetIsGrounded(bool g)
         {
+            if (MainAnimator == null || !MainAnimator.isInitialized)
+                return;
             // Grounded (2)
             MainAnimator.SetBool("Grounded", g);
             // FreeFall (3)
             MainAnimator.SetBool("FreeFall", !g);
+        }
+
+        private Quaternion GetEyeQuaternion(float x, float y, Quaternion up, Quaternion down, Quaternion left,
+            Quaternion right)
+        {
+            Quaternion final = new Quaternion((right.x - left.x)*x, (up.y - down.y)*y, (up*down).z/2, 0);
+            return final;
+        }
+
+        internal void UpdateEyes(UnifiedEyeData eyeData)
+        {
+            if (!Avatar.UseEyeManager)
+                return;
+            // Left Eye
+            if (Avatar.UseLeftEyeBoneInstead)
+            {
+                Avatar.LeftEyeBone.localRotation = GetEyeQuaternion(eyeData.Left.Gaze.x, eyeData.Left.Gaze.y,
+                    Avatar.LeftEyeUpLimit, Avatar.LeftEyeDownLimit, Avatar.LeftEyeLeftLimit, Avatar.LeftEyeRightLimit);
+            }
+            else
+            {
+                foreach (KeyValuePair<EyeBlendshapeAction,BlendshapeDescriptor> avatarEyeBlendshape in Avatar.EyeBlendshapes)
+                {
+                    switch (avatarEyeBlendshape.Key)
+                    {
+                        case EyeBlendshapeAction.Blink:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Openness * 100);
+                            break;
+                        case EyeBlendshapeAction.LookUp:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y > 0 ? eyeData.Left.Gaze.y * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookDown:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.y * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookRight:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.x > 0 ? eyeData.Left.Gaze.x * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookLeft:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.x * 100 : 0f);
+                            break;
+                    }
+                }
+            }
+            // Right Eye
+            if (Avatar.UseRightEyeBoneInstead)
+            {
+                Avatar.RightEyeBone.localRotation = GetEyeQuaternion(eyeData.Right.Gaze.x, eyeData.Right.Gaze.y,
+                    Avatar.RightEyeUpLimit, Avatar.RightEyeDownLimit, Avatar.RightEyeLeftLimit,
+                    Avatar.RightEyeRightLimit);
+            }
+            else
+            {
+                foreach (KeyValuePair<EyeBlendshapeAction,BlendshapeDescriptor> avatarEyeBlendshape in Avatar.RightEyeBlendshapes)
+                {
+                    switch (avatarEyeBlendshape.Key)
+                    {
+                        case EyeBlendshapeAction.Blink:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Openness * 100);
+                            break;
+                        case EyeBlendshapeAction.LookUp:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y > 0 ? eyeData.Right.Gaze.y * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookDown:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.y * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookRight:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.x > 0 ? eyeData.Right.Gaze.x * 100 : 0f);
+                            break;
+                        case EyeBlendshapeAction.LookLeft:
+                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.x * 100 : 0f);
+                            break;
+                    }
+                }
+            }
         }
 
         internal void UpdateFace(Dictionary<FaceExpressions, float> weights)

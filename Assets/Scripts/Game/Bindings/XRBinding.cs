@@ -29,9 +29,13 @@ namespace Hypernex.Game.Bindings
         public Action TriggerClick { get; set; } = () => { };
         public bool Grab { get; set; }
 
-        private XRHandSubsystem handSubsystem;
-        
-        public XRBinding(bool isLook) => IsLook = isLook;
+        private HandGetter HandGetter;
+
+        public XRBinding(bool isLook, HandGetter handGetter)
+        {
+            IsLook = isLook;
+            HandGetter = handGetter;
+        }
 
         private float maxAngleForFullCurl = 90f;
         public bool AreFingersTracked { get; private set; }
@@ -43,74 +47,14 @@ namespace Hypernex.Game.Bindings
 
         public void Update()
         {
-            // TODO: Get Index Fingers
-            if (handSubsystem == null)
-            {
-                // Unity Docs say to use null propagations
-                handSubsystem = XRGeneralSettings.Instance?.Manager?.activeLoader?.GetLoadedSubsystem<XRHandSubsystem>();
-                if (handSubsystem != null)
-                    handSubsystem.updatedHands += (subsystem, flags, updateType) =>
-                    {
-                        XRHand xrHand = IsLook ? subsystem.rightHand : subsystem.leftHand;
-                        switch (updateType)
-                        {
-                            case XRHandSubsystem.UpdateType.Dynamic:
-                                // game logic
-                                Pose indexIntermediatePose;
-                                Pose middleIntermediatePose;
-                                Pose ringIntermediatePose;
-                                Pose pinkyIntermediatePose;
-                                Pose thumbProximalPose;
-                                Pose indexTipPose;
-                                Pose middleTipPose;
-                                Pose ringTipPose;
-                                Pose pinkyTipPose;
-                                Pose thumbTipPose;
-                                if (xrHand.GetJoint(XRHandJointID.IndexIntermediate).TryGetPose(out indexIntermediatePose) &&
-                                    xrHand.GetJoint(XRHandJointID.MiddleIntermediate).TryGetPose(out middleIntermediatePose) &&
-                                    xrHand.GetJoint(XRHandJointID.RingIntermediate).TryGetPose(out ringIntermediatePose) &&
-                                    xrHand.GetJoint(XRHandJointID.LittleIntermediate).TryGetPose(out pinkyIntermediatePose) &&
-                                    xrHand.GetJoint(XRHandJointID.ThumbProximal).TryGetPose(out thumbProximalPose) &&
-                                    xrHand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out indexTipPose) &&
-                                    xrHand.GetJoint(XRHandJointID.MiddleTip).TryGetPose(out middleTipPose) &&
-                                    xrHand.GetJoint(XRHandJointID.RingTip).TryGetPose(out ringTipPose) &&
-                                    xrHand.GetJoint(XRHandJointID.LittleTip).TryGetPose(out pinkyTipPose) &&
-                                    xrHand.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out thumbTipPose))
-                                {
-                                    // Bend Finger goes here
-                                    float indexAngle = Quaternion.Angle(indexIntermediatePose.rotation,
-                                        indexTipPose.rotation);
-                                    float middleAngle = Quaternion.Angle(middleIntermediatePose.rotation,
-                                        middleTipPose.rotation);
-                                    float ringAngle = Quaternion.Angle(ringIntermediatePose.rotation,
-                                        ringTipPose.rotation);
-                                    float pinkyAngle = Quaternion.Angle(pinkyIntermediatePose.rotation,
-                                        pinkyTipPose.rotation);
-                                    float thumbAngle = Quaternion.Angle(thumbProximalPose.rotation,
-                                        thumbTipPose.rotation);
-                                    float normalIndexAngle = Mathf.Clamp(indexAngle / maxAngleForFullCurl, 0, 1);
-                                    float normalMiddleAngle = Mathf.Clamp(middleAngle / maxAngleForFullCurl, 0, 1);
-                                    float normalRingAngle = Mathf.Clamp(ringAngle / maxAngleForFullCurl, 0, 1);
-                                    float normalPinkyAngle = Mathf.Clamp(pinkyAngle / maxAngleForFullCurl, 0, 1);
-                                    float normalThumbAngle = Mathf.Clamp(thumbAngle / maxAngleForFullCurl, 0, 1);
-                                    ThumbCurl = 1 - normalThumbAngle;
-                                    IndexCurl = 1 - normalIndexAngle;
-                                    MiddleCurl = 1 - normalMiddleAngle;
-                                    RingCurl = 1 - normalRingAngle;
-                                    PinkyCurl = 1 - normalPinkyAngle;
-                                }
-                                break;
-                            case XRHandSubsystem.UpdateType.BeforeRender:
-                                // visual objects
-                                break;
-                        }
-                    };
-            }
-            else
-                AreFingersTracked = IsLook ? handSubsystem.rightHand.isTracked : handSubsystem.leftHand.isTracked;
-
-            /*Logger.CurrentLogger.Log(Id + " : " + ThumbCurl + ", " + IndexCurl + ", " + MiddleCurl + ", " + RingCurl +
-                                     ", " + PinkyCurl);*/
+            AreFingersTracked = HandGetter.Curls.Length == 5;
+            if (!AreFingersTracked)
+                return;
+            ThumbCurl = HandGetter.Curls[0];
+            IndexCurl = HandGetter.Curls[1];
+            MiddleCurl = HandGetter.Curls[2];
+            RingCurl = HandGetter.Curls[3];
+            PinkyCurl = HandGetter.Curls[4];
         }
 
         public void OnMove(InputAction.CallbackContext context)

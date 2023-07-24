@@ -3,8 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using MessagePack;
-using MessagePack.Resolvers;
 
 namespace Nexport
 {
@@ -12,8 +12,9 @@ namespace Nexport
     {
         public static bool UseCompression { get; set; } = true;
         public static readonly Dictionary<string, Type> RegisteredMessages = new Dictionary<string, Type>();
+        public static MessagePackSerializerOptions SerializerOptions = MessagePackSerializerOptions.Standard;
 
-        private static void msgCheck(Type type)
+        /*private static void msgCheck(Type type)
         {
             bool foundMessageId = false;
             foreach (PropertyInfo propertyInfo in type.GetProperties())
@@ -60,7 +61,7 @@ namespace Nexport
             }
             if (!foundMessageId)
                 throw new Exception("Your Msg must contain a MessageId with an Identifier of 1!");
-        }
+        }*/
 
         private static void loopMessages(Assembly? assembly)
         {
@@ -83,7 +84,7 @@ namespace Nexport
             {
                 if (type.FullName != null)
                 {
-                    msgCheck(type);
+                    //msgCheck(type);
                     if(!RegisteredMessages.ContainsKey(type.FullName))
                         RegisteredMessages.Add(type.FullName ?? throw new Exception("Failed to get FullName of type " + type), type);
                 }
@@ -113,37 +114,72 @@ namespace Nexport
 
         public static byte[] Serialize<T>(T obj)
         {
+            byte[] data;
             if (UseCompression)
-                return MessagePackSerializer.Serialize(obj,
-                    MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
-            return MessagePackSerializer.Serialize(obj);
+                data = MessagePackSerializer.Serialize(obj,
+                    SerializerOptions.WithCompression(MessagePackCompression.Lz4BlockArray));
+            else
+                data = MessagePackSerializer.Serialize(obj);
+            string messageId = obj!.GetType().FullName ?? throw new Exception("Object does not have FullName!");
+            List<byte> newData = new List<byte>();
+            byte[] name = Encoding.UTF8.GetBytes(messageId);
+            foreach (byte b in name)
+                newData.Add(b);
+            newData.Add(Convert.ToByte('*'));
+            foreach (byte b in data)
+                newData.Add(b);
+            return newData.ToArray();
         }
 
         public static T Deserialize<T>(byte[] data)
         {
+            (string, byte[]) midSplit = SplitMessageId(data);
             if (UseCompression)
             {
-                var options = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray);
-                return MessagePackSerializer.Deserialize<T>(data, options);
+                var options = SerializerOptions.WithCompression(MessagePackCompression.Lz4BlockArray);
+                return MessagePackSerializer.Deserialize<T>(midSplit.Item2, options);
             }
-            return MessagePackSerializer.Deserialize<T>(data);
+            return MessagePackSerializer.Deserialize<T>(midSplit.Item2);
         }
 
-        public static object? Deserialize(Type targetType, byte[] data)
+        private static object? Deserialize(Type targetType, byte[] data)
         {
             if (UseCompression)
             {
-                var options = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray);
+                var options = SerializerOptions.WithCompression(MessagePackCompression.Lz4BlockArray);
                 return MessagePackSerializer.Deserialize(targetType, data, options);
             }
             return MessagePackSerializer.Deserialize(targetType, data);
+        }
+
+        private static (string, byte[]) SplitMessageId(byte[] serializedData)
+        {
+            List<byte> messageIdBytes = new List<byte>();
+            List<byte> data = new List<byte>();
+            bool hasHitSeparator = false;
+            foreach (byte b in serializedData)
+            {
+                if (Convert.ToChar(b) == '*' && !hasHitSeparator)
+                {
+                    hasHitSeparator = true;
+                    continue;
+                }
+                if(!hasHitSeparator)
+                    messageIdBytes.Add(b);
+                else
+                    data.Add(b);
+            }
+            // Assume there was no MessageId
+            if (!hasHitSeparator)
+                return (String.Empty, messageIdBytes.ToArray());
+            return (Encoding.UTF8.GetString(messageIdBytes.ToArray()), data.ToArray());
         }
 
         public static MsgMeta? GetMeta(byte[] data)
         {
             try
             {
-                dynamic dynamicModel;
+                /*dynamic dynamicModel;
                 if (UseCompression)
                     dynamicModel = MessagePackSerializer.Deserialize<dynamic>(data,
                         ContractlessStandardResolver.Options.WithCompression(MessagePackCompression.Lz4BlockArray));
@@ -154,7 +190,13 @@ namespace Nexport
                     return null;
                 Type t = RegisteredMessages[msgid];
                 object? d = Deserialize(t, data);
-                return d != null ? new MsgMeta(data, d, msgid, t) : null;
+                return d != null ? new MsgMeta(data, d, msgid, t) : null;*/
+                (string, byte[]) midSplit = SplitMessageId(data);
+                if (!RegisteredMessages.ContainsKey(midSplit.Item1))
+                    return null;
+                Type t = RegisteredMessages[midSplit.Item1];
+                object? d = Deserialize(t, midSplit.Item2);
+                return d != null ? new MsgMeta(data, d, midSplit.Item1, t) : null;
             }
             catch (Exception)
             {

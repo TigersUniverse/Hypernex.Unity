@@ -19,6 +19,9 @@ namespace Hypernex.Tools
 
         public static void DownloadBytes(string url, Action<byte[]> OnDownload, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool skipCache = false)
         {
+#if UNITY_ANDROID
+            skipCache = true;
+#endif
             try
             {
                 if (Cache.ContainsKey(url) && !skipCache)

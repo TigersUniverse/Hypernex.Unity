@@ -56,7 +56,7 @@ namespace Hypernex.Game
 
         private void CreateNameplate()
         {
-            GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform.Find("Nameplate")
+            GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("UXTemplates").transform.Find("Nameplate")
                 .gameObject);
             SceneManager.MoveGameObjectToScene(np, instance.loadedScene);
             // ReSharper disable once Unity.InstantiateWithoutParent

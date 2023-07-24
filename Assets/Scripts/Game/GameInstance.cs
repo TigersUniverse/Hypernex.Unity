@@ -496,7 +496,7 @@ namespace Hypernex.Game
                         LoadScene(open, s);
                     else
                         Dispose();
-                }));
+                }, this));
             }
             else
             {
@@ -528,7 +528,7 @@ namespace Hypernex.Game
                                 LoadScene(open, s);
                             else
                                 Dispose();
-                        }));
+                        }, this));
                     }, knownHash);
                 }, worldMeta.OwnerId, fileId);
             }

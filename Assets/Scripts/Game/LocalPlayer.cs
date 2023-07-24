@@ -24,15 +24,15 @@ using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
-using CommonUsages = UnityEngine.XR.CommonUsages;
+using UnityEngine.XR.OpenXR.Features.Interactions;
 using InputDevice = UnityEngine.XR.InputDevice;
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
 using Mic = Hypernex.Tools.Mic;
 using Mouse = Hypernex.Game.Bindings.Mouse;
 using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
+using XRViveTracker = UnityEngine.XR.OpenXR.Features.Interactions.HTCViveTrackerProfile.XRViveTracker;
 
 namespace Hypernex.Game
 {
@@ -67,8 +67,8 @@ namespace Hypernex.Game
         
         public DontDestroyMe DontDestroyMe { get; private set; }
 
-        private Dictionary<InputDevice, GameObject> WorldTrackers = new();
-        private List<InputDevice> trackers = new();
+        //private Dictionary<InputDevice, GameObject> WorldTrackers = new();
+        //private List<InputDevice> trackers = new();
         
         public float WalkSpeed { get; set; } = 5f;
         public float RunSpeed { get; set; } = 10f;
@@ -83,6 +83,7 @@ namespace Hypernex.Game
         public XROrigin XROrigin;
         public Camera Camera;
         public Camera UICamera;
+        public Transform FakeVRHead;
         public List<TrackedPoseDriver> TrackedPoseDriver;
         public CharacterController CharacterController;
         public Transform LeftHandReference;
@@ -90,6 +91,8 @@ namespace Hypernex.Game
         public Transform RightHandReference;
         public Transform RightHandVRIKTarget;
         public PlayerInput vrPlayerInput;
+        public HandGetter LeftHandGetter;
+        public HandGetter RightHandGetter;
         public List<string> LastPlayerAssignedTags = new();
         public List<XRInteractorLineVisual> XRRays = new ();
         public Dictionary<string, object> LastExtraneousObjects = new();
@@ -634,7 +637,7 @@ namespace Hypernex.Game
 
         internal void StartVR()
         {
-            AlignVR(true);
+            AlignVR(true, true);
             Bindings.ForEach(x =>
             {
                 if(x.GetType() == typeof(Keyboard))
@@ -645,8 +648,8 @@ namespace Hypernex.Game
             Bindings.Clear();
             // Create Bindings
             vrPlayerInput.ActivateInput();
-            XRBinding leftBinding = new XRBinding(false);
-            XRBinding rightBinding = new XRBinding(true);
+            XRBinding leftBinding = new XRBinding(false, LeftHandGetter);
+            XRBinding rightBinding = new XRBinding(true, RightHandGetter);
             leftBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
             rightBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
             Bindings.Add(leftBinding);
@@ -654,6 +657,8 @@ namespace Hypernex.Game
             Bindings.Add(rightBinding);
             VRInputListener.AddXRBinding(rightBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
+            if(Dashboard.IsVisible)
+                Dashboard.PositionDashboard(this);
         }
 
         internal void StopVR()
@@ -669,9 +674,9 @@ namespace Hypernex.Game
             Logger.CurrentLogger.Log("Removed VR Bindings");
         }
 
-        public void AlignVR(bool useConfig)
+        public void AlignVR(bool useConfig, bool o = false)
         {
-            if (!IsVR)
+            if (!IsVR && !o)
                 return;
             // Align the character controller
             if (useConfig && ConfigManager.SelectedConfigUser != null)
@@ -786,26 +791,24 @@ namespace Hypernex.Game
             RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
             foreach (XRInteractorLineVisual lineVisual in XRRays)
                 lineVisual.enabled = vr;
-            if (vr)
+            switch (vr)
             {
-                trackers.Clear();
-                InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.TrackingReference, trackers);
-                foreach (InputDevice inputDevice in trackers)
-                {
-                    if (!WorldTrackers.ContainsKey(inputDevice))
+                case true when avatar == null:
+                    XRTracker.Trackers.ForEach(x =>
                     {
-                        GameObject o = new GameObject(inputDevice.name);
-                        o.transform.SetParent(transform);
-                        WorldTrackers.Add(inputDevice, o);
-                    }
-                    else
+                        Renderer r = x.renderer;
+                        if (r != null)
+                            r.enabled = true;
+                    });
+                    break;
+                case false:
+                    XRTracker.Trackers.ForEach(x =>
                     {
-                        bool a = inputDevice.TryGetFeatureValue(CommonUsages.devicePosition, out Vector3 p);
-                        bool b = inputDevice.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion r);
-                        if (a && b)
-                            WorldTrackers[inputDevice].transform.SetPositionAndRotation(p, r);
-                    }
-                }
+                        Renderer r = x.renderer;
+                        if (r != null)
+                            r.enabled = false;
+                    });
+                    break;
             }
             Cursor.lockState = vr || LockCamera ? CursorLockMode.None : CursorLockMode.Locked;
             bool groundedPlayer = CharacterController.isGrounded;
@@ -867,17 +870,18 @@ namespace Hypernex.Game
                 avatar?.SetIsGrounded(true);
             }
             bool isMoving = left_m?.Item3 ?? false;
-            avatar?.Update(areTwoTriggersClicked(), new Dictionary<InputDevice, GameObject>(WorldTrackers),
-                Camera.transform, LeftHandVRIKTarget, RightHandVRIKTarget, isMoving);
+            avatar?.Update(areTwoTriggersClicked(), FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
+                isMoving);
             if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
                 FaceTrackingManager.HasInitialized)
             {
-                // TODO: Universal Eyes
+                avatar?.UpdateEyes(FaceTrackingManager.GetEyeWeights());
                 Dictionary<FaceExpressions, float> faceWeights = FaceTrackingManager.GetFaceWeights();
                 avatar?.UpdateFace(faceWeights);
                 foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
                     avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
             }
+            // TODO: Non-Eye Tracking Eye Movement
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
                 GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
                 {

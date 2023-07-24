@@ -8,6 +8,30 @@ using HypernexSharp.APIObjects;
 
 namespace Hypernex.Tools
 {
+#if UNITY_ANDROID
+    internal static class DiscordTools
+    {
+        public static void StartDiscord()
+        {
+        }
+
+        internal static void FocusInstance(WorldMeta worldMeta, string id, User host)
+        {
+        }
+
+        internal static void UnfocusInstance(string id)
+        {
+        }
+
+        internal static void RunCallbacks()
+        {
+        }
+
+        internal static void Stop()
+        {
+        }
+    }
+#else
     internal static class DiscordTools
     {
         private const long DiscordApplicationId = 1101618498062516254;
@@ -154,4 +178,5 @@ namespace Hypernex.Tools
             } catch(Exception){}
         }
     }
+#endif
 }
