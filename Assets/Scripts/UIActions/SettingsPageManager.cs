@@ -144,7 +144,7 @@ namespace Hypernex.UIActions
             AllPanels.ForEach(x => x.SetActive(false));
             VRPanel.SetActive(true);
         }
-        
+
         public void SetSnapTurn(bool value)
         {
             if (ConfigManager.SelectedConfigUser == null)
@@ -152,6 +152,8 @@ namespace Hypernex.UIActions
             ConfigManager.SelectedConfigUser.UseSnapTurn = value;
             UseSnapTurnValue.text = ConfigManager.SelectedConfigUser.UseSnapTurn ? "Enabled" : "Disabled";
         }
+
+        public void CalibrateVR() => LocalPlayer.Instance.AlignVR(false);
 
         private UnifiedMutationConfig Mutations;
 

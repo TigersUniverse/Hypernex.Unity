@@ -26,14 +26,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.XR.OpenXR.Features.Interactions;
-using InputDevice = UnityEngine.XR.InputDevice;
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
 using Mic = Hypernex.Tools.Mic;
 using Mouse = Hypernex.Game.Bindings.Mouse;
 using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
-using XRViveTracker = UnityEngine.XR.OpenXR.Features.Interactions.HTCViveTrackerProfile.XRViveTracker;
 
 namespace Hypernex.Game
 {

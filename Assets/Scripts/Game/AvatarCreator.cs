@@ -38,7 +38,7 @@ namespace Hypernex.Game
         private bool calibrated;
         private VRIKCalibrator.Settings vrikSettings = new()
         {
-            scaleMlp = LocalPlayer.Instance.CharacterController.height - 0.8f + LocalPlayer.Instance.CharacterController.center.y,
+            scaleMlp = 1,
             handOffset = new Vector3(0, 0.01f, -0.1f),
         };
         private GameObject headAlign;
