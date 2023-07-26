@@ -11,6 +11,7 @@ namespace Hypernex.UI.Templates
     public class CurrentAvatar : MonoBehaviour
     {
         public LoginPageTopBarButton CurrentAvatarPage;
+        public DashboardManager DashboardManager;
         public TMP_Text AvatarNameLabel;
         public TMP_Text AvatarScaleLabel;
         public Slider AvatarScaleSlider;
@@ -52,13 +53,27 @@ namespace Hypernex.UI.Templates
             return false;
         }
 
-        public void RefreshAvatar()
+        public void RefreshAvatar(bool lpi)
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
                 return;
-            LocalPlayer.Instance.RefreshAvatar();
+            SizeAvatar(1f);
+            if(lpi)
+                LocalPlayer.Instance.RefreshAvatar(true);
             AvatarScaleSlider.value = LocalPlayer.Instance.transform.localScale.y;
-            LoginPageTopBarButton.Show("Home");
+            if(lpi)
+                LoginPageTopBarButton.Show("Home");
+        }
+
+        public void SizeAvatar(float v)
+        {
+            AvatarScaleSlider.value = v;
+            LocalPlayer.Instance.transform.localScale = new Vector3(v, v, v);
+            Vector3 lp = LocalPlayer.Instance.transform.position;
+            float scaleUp = DashboardManager.OpenedPosition.y + (v - DashboardManager.OpenedScale.y);
+            float scaleDown = DashboardManager.OpenedBounds.min.y + v/2;
+            LocalPlayer.Instance.transform.position = new Vector3(lp.x, v >= DashboardManager.OpenedScale.y ? scaleUp : scaleDown, lp.z);
+            LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
         }
         
         private void CreateIntParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
@@ -102,12 +117,7 @@ namespace Hypernex.UI.Templates
             float lv = LocalPlayer.Instance.transform.localScale.y;
             float v = (float) Math.Round(AvatarScaleSlider.value, 1);
             if(!LocalPlayer.IsVR || !IsVRTriggerPressed() && v != (float) Math.Round(lv, 1))
-            {
-                LocalPlayer.Instance.transform.localScale = new Vector3(v, v, v);
-                Vector3 lp = LocalPlayer.Instance.transform.position;
-                LocalPlayer.Instance.transform.position = new Vector3(lp.x, lp.y + (v - lv), lp.z);
-                LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
-            }
+                SizeAvatar(v);
         }
     }
 }

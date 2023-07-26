@@ -56,10 +56,12 @@ namespace Hypernex.UIActions
                     CreateFriendCardFromUser(lastFriend);
         }
         
-        void OnEnable()
+        private void OnEnable()
         {
             if(APIPlayer.APIUser == null)
                 return;
+            if (hasEnabledOnce) return;
+            hasEnabledOnce = true;
             APIPlayer.OnUser += OnLogin;
             APIPlayer.OnUserRefresh += user =>
             {
@@ -68,11 +70,7 @@ namespace Hypernex.UIActions
             };
             APIPlayer.OnSocketConnect += OnSocket;
             APIPlayer.OnLogout += OnLogout;
-            if (!hasEnabledOnce)
-            {
-                hasEnabledOnce = true;
-                OnLogin(APIPlayer.APIUser);
-            }
+            OnLogin(APIPlayer.APIUser);
         }
 
         private void CreateFriendCardFromUser(User user)

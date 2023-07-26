@@ -15,6 +15,7 @@ using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI;
+using Hypernex.UI.Templates;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
@@ -99,6 +100,7 @@ namespace Hypernex.Game
         public VRInputListener VRInputListener;
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
+        public CurrentAvatar CurrentAvatarDisplay;
 
         private Denoiser denoiser;
         private float verticalVelocity;
@@ -146,8 +148,10 @@ namespace Hypernex.Game
         }
 
         // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
-        public void RefreshAvatar()
+        public void RefreshAvatar(bool fromDash = false)
         {
+            if(!fromDash)
+                CurrentAvatarDisplay.RefreshAvatar(false);
             transform.localScale = new Vector3(1, 1, 1);
             Dashboard.PositionDashboard(this);
             OnAvatarDownload(avatarFile, avatarMeta);
@@ -408,6 +412,7 @@ namespace Hypernex.Game
                 }
                 avatarMeta = am;
                 lastAvatar?.Dispose();
+                CurrentAvatarDisplay.SizeAvatar(1f);
                 avatar = new AvatarCreator(this, a, IsVR);
                 foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
                     avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));

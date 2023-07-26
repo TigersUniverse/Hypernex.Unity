@@ -19,6 +19,7 @@ namespace Hypernex.Game
         
         [HideInInspector] public bool NetworkSteal;
         public Action<Vector3> OnForce = force => { };
+        public Action OnSteal = () => { };
 
         private string networkOwner;
         private Coroutine lastCoroutine;
@@ -108,6 +109,8 @@ namespace Hypernex.Game
                     //UpdateTransform(worldObjectUpdate);
                     break;
                 case WorldObjectAction.Unclaim:
+                    if(IsOwnedByLocalPlayer())
+                        QuickInvoke.InvokeActionOnMainThread(OnSteal);
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                     {
                         if(networkOwner == worldObjectUpdate.Auth.UserId)

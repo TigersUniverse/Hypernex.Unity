@@ -8,6 +8,8 @@ namespace Hypernex.Game
 {
     public class Grabbable : MonoBehaviour
     {
+        public static List<Grabbable> AllGrabbables => new(allGrabbables);
+        public static List<Grabbable> HighlightedGrabbables => new(highlightedGrabbables);
         public bool ApplyVelocity = true;
         public float VelocityAmount = 10f;
         public float VelocityThreshold = 0.05f;
@@ -18,6 +20,8 @@ namespace Hypernex.Game
         [HideInInspector] public Transform CurrentGrabbed;
         public IBinding CurrentGrabbedFromBinding;
 
+        private static List<Grabbable> allGrabbables = new();
+        private static List<Grabbable> highlightedGrabbables = new();
         private Transform ObjectGrabbing;
         private NetworkSync NetworkSync;
         private MeshRenderer meshRenderer;
@@ -75,7 +79,7 @@ namespace Hypernex.Game
             if (NetworkSync != null && (!NetworkSync.IsOwned() || NetworkSync.NetworkSteal))
                 NetworkSync.Claim();
             //else if(NetworkSync != null && !NetworkSync.IsOwnedByLocalPlayer())
-                //Deregister(true);
+            //Deregister(true);
         }
 
         private void Deregister(bool ignoreVelocity = false)
@@ -111,8 +115,11 @@ namespace Hypernex.Game
 
         private void Highlight(GameObject t, (bool, bool) specificResult)
         {
-            if (highlighted || meshRenderer == null) return;
+            if (highlighted) return;
             highlighted = true;
+            if(!HighlightedGrabbables.Contains(this))
+                highlightedGrabbables.Add(this);
+            if (meshRenderer == null) return;
             List<Material> materials = meshRenderer.materials.ToList();
             materials.Add(Init.Instance.OutlineMaterial);
             meshRenderer.materials = materials.ToArray();
@@ -134,7 +141,11 @@ namespace Hypernex.Game
 
         private void NoHighlight()
         {
-            if (!highlighted || meshRenderer == null) return;
+            if (!highlighted) return;
+            highlighted = false;
+            if(HighlightedGrabbables.Contains(this))
+                highlightedGrabbables.Remove(this);
+            if (meshRenderer == null) return;
             List<Material> materials = meshRenderer.materials.ToList();
             Material matToRemove = materials.ElementAt(materials.Count - 1);
             if (matToRemove.shader != Init.Instance.OutlineMaterial.shader)
@@ -156,15 +167,44 @@ namespace Hypernex.Game
             }
         }
 
+        private bool IsGrabbingSomething(IBinding binding) =>
+            AllGrabbables.Any(allGrabbable =>
+                allGrabbable.CurrentGrabbedFromBinding?.AttachedObject == binding.AttachedObject);
+
+        private Grabbable GetClosestGrabbable(Transform t)
+        {
+            (Grabbable, float)? g = null;
+            foreach (Grabbable grabbable in AllGrabbables)
+            {
+                if (grabbable.ObjectGrabbing == t)
+                    return null;
+                if(grabbable.CurrentGrabbed != null) continue;
+                float d = Vector3.Distance(grabbable.transform.position, t.transform.position);
+                if (g == null)
+                    g = (grabbable, d);
+                else if (d < g.Value.Item2)
+                    g = (grabbable, d);
+            }
+            return g?.Item1;
+        }
+
         private void Start()
         {
             NetworkSync = GetComponent<NetworkSync>();
             if (NetworkSync != null)
+            {
                 NetworkSync.OnForce += force =>
                 {
                     rb.AddForce(force);
                     cd.enabled = true;
                 };
+                NetworkSync.OnSteal += () =>
+                {
+                    NoHighlight();
+                    if (CurrentGrabbed != null)
+                        Deregister(true);
+                };
+            }
             meshRenderer = GetComponent<MeshRenderer>();
         }
 
@@ -172,6 +212,7 @@ namespace Hypernex.Game
         {
             rb = GetComponent<Rigidbody>();
             cd = GetComponent<Collider>();
+            allGrabbables.Add(this);
         }
 
         private void Update()
@@ -207,7 +248,7 @@ namespace Hypernex.Game
                     foundBindings.Add(instanceBinding);
                 else if (!facing && foundBindings.Contains(instanceBinding))
                     foundBindings.Remove(instanceBinding);
-                if (instanceBinding.Grab && CurrentGrabbedFromBinding != instanceBinding && foundBindings.Contains(instanceBinding))
+                if (instanceBinding.Grab && CurrentGrabbedFromBinding != instanceBinding && foundBindings.Contains(instanceBinding) && !IsGrabbingSomething(instanceBinding) && (!vr || GetClosestGrabbable(instanceBinding.AttachedObject) == this))
                 {
                     if (CurrentGrabbed != null)
                         Destroy(CurrentGrabbed.gameObject);
@@ -239,9 +280,9 @@ namespace Hypernex.Game
                                          (rightControllerFacingSpecific.Item1 || rightControllerFacingSpecific.Item2);
             if(desktopFacing)
                 Highlight(LocalPlayer.Instance.Camera.gameObject, desktopFacingSpecific);
-            else if(leftControllerFacing)
+            else if(leftControllerFacing && GetClosestGrabbable(LocalPlayer.Instance.LeftHandReference) == this)
                 Highlight(LocalPlayer.Instance.LeftHandReference.gameObject, leftControllerFacingSpecific);
-            else if(rightControllerFacing)
+            else if(rightControllerFacing && GetClosestGrabbable(LocalPlayer.Instance.RightHandReference) == this)
                 Highlight(LocalPlayer.Instance.RightHandReference.gameObject, rightControllerFacingSpecific);
             else
             {
@@ -264,6 +305,7 @@ namespace Hypernex.Game
 
         private void OnDisable()
         {
+            allGrabbables.Remove(this);
             NoHighlight();
             Deregister(true);
         }

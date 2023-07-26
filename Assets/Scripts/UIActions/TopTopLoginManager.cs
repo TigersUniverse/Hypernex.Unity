@@ -16,6 +16,7 @@ namespace Hypernex.UIActions
         public static Queue<MessageMeta> UnreadMessages = new();
 
         public MessagesPageManager MessagesPage;
+        public GameObject MailIcon;
         public GameObject NotificationIcon;
         public Texture2D DefaultWorldBanner;
         public Texture2D DefaultUserIcon;
@@ -74,6 +75,8 @@ namespace Hypernex.UIActions
 
         private void Start()
         {
+            APIPlayer.OnUser += _ => MailIcon.SetActive(true);
+            APIPlayer.OnLogout += () => MailIcon.SetActive(false);
             SocketManager.OnInvite += invite =>
             {
                 Logger.CurrentLogger.Debug("Got Invite from " + invite.fromUserId);

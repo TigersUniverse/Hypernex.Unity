@@ -23,18 +23,21 @@ namespace Hypernex.Game
 {
     public class AvatarCreator : IDisposable
     {
+        public const string PARAMETER_ID = "parameter";
+        public const string SPLIT = "*";
+        
         public Avatar Avatar;
         public Animator MainAnimator;
         public FaceTrackingDescriptor FaceTrackingDescriptor;
-        public List<AnimatorPlayable> AnimatorPlayables => new (PlayableAnimators);
+        public List<AnimatorPlayable> AnimatorPlayables => new(PlayableAnimators);
 
-        private List<AnimatorPlayable> PlayableAnimators = new ();
+        private List<AnimatorPlayable> PlayableAnimators = new();
         internal List<Sandbox> localAvatarSandboxes = new();
         private VRIK vrik;
         private bool calibrated;
         private VRIKCalibrator.Settings vrikSettings = new()
         {
-            scaleMlp = 1f,
+            scaleMlp = LocalPlayer.Instance.CharacterController.height - 0.8f + LocalPlayer.Instance.CharacterController.center.y,
             handOffset = new Vector3(0, 0.01f, -0.1f),
         };
         private GameObject headAlign;
@@ -44,7 +47,7 @@ namespace Hypernex.Game
         internal OpusHandler opusHandler;
         private List<AvatarNearClip> avatarNearClips = new();
         private OVRLipSyncContext lipSyncContext;
-        private List<OVRLipSyncContextMorphTarget> morphTargets = new ();
+        private List<OVRLipSyncContextMorphTarget> morphTargets = new();
 
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -481,19 +484,19 @@ namespace Hypernex.Game
                         switch (playableAnimatorControllerParameter.type)
                         {
                             case AnimatorControllerParameterType.Bool:
-                                weights.Add(playableAnimatorControllerParameter.name,
+                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
                                     playableAnimator.AnimatorControllerPlayable.GetBool(
                                         playableAnimatorControllerParameter.name)
                                         ? 1.00f
                                         : 0.00f);
                                 break;
                             case AnimatorControllerParameterType.Int:
-                                weights.Add(playableAnimatorControllerParameter.name,
+                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
                                     playableAnimator.AnimatorControllerPlayable.GetInteger(
                                         playableAnimatorControllerParameter.name));
                                 break;
                             case AnimatorControllerParameterType.Float:
-                                weights.Add(playableAnimatorControllerParameter.name,
+                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
                                     playableAnimator.AnimatorControllerPlayable.GetFloat(
                                         playableAnimatorControllerParameter.name));
                                 break;
@@ -502,27 +505,48 @@ namespace Hypernex.Game
             }
             return weights;
         }
-
-        internal void HandleNetParameter(string parameterName, float weight)
+        
+        private string CombineRemaining(string[] s, int startIndex)
         {
-            foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
+            string r = String.Empty;
+            for (int i = startIndex; i < s.Length; i++)
+                r += s[i] + SPLIT;
+            return r.Remove(r.Length - 1);
+        }
+
+        internal void HandleNetParameter(string key, float weight)
+        {
+            string[] t = key.Split(SPLIT);
+            switch (t[0].ToLower())
             {
-                AnimatorControllerParameter parameter = GetParameterByName(parameterName, playableAnimator);
-                if (parameter != null)
+                case PARAMETER_ID:
                 {
-                    switch (parameter.type)
+                    string parameterName = CombineRemaining(t, 1);
+                    foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
                     {
-                        case AnimatorControllerParameterType.Bool:
-                            playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
-                                Math.Abs(weight - 1.00f) < 0.01);
-                            break;
-                        case AnimatorControllerParameterType.Int:
-                            playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName, (int) weight);
-                            break;
-                        case AnimatorControllerParameterType.Float:
-                            playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName, weight);
-                            break;
+                        try
+                        {
+                            AnimatorControllerParameter parameter = GetParameterByName(parameterName, playableAnimator);
+                            if (parameter != null)
+                            {
+                                switch (parameter.type)
+                                {
+                                    case AnimatorControllerParameterType.Bool:
+                                        playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
+                                            Math.Abs(weight - 1.00f) < 0.01);
+                                        break;
+                                    case AnimatorControllerParameterType.Int:
+                                        playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName, (int) weight);
+                                        break;
+                                    case AnimatorControllerParameterType.Float:
+                                        playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName, weight);
+                                        break;
+                                }
+                            }
+                        }
+                        catch(Exception){}
                     }
+                    break;
                 }
             }
         }
@@ -621,6 +645,12 @@ namespace Hypernex.Game
             }
             if (vrik != null && vrik.solver.initiated && XRTracker.Trackers.Count(x => x.IsTracked) != 3 && !calibrated)
             {
+                XRTracker.Trackers.ForEach(x =>
+                {
+                    Renderer r = x.renderer;
+                    if (r != null)
+                        r.enabled = false;
+                });
                 VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
                     RightHandReference.transform);
                 SetupAnimators();
@@ -653,7 +683,6 @@ namespace Hypernex.Game
                             Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
                             if (newTs[0] != null && newTs[1] != null && newTs[2] != null)
                             {
-                                //vrik = Avatar.gameObject.AddComponent<VRIK>();
                                 VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0],
                                     LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
                                 RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
@@ -674,6 +703,12 @@ namespace Hypernex.Game
             }
             else if (calibrated)
             {
+                XRTracker.Trackers.ForEach(x =>
+                {
+                    Renderer r = x.renderer;
+                    if (r != null)
+                        r.enabled = false;
+                });
                 vrik.solver.locomotion.weight = isMoving || XRTracker.Trackers.Count(x => x.IsTracked) == 3 ? 0f : 1f;
                 if (XRTracker.Trackers.Count(x => x.IsTracked) != 3)
                 {
@@ -682,6 +717,13 @@ namespace Hypernex.Game
                     vrik.solver.locomotion.footDistance = 0.1f * scale * height;
                     vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
                 }
+                MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
+                // MotionSpeed (4)
+                MainAnimator.SetFloat("MotionSpeed", 1f);
+                MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            }
+            else if (vrik == null)
+            {
                 MainAnimator.runtimeAnimatorController = Init.Instance.DefaultAvatarAnimatorController;
                 // MotionSpeed (4)
                 MainAnimator.SetFloat("MotionSpeed", 1f);

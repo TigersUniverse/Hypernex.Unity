@@ -13,7 +13,7 @@ namespace Hypernex.Game.Bindings
     {
         public string Id => (IsLook ? "Left" : "Right") + " VRController";
         public Transform AttachedObject =>
-            IsLook ? LocalPlayer.Instance.RightHandReference : LocalPlayer.Instance.LeftHandReference;
+            !IsLook ? LocalPlayer.Instance.RightHandReference : LocalPlayer.Instance.LeftHandReference;
         public bool IsLeftController => !IsLook;
         public bool IsRightController => IsLook;
         public bool IsLook { get; }

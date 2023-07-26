@@ -13,6 +13,11 @@ namespace Hypernex.UI
 
         public GameObject Dashboard;
 
+        public Vector3 OpenedPosition { get; private set; }
+        public Quaternion OpenedRotation { get; private set; }
+        public Vector3 OpenedScale { get; private set; }
+        public Bounds OpenedBounds { get; private set; }
+
         public void Start()
         {
             IsVisible = Dashboard.activeSelf;
@@ -41,7 +46,13 @@ namespace Hypernex.UI
         {
             IsVisible = !IsVisible;
             if (IsVisible)
+            {
                 PositionDashboard(localPlayer);
+                OpenedPosition = localPlayer.transform.position;
+                OpenedRotation = localPlayer.transform.rotation;
+                OpenedScale = localPlayer.transform.localScale;
+                OpenedBounds = localPlayer.CharacterController.bounds;
+            }
             Dashboard.SetActive(IsVisible);
             localPlayer.LockCamera = IsVisible;
             localPlayer.LockMovement = IsVisible;
