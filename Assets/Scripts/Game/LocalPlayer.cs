@@ -217,10 +217,6 @@ namespace Hypernex.Game
             };
             if (avatarMeta != null)
                 playerUpdate.AvatarId = avatarMeta.Id;
-            if(avatar != null)
-                foreach (var animatorWeight in avatar.GetAnimatorWeights())
-                    if(!playerUpdate.WeightedObjects.ContainsKey(animatorWeight.Key))
-                        playerUpdate.WeightedObjects.Add(animatorWeight.Key, animatorWeight.Value);
             if (playerUpdate.IsPlayerVR)
             {
                 XRBinding left = null;
@@ -497,7 +493,8 @@ namespace Hypernex.Game
         }
 
         private Coroutine lastCoroutine;
-        private Queue<PlayerObjectUpdate> msgs = new();
+        private Queue<PlayerObjectUpdate> poumsgs = new();
+        private Queue<WeightedObjectUpdate> woumsgs = new();
         private CancellationTokenSource cts;
         private Mutex mutex = new();
 
@@ -509,15 +506,23 @@ namespace Hypernex.Game
                 {
                     PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
                     gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-                    if (msgs.Count <= 0 && mutex.WaitOne(1))
+                    if (poumsgs.Count <= 0 && mutex.WaitOne(1))
                     {
                         try
                         {
                             foreach (PlayerObjectUpdate playerObjectUpdate in GetPlayerObjectUpdates())
                             {
-                                msgs.Enqueue(playerObjectUpdate);
+                                poumsgs.Enqueue(playerObjectUpdate);
                                 //byte[] g = Msg.Serialize(playerObjectUpdate);
                                 //gameInstance.SendMessage(g, MessageChannel.Unreliable);
+                            }
+                            foreach (WeightedObjectUpdate weightedObjectUpdate in avatar.GetAnimatorWeights(new JoinAuth
+                                     {
+                                         UserId = APIPlayer.APIUser.Id,
+                                         TempToken = GameInstance.FocusedInstance.userIdToken
+                                     }))
+                            {
+                                woumsgs.Enqueue(weightedObjectUpdate);
                             }
                         }
                         catch (Exception e)
@@ -599,12 +604,21 @@ namespace Hypernex.Game
                     {
                         if (mutex.WaitOne())
                         {
-                            if (msgs.Count > 0)
+                            if (poumsgs.Count > 0)
                             {
-                                for (int i = 0; i < msgs.Count; i++)
+                                for (int i = 0; i < poumsgs.Count; i++)
                                 {
-                                    PlayerObjectUpdate p = msgs.Dequeue();
+                                    PlayerObjectUpdate p = poumsgs.Dequeue();
                                     byte[] msg = Msg.Serialize(p);
+                                    GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
+                                }
+                            }
+                            if (woumsgs.Count > 0)
+                            {
+                                for (int i = 0; i < woumsgs.Count; i++)
+                                {
+                                    WeightedObjectUpdate w = woumsgs.Dequeue();
+                                    byte[] msg = Msg.Serialize(w);
                                     GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
                                 }
                             }

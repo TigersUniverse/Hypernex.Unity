@@ -346,13 +346,16 @@ namespace Hypernex.Game
             }
             if (Avatar != null && Avatar.Avatar.transform.parent == transform)
             {
-                foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
-                    Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);
+                /*foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
+                    Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);*/
                 LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
                 LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
                 Avatar.audioSource.volume = playerUpdate.IsSpeaking ? volume : 0f;
             }
         }
+
+        public void WeightedObject(WeightedObjectUpdate weightedObjectUpdate) =>
+            Avatar?.HandleNetParameter(weightedObjectUpdate);
 
         /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {

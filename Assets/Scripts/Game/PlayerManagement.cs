@@ -52,6 +52,19 @@ namespace Hypernex.Game
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerUpdate.Auth.UserId}");
         }
 
+        public static void HandleWeightedObjectUpdate(GameInstance gameInstance, WeightedObjectUpdate weightedObjectUpdate)
+        {
+            if (weightedObjectUpdate.Auth.UserId == APIPlayer.APIUser?.Id ||
+                string.IsNullOrEmpty(weightedObjectUpdate.Auth.UserId))
+                return;
+            NetPlayer netPlayer = GetOrCreateNetPlayer(gameInstance, weightedObjectUpdate.Auth.UserId);
+            if (netPlayer != null)
+                netPlayer.WeightedObject(weightedObjectUpdate);
+            else
+                Logger.CurrentLogger.Debug(
+                    $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{weightedObjectUpdate.Auth.UserId}");
+        }
+
         public static void HandlePlayerObjectUpdate(GameInstance gameInstance, PlayerObjectUpdate playerObjectUpdate)
         {
             if (playerObjectUpdate.Auth.UserId == APIPlayer.APIUser?.Id || string.IsNullOrEmpty(playerObjectUpdate.Auth.UserId))

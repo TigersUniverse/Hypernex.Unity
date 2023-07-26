@@ -4,6 +4,7 @@ using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Bindings;
+using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
@@ -24,7 +25,7 @@ namespace Hypernex.Game
     public class AvatarCreator : IDisposable
     {
         public const string PARAMETER_ID = "parameter";
-        public const string SPLIT = "*";
+        public const string BLENDSHAPE_ID = "blendshape";
         
         public Avatar Avatar;
         public Animator MainAnimator;
@@ -48,6 +49,7 @@ namespace Hypernex.Game
         private List<AvatarNearClip> avatarNearClips = new();
         private OVRLipSyncContext lipSyncContext;
         private List<OVRLipSyncContextMorphTarget> morphTargets = new();
+        private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
 
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -113,7 +115,10 @@ namespace Hypernex.Game
             calibrated = false;
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
                 skinnedMeshRenderer.updateWhenOffscreen = true;
+                skinnedMeshRenderers.Add(skinnedMeshRenderer);
+            }
             if (string.IsNullOrEmpty(LocalPlayer.Instance.avatarMeta.ImageURL))
                 CurrentAvatarBanner.Instance.Render(this, Array.Empty<byte>());
             else
@@ -473,57 +478,81 @@ namespace Hypernex.Game
             }
         }
 
-        internal Dictionary<string, float> GetAnimatorWeights()
+        internal List<WeightedObjectUpdate> GetAnimatorWeights(JoinAuth j)
         {
-            Dictionary<string, float> weights = new Dictionary<string, float>();
+            List<WeightedObjectUpdate> weights = new();
             foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
             {
                 foreach (AnimatorControllerParameter playableAnimatorControllerParameter in playableAnimator.AnimatorControllerParameters)
                 {
-                    if (!weights.ContainsKey(playableAnimatorControllerParameter.name))
-                        switch (playableAnimatorControllerParameter.type)
-                        {
-                            case AnimatorControllerParameterType.Bool:
-                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
-                                    playableAnimator.AnimatorControllerPlayable.GetBool(
-                                        playableAnimatorControllerParameter.name)
-                                        ? 1.00f
-                                        : 0.00f);
-                                break;
-                            case AnimatorControllerParameterType.Int:
-                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
-                                    playableAnimator.AnimatorControllerPlayable.GetInteger(
-                                        playableAnimatorControllerParameter.name));
-                                break;
-                            case AnimatorControllerParameterType.Float:
-                                weights.Add(PARAMETER_ID + SPLIT + playableAnimatorControllerParameter.name,
-                                    playableAnimator.AnimatorControllerPlayable.GetFloat(
-                                        playableAnimatorControllerParameter.name));
-                                break;
-                        }
+                    WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
+                    {
+                        Auth = j,
+                        PathToWeightContainer = playableAnimator.CustomPlayableAnimator.AnimatorController.name,
+                        TypeOfWeight = PARAMETER_ID,
+                        WeightIndex = playableAnimatorControllerParameter.name
+                    };
+                    switch (playableAnimatorControllerParameter.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                            weightedObjectUpdate.Weight =
+                                playableAnimator.AnimatorControllerPlayable.GetBool(playableAnimatorControllerParameter
+                                    .name)
+                                    ? 1.00f
+                                    : 0.00f;
+                            break;
+                        case AnimatorControllerParameterType.Int:
+                            weightedObjectUpdate.Weight =
+                                playableAnimator.AnimatorControllerPlayable.GetInteger(
+                                    playableAnimatorControllerParameter.name);
+                            break;
+                        case AnimatorControllerParameterType.Float:
+                            weightedObjectUpdate.Weight =
+                                playableAnimator.AnimatorControllerPlayable.GetFloat(playableAnimatorControllerParameter
+                                    .name);
+                            break;
+                        default:
+                            continue;
+                    }
+                    weights.Add(weightedObjectUpdate);
+                }
+            }
+            foreach (SkinnedMeshRenderer skinnedMeshRenderer in skinnedMeshRenderers)
+            {
+                PathDescriptor p = skinnedMeshRenderer.gameObject.GetComponent<PathDescriptor>();
+                if(p == null) continue;
+                for (int i = 0; i < skinnedMeshRenderer.sharedMesh.blendShapeCount; i++)
+                {
+                    // Exclude Visemes
+                    if (Avatar.UseVisemes && Avatar.VisemesDict.Count(x =>
+                            x.Value.SkinnedMeshRenderer == skinnedMeshRenderer && x.Value.BlendshapeIndex == i) >
+                        0) continue;
+                    float w = skinnedMeshRenderer.GetBlendShapeWeight(i);
+                    WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
+                    {
+                        Auth = j,
+                        PathToWeightContainer = p.path,
+                        TypeOfWeight = BLENDSHAPE_ID,
+                        WeightIndex = i.ToString(),
+                        Weight = w
+                    };
+                    weights.Add(weightedObjectUpdate);
                 }
             }
             return weights;
         }
-        
-        private string CombineRemaining(string[] s, int startIndex)
-        {
-            string r = String.Empty;
-            for (int i = startIndex; i < s.Length; i++)
-                r += s[i] + SPLIT;
-            return r.Remove(r.Length - 1);
-        }
 
-        internal void HandleNetParameter(string key, float weight)
+        internal void HandleNetParameter(WeightedObjectUpdate weight)
         {
-            string[] t = key.Split(SPLIT);
-            switch (t[0].ToLower())
+            switch (weight.TypeOfWeight.ToLower())
             {
                 case PARAMETER_ID:
                 {
-                    string parameterName = CombineRemaining(t, 1);
+                    string parameterName = weight.WeightIndex;
                     foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
                     {
+                        if (playableAnimator.CustomPlayableAnimator.AnimatorController.name !=
+                            weight.PathToWeightContainer) continue;
                         try
                         {
                             AnimatorControllerParameter parameter = GetParameterByName(parameterName, playableAnimator);
@@ -533,19 +562,32 @@ namespace Hypernex.Game
                                 {
                                     case AnimatorControllerParameterType.Bool:
                                         playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
-                                            Math.Abs(weight - 1.00f) < 0.01);
+                                            Math.Abs(weight.Weight - 1.00f) < 0.01);
                                         break;
                                     case AnimatorControllerParameterType.Int:
-                                        playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName, (int) weight);
+                                        playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
+                                            (int) weight.Weight);
                                         break;
                                     case AnimatorControllerParameterType.Float:
-                                        playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName, weight);
+                                        playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
+                                            weight.Weight);
                                         break;
                                 }
                             }
-                        }
-                        catch(Exception){}
+                        } catch(Exception){}
                     }
+                    break;
+                }
+                case BLENDSHAPE_ID:
+                {
+                    try
+                    {
+                        Transform t = Avatar.transform.parent.Find(weight.PathToWeightContainer);
+                        if (t == null) break;
+                        SkinnedMeshRenderer s = t.gameObject.GetComponent<SkinnedMeshRenderer>();
+                        if (s == null) break;
+                        s.SetBlendShapeWeight(Convert.ToInt32(weight.WeightIndex), weight.Weight);
+                    } catch(Exception){}
                     break;
                 }
             }

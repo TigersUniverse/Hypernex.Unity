@@ -31,6 +31,13 @@ namespace Hypernex.Game
                     PlayerManagement.HandlePlayerObjectUpdate(gameInstance, playerObjectUpdate);
                     break;
                 }
+                case "Hypernex.Networking.Messages.WeightedObjectUpdate":
+                {
+                    WeightedObjectUpdate weightedObjectUpdate =
+                        (WeightedObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(WeightedObjectUpdate));
+                    PlayerManagement.HandleWeightedObjectUpdate(gameInstance, weightedObjectUpdate);
+                    break;
+                }
                 case "Hypernex.Networking.Messages.WorldObjectUpdate":
                 {
                     WorldObjectUpdate worldObjectUpdate =
