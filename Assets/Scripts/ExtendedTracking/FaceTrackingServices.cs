@@ -32,7 +32,7 @@ namespace Hypernex.ExtendedTracking
                         Logger.CurrentLogger.Critical(exception);
                         break;
                     default:
-                        Logger.CurrentLogger.Log(state.ToString());
+                        Logger.CurrentLogger.Debug(state.ToString());
                         break;
                 }
             }

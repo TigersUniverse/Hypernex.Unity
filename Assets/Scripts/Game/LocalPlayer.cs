@@ -248,6 +248,7 @@ namespace Hypernex.Game
         }
 
         internal Dictionary<string, NetworkedObject> children = new();
+        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
 
         private List<NetworkedObject> GetNetworkObjects()
         {
@@ -513,11 +514,18 @@ namespace Hypernex.Game
                                 //byte[] g = Msg.Serialize(playerObjectUpdate);
                                 //gameInstance.SendMessage(g, MessageChannel.Unreliable);
                             }
-                            foreach (WeightedObjectUpdate weightedObjectUpdate in avatar.GetAnimatorWeights(new JoinAuth
-                                     {
-                                         UserId = APIPlayer.APIUser.Id,
-                                         TempToken = GameInstance.FocusedInstance.userIdToken
-                                     }))
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.CurrentLogger.Error("Failed to get PlayerUpdate! Exception: " + e);
+                        }
+                        mutex.ReleaseMutex();
+                    }
+                    if (woumsgs.Count <= 0 && mutex.WaitOne(1))
+                    {
+                        try
+                        {
+                            foreach (WeightedObjectUpdate weightedObjectUpdate in weightedObjectUpdates)
                             {
                                 woumsgs.Enqueue(weightedObjectUpdate);
                             }
@@ -888,15 +896,6 @@ namespace Hypernex.Game
             bool isMoving = left_m?.Item3 ?? false;
             avatar?.Update(areTwoTriggersClicked(), FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
                 isMoving);
-            if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
-                FaceTrackingManager.HasInitialized)
-            {
-                avatar?.UpdateEyes(FaceTrackingManager.GetEyeWeights());
-                Dictionary<FaceExpressions, float> faceWeights = FaceTrackingManager.GetFaceWeights();
-                avatar?.UpdateFace(faceWeights);
-                foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
-                    avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
-            }
             // TODO: Non-Eye Tracking Eye Movement
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
                 GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
@@ -922,6 +921,21 @@ namespace Hypernex.Game
         private void LateUpdate()
         {
             avatar?.LateUpdate(IsVR, Camera.transform, LockCamera);
+            if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
+                FaceTrackingManager.HasInitialized)
+            {
+                avatar?.UpdateEyes(FaceTrackingManager.GetEyeWeights());
+                Dictionary<FaceExpressions, float> faceWeights = FaceTrackingManager.GetFaceWeights();
+                avatar?.UpdateFace(faceWeights);
+                foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
+                    avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
+            }
+            if(APIPlayer.APIUser != null && GameInstance.FocusedInstance != null)
+                weightedObjectUpdates = avatar?.GetAnimatorWeights(new JoinAuth
+                {
+                    UserId = APIPlayer.APIUser.Id,
+                    TempToken = GameInstance.FocusedInstance.userIdToken
+                });
         }
 
         private void OnDestroy() => Dispose();

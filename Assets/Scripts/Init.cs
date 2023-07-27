@@ -71,7 +71,12 @@ public class Init : MonoBehaviour
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
         OverlayManager.Begin();
-        Application.wantsToQuit += () => IsQuitting = true;
+        Application.wantsToQuit += () =>
+        {
+            FaceTrackingManager.Destroy();
+            IsQuitting = true;
+            return true;
+        };
         kcp2k.Log.Info = s => unityLogger.Debug(s);
         kcp2k.Log.Warning = s => unityLogger.Warn(s);
         kcp2k.Log.Error = s => unityLogger.Error(s);
@@ -180,7 +185,6 @@ public class Init : MonoBehaviour
             APIPlayer.UserSocket.Close();
         OverlayManager.Dispose();
         DiscordTools.Stop();
-        FaceTrackingManager.Destroy();
         StopVR();
         AssetBundleTools.UnloadAllAssetBundles();
     }

@@ -74,6 +74,7 @@ namespace Hypernex.Game
                         avatarNearClips.Add(avatarNearClip);
                 }
             avatarNearClips.ForEach(x => x.CreateShadows());
+            FaceTrackingDescriptor = Avatar.gameObject.GetComponent<FaceTrackingDescriptor>();
             Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
             if(head != null)
                 vrikSettings.headOffset = head.position - headAlign.transform.position;
@@ -947,9 +948,11 @@ namespace Hypernex.Game
             {
                 if (!FaceTrackingDescriptor.FaceValues.ContainsKey(keyValuePair.Key)) continue;
                 BlendshapeDescriptor blendshapeDescriptor = FaceTrackingDescriptor.FaceValues[keyValuePair.Key];
-                if (blendshapeDescriptor != null)
+                if (blendshapeDescriptor != null && blendshapeDescriptor.SkinnedMeshRenderer != null)
+                {
                     SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
-                        blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value);
+                        blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value * 100);
+                }
             }
         }
 

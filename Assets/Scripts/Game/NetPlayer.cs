@@ -109,6 +109,7 @@ namespace Hypernex.Game
                             return;
                         Avatar?.Dispose();
                         avatarUpdates.Clear();
+                        weightedObjectUpdates.Clear();
                         Avatar = new AvatarCreator(this, a);
                         foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
                             Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
@@ -319,6 +320,11 @@ namespace Hypernex.Game
                 }
                 playerObjectUpdateHolder.t.localScale = playerObjectUpdateHolder.ExpectedSize;
             }
+            if (weightedObjectUpdates.Count > 0)
+            {
+                foreach (WeightedObjectUpdate w in new List<WeightedObjectUpdate>(weightedObjectUpdates))
+                    Avatar?.HandleNetParameter(w);
+            }
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 
@@ -354,8 +360,16 @@ namespace Hypernex.Game
             }
         }
 
-        public void WeightedObject(WeightedObjectUpdate weightedObjectUpdate) =>
-            Avatar?.HandleNetParameter(weightedObjectUpdate);
+        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
+
+        public void WeightedObject(WeightedObjectUpdate weightedObjectUpdate)
+        {
+            weightedObjectUpdates.RemoveAll(x =>
+                x.PathToWeightContainer == weightedObjectUpdate.PathToWeightContainer &&
+                x.TypeOfWeight == weightedObjectUpdate.TypeOfWeight &&
+                x.WeightIndex == weightedObjectUpdate.WeightIndex);
+            weightedObjectUpdates.Add(weightedObjectUpdate);
+        }
 
         /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
