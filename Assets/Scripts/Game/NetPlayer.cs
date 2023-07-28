@@ -357,6 +357,7 @@ namespace Hypernex.Game
                 LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
                 LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
                 Avatar.audioSource.volume = playerUpdate.IsSpeaking ? volume : 0f;
+                Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
             }
         }
 

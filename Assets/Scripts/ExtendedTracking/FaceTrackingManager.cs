@@ -17,6 +17,8 @@ namespace Hypernex.ExtendedTracking
     public static class FaceTrackingManager
     {
         public static bool HasInitialized { get; private set; }
+        public static bool EyeTracking => libManager?.ModuleMetadatas.Count(x => x.UsingEye && x.Active) > 0;
+        public static bool LipTracking => libManager?.ModuleMetadatas.Count(x => x.UsingExpression && x.Active) > 0;
         
         private static FaceTrackingServices.FTSettings settings;
         private static FaceTrackingServices.FTLoggerFactory loggerFactory;

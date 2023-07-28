@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
-using UnityEngine.XR;
 using VRCFaceTracking.Core.Params.Data;
 using Avatar = Hypernex.CCK.Unity.Avatar;
 using Object = UnityEngine.Object;
@@ -47,7 +46,7 @@ namespace Hypernex.Game
         internal AudioSource audioSource;
         internal OpusHandler opusHandler;
         private List<AvatarNearClip> avatarNearClips = new();
-        private OVRLipSyncContext lipSyncContext;
+        internal OVRLipSyncContext lipSyncContext;
         private List<OVRLipSyncContextMorphTarget> morphTargets = new();
         private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
 
@@ -869,7 +868,11 @@ namespace Hypernex.Game
         private Quaternion GetEyeQuaternion(float x, float y, Quaternion up, Quaternion down, Quaternion left,
             Quaternion right)
         {
-            Quaternion final = new Quaternion((right.x - left.x)*x, (up.y - down.y)*y, (up*down).z/2, 0);
+            // what am i doing
+            float xx = (left.x - right.x) / 2;
+            float yy = (up.y - down.y) / 2;
+            float zz = (left.z + right.z + up.z + down.z) / 4;
+            Quaternion final = new Quaternion(xx * x, yy * y, zz, 0);
             return final;
         }
 
@@ -877,73 +880,166 @@ namespace Hypernex.Game
         {
             if (!Avatar.UseEyeManager)
                 return;
-            // Left Eye
-            if (Avatar.UseLeftEyeBoneInstead)
+            if (Avatar.UseCombinedEyeBlendshapes)
             {
-                Avatar.LeftEyeBone.localRotation = GetEyeQuaternion(eyeData.Left.Gaze.x, eyeData.Left.Gaze.y,
-                    Avatar.LeftEyeUpLimit, Avatar.LeftEyeDownLimit, Avatar.LeftEyeLeftLimit, Avatar.LeftEyeRightLimit);
-            }
-            else
-            {
+                float opennessValue = (eyeData.Left.Openness + eyeData.Right.Openness) / 2;
+                float leftValue = (eyeData.Left.Gaze.x >= 0f ? -eyeData.Left.Gaze.x :
+                    0 + eyeData.Right.Gaze.x >= 0f ? -eyeData.Right.Gaze.x : 0) / 2;
+                float rightValue = (eyeData.Left.Gaze.x >= 0f ? eyeData.Left.Gaze.x :
+                    0 + eyeData.Right.Gaze.x >= 0f ? eyeData.Right.Gaze.x : 0) / 2;
+                float downValue = (eyeData.Left.Gaze.y >= 0f ? -eyeData.Left.Gaze.y :
+                    0 + eyeData.Right.Gaze.y >= 0f ? -eyeData.Right.Gaze.y : 0) / 2;
+                float upValue = (eyeData.Left.Gaze.y >= 0f ? eyeData.Left.Gaze.y :
+                    0 + eyeData.Right.Gaze.y >= 0f ? eyeData.Right.Gaze.y : 0) / 2;
                 foreach (KeyValuePair<EyeBlendshapeAction,BlendshapeDescriptor> avatarEyeBlendshape in Avatar.EyeBlendshapes)
                 {
                     switch (avatarEyeBlendshape.Key)
                     {
                         case EyeBlendshapeAction.Blink:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Openness * 100);
+                            avatarEyeBlendshape.Value.SetWeight(opennessValue * 100);
                             break;
                         case EyeBlendshapeAction.LookUp:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y > 0 ? eyeData.Left.Gaze.y * 100 : 0f);
+                            avatarEyeBlendshape.Value.SetWeight(upValue * 100);
                             break;
                         case EyeBlendshapeAction.LookDown:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.y * 100 : 0f);
+                            avatarEyeBlendshape.Value.SetWeight(downValue * 100);
                             break;
                         case EyeBlendshapeAction.LookRight:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.x > 0 ? eyeData.Left.Gaze.x * 100 : 0f);
+                            avatarEyeBlendshape.Value.SetWeight(rightValue * 100);
                             break;
                         case EyeBlendshapeAction.LookLeft:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.x * 100 : 0f);
+                            avatarEyeBlendshape.Value.SetWeight(leftValue * 100);
                             break;
                     }
                 }
-            }
-            // Right Eye
-            if (Avatar.UseRightEyeBoneInstead)
-            {
-                Avatar.RightEyeBone.localRotation = GetEyeQuaternion(eyeData.Right.Gaze.x, eyeData.Right.Gaze.y,
-                    Avatar.RightEyeUpLimit, Avatar.RightEyeDownLimit, Avatar.RightEyeLeftLimit,
-                    Avatar.RightEyeRightLimit);
+                SetParameter("LeftEyeBlink", opennessValue);
+                SetParameter("LeftEyeLookLeft", leftValue);
+                SetParameter("LeftEyeLookRight", rightValue);
+                SetParameter("LeftEyeLookUp", upValue);
+                SetParameter("LeftEyeLookDown", downValue);
+                SetParameter("RightEyeBlink", opennessValue);
+                SetParameter("RightEyeLookLeft", leftValue);
+                SetParameter("RightEyeLookRight", rightValue);
+                SetParameter("RightEyeLookUp", upValue);
+                SetParameter("RightEyeLookDown", downValue);
             }
             else
             {
-                foreach (KeyValuePair<EyeBlendshapeAction,BlendshapeDescriptor> avatarEyeBlendshape in Avatar.RightEyeBlendshapes)
+                // Left Eye
+                float leftOpennessValue = eyeData.Left.Openness;
+                float leftUpValue = eyeData.Left.Gaze.y > 0 ? eyeData.Left.Gaze.y : 0f;
+                float leftDownValue = eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.y : 0f;
+                float leftRightValue = eyeData.Left.Gaze.x > 0 ? eyeData.Left.Gaze.x : 0f;
+                float leftLeftValue = eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.x : 0f;
+                if (Avatar.UseLeftEyeBoneInstead)
                 {
-                    switch (avatarEyeBlendshape.Key)
+                    Avatar.LeftEyeBone.localRotation = GetEyeQuaternion(eyeData.Left.Gaze.x, eyeData.Left.Gaze.y,
+                        Avatar.LeftEyeUpLimit, Avatar.LeftEyeDownLimit, Avatar.LeftEyeLeftLimit,
+                        Avatar.LeftEyeRightLimit);
+                }
+                else
+                {
+                    foreach (KeyValuePair<EyeBlendshapeAction, BlendshapeDescriptor> avatarEyeBlendshape in Avatar
+                                 .LeftEyeBlendshapes)
                     {
-                        case EyeBlendshapeAction.Blink:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Openness * 100);
-                            break;
-                        case EyeBlendshapeAction.LookUp:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y > 0 ? eyeData.Right.Gaze.y * 100 : 0f);
-                            break;
-                        case EyeBlendshapeAction.LookDown:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.y * 100 : 0f);
-                            break;
-                        case EyeBlendshapeAction.LookRight:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.x > 0 ? eyeData.Right.Gaze.x * 100 : 0f);
-                            break;
-                        case EyeBlendshapeAction.LookLeft:
-                            avatarEyeBlendshape.Value.SetWeight(eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.x * 100 : 0f);
-                            break;
+                        switch (avatarEyeBlendshape.Key)
+                        {
+                            case EyeBlendshapeAction.Blink:
+                                avatarEyeBlendshape.Value.SetWeight(leftOpennessValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookUp:
+                                avatarEyeBlendshape.Value.SetWeight(leftUpValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookDown:
+                                avatarEyeBlendshape.Value.SetWeight(leftDownValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookRight:
+                                avatarEyeBlendshape.Value.SetWeight(leftRightValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookLeft:
+                                avatarEyeBlendshape.Value.SetWeight(leftLeftValue * 100);
+                                break;
+                        }
                     }
                 }
+                SetParameter("LeftEyeBlink", leftOpennessValue);
+                SetParameter("LeftEyeLookLeft", leftLeftValue);
+                SetParameter("LeftEyeLookRight", leftRightValue);
+                SetParameter("LeftEyeLookUp", leftUpValue);
+                SetParameter("LeftEyeLookDown", leftDownValue);
+                // Right Eye
+                float rightOpennessValue = eyeData.Right.Openness;
+                float rightUpValue = eyeData.Right.Gaze.y > 0 ? eyeData.Right.Gaze.y : 0f;
+                float rightDownValue = eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.y : 0f;
+                float rightRightValue = eyeData.Right.Gaze.x > 0 ? eyeData.Right.Gaze.x : 0f;
+                float rightLeftValue = eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.x : 0f;
+                if (Avatar.UseRightEyeBoneInstead)
+                {
+                    Avatar.RightEyeBone.localRotation = GetEyeQuaternion(eyeData.Right.Gaze.x, eyeData.Right.Gaze.y,
+                        Avatar.RightEyeUpLimit, Avatar.RightEyeDownLimit, Avatar.RightEyeLeftLimit,
+                        Avatar.RightEyeRightLimit);
+                }
+                else
+                {
+                    foreach (KeyValuePair<EyeBlendshapeAction, BlendshapeDescriptor> avatarEyeBlendshape in Avatar
+                                 .RightEyeBlendshapes)
+                    {
+                        switch (avatarEyeBlendshape.Key)
+                        {
+                            case EyeBlendshapeAction.Blink:
+                                avatarEyeBlendshape.Value.SetWeight(rightOpennessValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookUp:
+                                avatarEyeBlendshape.Value.SetWeight(rightUpValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookDown:
+                                avatarEyeBlendshape.Value.SetWeight(rightDownValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookRight:
+                                avatarEyeBlendshape.Value.SetWeight(rightRightValue * 100);
+                                break;
+                            case EyeBlendshapeAction.LookLeft:
+                                avatarEyeBlendshape.Value.SetWeight(rightLeftValue * 100);
+                                break;
+                        }
+                    }
+                }
+                SetParameter("RightEyeBlink", rightOpennessValue);
+                SetParameter("RightEyeLookLeft", rightLeftValue);
+                SetParameter("RightEyeLookRight", rightRightValue);
+                SetParameter("RightEyeLookUp", rightUpValue);
+                SetParameter("RightEyeLookDown", rightDownValue);
             }
+            if(FaceTrackingDescriptor != null)
+                foreach (KeyValuePair<ExtraEyeExpressions,BlendshapeDescriptors> extraEyeValue in FaceTrackingDescriptor.ExtraEyeValues)
+                {
+                    switch (extraEyeValue.Key)
+                    {
+                        case ExtraEyeExpressions.PupilDilation:
+                        {
+                            float v = (eyeData.Left.PupilDiameter_MM + eyeData.Right.PupilDiameter_MM) / 2;
+                            foreach (BlendshapeDescriptor blendshapeDescriptor in extraEyeValue.Value.Descriptors)
+                            {
+                                if (blendshapeDescriptor == null || blendshapeDescriptor.SkinnedMeshRenderer == null)
+                                    continue;
+                                SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
+                                    blendshapeDescriptor.BlendshapeIndex, v);
+                            }
+                            SetParameter("PupilDilation", v);
+                            break;
+                        }
+                    }
+                }
         }
 
         internal void UpdateFace(Dictionary<FaceExpressions, float> weights)
         {
             if (FaceTrackingDescriptor == null)
+            {
+                foreach (FaceExpressions faceExpression in weights.Keys)
+                    SetParameter(faceExpression.ToString(), 0);
                 return;
+            }
             foreach (KeyValuePair<FaceExpressions,float> keyValuePair in weights)
             {
                 if (!FaceTrackingDescriptor.FaceValues.ContainsKey(keyValuePair.Key)) continue;
@@ -952,7 +1048,10 @@ namespace Hypernex.Game
                 {
                     SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
                         blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value * 100);
+                    SetParameter(keyValuePair.Key.ToString(), keyValuePair.Value);
                 }
+                else
+                    SetParameter(keyValuePair.Key.ToString(), 0);
             }
         }
 

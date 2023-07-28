@@ -30,11 +30,18 @@ namespace Hypernex.UI
             if(LocalPlayer.IsVR)
             {
                 float s = localPlayer.transform.localScale.y;
+                // Resize the UI templates based on the VR player size
+                GameObject t = DontDestroyMe.GetNotDestroyedObject("Templates");
+                if(t != null)
+                    t.transform.localScale = new Vector3(s, s, s);
                 Dashboard.transform.localScale = new Vector3(SCALE * s, SCALE * s, SCALE * s);
                 Dashboard.transform.position = reference.position + reference.forward * (0.73f * s);
             }
             else
             {
+                GameObject t = DontDestroyMe.GetNotDestroyedObject("Templates");
+                if(t != null)
+                    t.transform.localScale = new Vector3(1, 1, 1);
                 Dashboard.transform.localScale = new Vector3(SCALE, SCALE, SCALE);
                 Dashboard.transform.position = reference.position + reference.forward * 0.73f;
             }

@@ -195,6 +195,22 @@ namespace Hypernex.Game
             opusHandler.OnMicStart();
         }
 
+        private void AddSystemTags(ref List<string> tags)
+        {
+            if (!tags.Contains("*eyetracking") && FaceTrackingManager.EyeTracking)
+                tags.Add("*eyetracking");
+            if (!tags.Contains("*liptracking") && FaceTrackingManager.LipTracking)
+                tags.Add("*liptracking");
+        }
+
+        private void TagsCheck(ref List<string> tags)
+        {
+            if (tags.Contains("*eyetracking") && !FaceTrackingManager.EyeTracking)
+                tags.Remove("*eyetracking");
+            if (tags.Contains("*liptracking") && !FaceTrackingManager.LipTracking)
+                tags.Remove("*liptracking");
+        }
+
         private PlayerUpdate GetPlayerUpdate(GameInstance gameInstance)
         {
             if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen)
@@ -212,6 +228,7 @@ namespace Hypernex.Game
                 ExtraneousData = new Dictionary<string, object>(),
                 WeightedObjects = new Dictionary<string, float>()
             };
+            AddSystemTags(ref playerUpdate.PlayerAssignedTags);
             if (avatarMeta != null)
                 playerUpdate.AvatarId = avatarMeta.Id;
             if (playerUpdate.IsPlayerVR)
@@ -242,6 +259,7 @@ namespace Hypernex.Game
             foreach (KeyValuePair<string,object> extraneousObject in new Dictionary<string, object>(MoreExtraneousObjects))
                 if(!playerUpdate.ExtraneousData.ContainsKey(extraneousObject.Key))
                     playerUpdate.ExtraneousData.Add(extraneousObject.Key, extraneousObject.Value);
+            TagsCheck(ref playerUpdate.PlayerAssignedTags);
             LastPlayerAssignedTags = new List<string>(playerUpdate.PlayerAssignedTags);
             LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
             return playerUpdate;
@@ -618,6 +636,20 @@ namespace Hypernex.Game
                                     GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
                                 }
                             }
+                            mutex.ReleaseMutex();
+                        }
+                    }
+                    Thread.Sleep(10);
+                }
+            }).Start();
+            new Thread(() =>
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen)
+                    {
+                        if (mutex.WaitOne())
+                        {
                             if (woumsgs.Count > 0)
                             {
                                 for (int i = 0; i < woumsgs.Count; i++)
@@ -681,6 +713,12 @@ namespace Hypernex.Game
             Bindings.Add(rightBinding);
             VRInputListener.AddXRBinding(rightBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
+            CoroutineRunner.Instance.Run(PositionDashboardOnVRSwitch());
+        }
+
+        private IEnumerator PositionDashboardOnVRSwitch()
+        {
+            yield return new WaitForSeconds(1f);
             if(Dashboard.IsVisible)
                 Dashboard.PositionDashboard(this);
         }
