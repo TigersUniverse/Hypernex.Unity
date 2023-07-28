@@ -8,16 +8,8 @@ Shader "VirtualBrightPlayz/Mirror"
     SubShader
     {
         Tags { "RenderType"="Opaque" "Queue"="Transparent" }
-        // LOD 100
-        // ZTest Off
-        // Cull Off
-
-        // Stencil
-        // {
-        //     Ref 1
-        //     Comp equal
-        //     Pass keep
-        // }
+        LOD 100
+        ZTest Off
 
         Pass
         {
@@ -25,7 +17,6 @@ Shader "VirtualBrightPlayz/Mirror"
             #pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_instancing
-            // make fog work
             #pragma multi_compile_fog
 
             #include "UnityCG.cginc"
@@ -42,18 +33,14 @@ Shader "VirtualBrightPlayz/Mirror"
             {
                 float2 uv : TEXCOORD0;
                 float4 screenPos : TEXCOORD1;
-                // UNITY_FOG_COORDS(2)
                 float4 vertex : SV_POSITION;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
             sampler2D _MainTex;
-            // UNITY_DECLARE_SCREENSPACE_TEXTURE(_MainTex);
-            float4 _MainTex_ST;
             sampler2D _AltTex;
-            // UNITY_DECLARE_SCREENSPACE_TEXTURE(_AltTex);
-            float2 _Offset;
+            float4 _MainTex_ST;
 
             v2f vert (appdata v)
             {
@@ -64,7 +51,6 @@ Shader "VirtualBrightPlayz/Mirror"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.screenPos = ComputeScreenPos(o.vertex);
-                // UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
 
@@ -72,25 +58,10 @@ Shader "VirtualBrightPlayz/Mirror"
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
                 float2 screenUV = i.screenPos.xy / i.screenPos.w;
-                float2 offset = _Offset;
                 screenUV.x *= -1;
-                // screenUV.y *= -1;
-                if (unity_StereoEyeIndex)
-                {
-                    // offset.x *= -1;
-                }
-                fixed4 col = float4(0, 0, 0, 1);
-                if (unity_StereoEyeIndex == 1)
-                {
-                    // col = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_AltTex, screenUV);
-                    col = tex2D(_AltTex, screenUV);
-                }
-                else
-                {
-                    // col = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, screenUV);
-                    col = tex2D(_MainTex, screenUV);
-                }
-                return col;
+                return (unity_StereoEyeIndex == 1) ? 
+                    tex2D(_AltTex, screenUV) : 
+                    tex2D(_MainTex, screenUV);;
             }
             ENDCG
         }

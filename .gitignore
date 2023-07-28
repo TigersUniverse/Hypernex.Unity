@@ -65,3 +65,4 @@ crashlytics-build.properties
 /[Aa]ssets/DynamicBone
 /[Aa]ssets/MagicaCloth2
 /[Aa]ssets/StreamingAssets
+/.vsconfig
