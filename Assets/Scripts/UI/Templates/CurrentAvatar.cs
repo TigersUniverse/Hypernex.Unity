@@ -108,8 +108,12 @@ namespace Hypernex.UI.Templates
 
         private void Update()
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)
+            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null || !LocalPlayer.Instance.avatar.calibrated)
+            {
+                AvatarScaleSlider.gameObject.SetActive(false);
                 return;
+            }
+            AvatarScaleSlider.gameObject.SetActive(true);
             // Doesn't matter which dimension, they should always be uniform
             AvatarScaleLabel.text = "Avatar Scale: " + Math.Round(AvatarScaleSlider.value, 1);
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null)

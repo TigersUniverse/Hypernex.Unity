@@ -30,11 +30,11 @@ namespace Hypernex.Game
         public Animator MainAnimator;
         public FaceTrackingDescriptor FaceTrackingDescriptor;
         public List<AnimatorPlayable> AnimatorPlayables => new(PlayableAnimators);
+        public bool calibrated { get; private set; }
 
         private List<AnimatorPlayable> PlayableAnimators = new();
         internal List<Sandbox> localAvatarSandboxes = new();
         private VRIK vrik;
-        private bool calibrated;
         private VRIKCalibrator.Settings vrikSettings = new()
         {
             scaleMlp = 1,
@@ -49,6 +49,7 @@ namespace Hypernex.Game
         internal OVRLipSyncContext lipSyncContext;
         private List<OVRLipSyncContextMorphTarget> morphTargets = new();
         private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
+        private FingerCalibration fingerCalibration;
 
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -57,6 +58,7 @@ namespace Hypernex.Game
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
+            fingerCalibration = new FingerCalibration(this);
             headAlign = new GameObject("headalign_" + Guid.NewGuid());
             headAlign.transform.SetParent(a.ViewPosition.transform);
             headAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
@@ -617,7 +619,7 @@ namespace Hypernex.Game
             TwistSolver rightSolver = new TwistSolver { transform = rightLowerArm, children = new []{rightHand} };
             twistRelaxer.twistSolvers = new[] { leftSolver, rightSolver };
         }
-        
+
         /// <summary>
         /// Sorts Trackers from 0 by how close they are to the Body, LeftFoot, and RightFoot
         /// </summary>
@@ -685,7 +687,7 @@ namespace Hypernex.Game
                     break;
                 }
             }
-            if (vrik != null && vrik.solver.initiated && XRTracker.Trackers.Count(x => x.IsTracked) != 3 && !calibrated)
+            if (vrik != null && vrik.solver.initiated && (XRTracker.Trackers.Count(x => x.IsTracked) != 3 || MainAnimator.avatar == null) && !calibrated)
             {
                 XRTracker.Trackers.ForEach(x =>
                 {
@@ -725,6 +727,9 @@ namespace Hypernex.Game
                             Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
                             if (newTs[0] != null && newTs[1] != null && newTs[2] != null)
                             {
+                                newTs[0].rotation = body.rotation;
+                                newTs[1].rotation = leftFoot.rotation;
+                                newTs[2].rotation = rightFoot.rotation;
                                 VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, newTs[0],
                                     LeftHandReference.transform, RightHandReference.transform, newTs[1], newTs[2]);
                                 RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
@@ -819,6 +824,10 @@ namespace Hypernex.Game
                 if(headBone != null)
                     headBone.rotation = cameraTransform.rotation;
             }
+            if (isVR)
+            {
+                fingerCalibration?.LateUpdate();
+            }
             if (!isVR)
             {
                 foreach (PathDescriptor pathDescriptor in new List<PathDescriptor>(LocalPlayer.Instance.SavedTransforms))
@@ -882,7 +891,7 @@ namespace Hypernex.Game
                 return;
             if (Avatar.UseCombinedEyeBlendshapes)
             {
-                float opennessValue = (eyeData.Left.Openness + eyeData.Right.Openness) / 2;
+                float opennessValue = 1f - ((eyeData.Left.Openness + eyeData.Right.Openness) / 2);
                 float leftValue = (eyeData.Left.Gaze.x >= 0f ? -eyeData.Left.Gaze.x :
                     0 + eyeData.Right.Gaze.x >= 0f ? -eyeData.Right.Gaze.x : 0) / 2;
                 float rightValue = (eyeData.Left.Gaze.x >= 0f ? eyeData.Left.Gaze.x :
@@ -926,7 +935,7 @@ namespace Hypernex.Game
             else
             {
                 // Left Eye
-                float leftOpennessValue = eyeData.Left.Openness;
+                float leftOpennessValue = 1f - eyeData.Left.Openness;
                 float leftUpValue = eyeData.Left.Gaze.y > 0 ? eyeData.Left.Gaze.y : 0f;
                 float leftDownValue = eyeData.Left.Gaze.y < 0 ? eyeData.Left.Gaze.y : 0f;
                 float leftRightValue = eyeData.Left.Gaze.x > 0 ? eyeData.Left.Gaze.x : 0f;
@@ -968,7 +977,7 @@ namespace Hypernex.Game
                 SetParameter("LeftEyeLookUp", leftUpValue);
                 SetParameter("LeftEyeLookDown", leftDownValue);
                 // Right Eye
-                float rightOpennessValue = eyeData.Right.Openness;
+                float rightOpennessValue = 1f - eyeData.Right.Openness;
                 float rightUpValue = eyeData.Right.Gaze.y > 0 ? eyeData.Right.Gaze.y : 0f;
                 float rightDownValue = eyeData.Right.Gaze.y < 0 ? eyeData.Right.Gaze.y : 0f;
                 float rightRightValue = eyeData.Right.Gaze.x > 0 ? eyeData.Right.Gaze.x : 0f;

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Hypernex.Game;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 
@@ -19,6 +21,8 @@ public class HandGetter : MonoBehaviour
 #endif
 
     public GameObject WristObject;
+
+    private bool initializedOrientations;
 
     private float[] _localCurlsOpen = new float[5]
     {
@@ -53,6 +57,34 @@ public class HandGetter : MonoBehaviour
         {
             hf.GetHandJoints(HandIndex, out positions, out orientations, out radius);
             if (positions.Length == 0) return;
+            if (!initializedOrientations)
+            {
+                List<Quaternion> thumb = new();
+                List<Quaternion> index = new();
+                List<Quaternion> middle = new();
+                List<Quaternion> ring = new();
+                List<Quaternion> little = new();
+                thumb.Add(orientations[7]);
+                thumb.Add(orientations[8]);
+                index.Add(orientations[10]);
+                index.Add(orientations[11]);
+                index.Add(orientations[12]);
+                middle.Add(orientations[14]);
+                middle.Add(orientations[15]);
+                middle.Add(orientations[16]);
+                ring.Add(orientations[18]);
+                ring.Add(orientations[19]);
+                ring.Add(orientations[20]);
+                little.Add(orientations[22]);
+                little.Add(orientations[23]);
+                little.Add(orientations[24]);
+                FingerCalibration.InitialXRThumbs = thumb.ToArray();
+                FingerCalibration.InitialXRIndex = index.ToArray();
+                FingerCalibration.InitialXRMiddle = middle.ToArray();
+                FingerCalibration.InitialXRRing = ring.ToArray();
+                FingerCalibration.InitialXRLittle = little.ToArray();
+                initializedOrientations = true;
+            }
             if(joints == null || joints.Length == 0)
             {
                 joints = new Transform[positions.Length];

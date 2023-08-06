@@ -225,10 +225,7 @@ namespace Hypernex.UIActions
                     });
                 }
             }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
+            catch (Exception e){}
         }
 
         private void OnEnable()

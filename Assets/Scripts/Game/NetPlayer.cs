@@ -221,6 +221,10 @@ namespace Hypernex.Game
                 nameplateTemplate.FollowTransform = MainCameraTransform;
             foreach (string key in new List<string>(avatarUpdates.Keys))
                 UpdatePlayerObjectUpdate(key, interpolationRatio);
+            foreach (KeyValuePair<WeightedObjectUpdate, float> keyValuePair in
+                     new Dictionary<WeightedObjectUpdate, float>(weightedObjectUpdates))
+                weightedObjectUpdates[keyValuePair.Key] =
+                    Mathf.Lerp(keyValuePair.Value, keyValuePair.Key.Weight, interpolationRatio);
             elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 
@@ -322,8 +326,18 @@ namespace Hypernex.Game
             }
             if (weightedObjectUpdates.Count > 0)
             {
-                foreach (WeightedObjectUpdate w in new List<WeightedObjectUpdate>(weightedObjectUpdates))
-                    Avatar?.HandleNetParameter(w);
+                /*foreach (WeightedObjectUpdate w in new List<WeightedObjectUpdate>(weightedObjectUpdates))
+                    Avatar?.HandleNetParameter(w);*/
+                foreach (KeyValuePair<WeightedObjectUpdate,float> keyValuePair in new Dictionary<WeightedObjectUpdate, float>(weightedObjectUpdates))
+                {
+                    Avatar?.HandleNetParameter(new WeightedObjectUpdate
+                    {
+                        PathToWeightContainer = keyValuePair.Key.PathToWeightContainer,
+                        TypeOfWeight = keyValuePair.Key.TypeOfWeight,
+                        WeightIndex = keyValuePair.Key.WeightIndex,
+                        Weight = keyValuePair.Value
+                    });
+                }
             }
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
@@ -361,15 +375,24 @@ namespace Hypernex.Game
             }
         }
 
-        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
+        private Dictionary<WeightedObjectUpdate, float> weightedObjectUpdates = new();
 
         public void WeightedObject(WeightedObjectUpdate weightedObjectUpdate)
         {
-            weightedObjectUpdates.RemoveAll(x =>
-                x.PathToWeightContainer == weightedObjectUpdate.PathToWeightContainer &&
-                x.TypeOfWeight == weightedObjectUpdate.TypeOfWeight &&
-                x.WeightIndex == weightedObjectUpdate.WeightIndex);
-            weightedObjectUpdates.Add(weightedObjectUpdate);
+            float last = 0f;
+            foreach (WeightedObjectUpdate x in new List<WeightedObjectUpdate>(weightedObjectUpdates.Keys))
+            {
+                if (x.PathToWeightContainer == weightedObjectUpdate.PathToWeightContainer &&
+                    x.TypeOfWeight == weightedObjectUpdate.TypeOfWeight &&
+                    x.WeightIndex == weightedObjectUpdate.WeightIndex)
+                {
+                    last = weightedObjectUpdates[x];
+                    weightedObjectUpdates.Remove(x);
+                }
+            }
+            if (last <= 0f)
+                last = weightedObjectUpdate.Weight;
+            weightedObjectUpdates.Add(weightedObjectUpdate, last);
         }
 
         /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
