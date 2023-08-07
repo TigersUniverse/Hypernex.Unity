@@ -1,12 +1,11 @@
-using System.Collections.Generic;
 using Hypernex.Game;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 
 public class HandGetter : MonoBehaviour
 {
-    // Start is called before the first frame update
-
+    public bool EnableDebug;
+    public Material mat;
     public Vector3[] positions;
     public Quaternion[] orientations;
     public Transform[] joints;
@@ -43,6 +42,43 @@ public class HandGetter : MonoBehaviour
     };
 
     public float[] Curls = new float[5];
+    
+    private struct BoneLineData
+    {
+        public LineRenderer r;
+        public Vector3[] vertices;
+        public int[] indices;
+    }
+
+    //line data for finger line renderers. indices are indices into OpenXR positions array
+    private BoneLineData[] boneLines = new BoneLineData[]
+    {
+        new BoneLineData { vertices = new Vector3[2], indices = new int[] { 1, 0 } },   //palm
+        new BoneLineData { vertices = new Vector3[5], indices = new int[] { 1, 2, 3, 4, 5 } },  //thumb
+        new BoneLineData { vertices = new Vector3[6], indices = new int[] { 1, 6, 7, 8, 9, 10 } },  //index
+        new BoneLineData { vertices = new Vector3[6], indices = new int[] { 1, 11, 12, 13, 14, 15 } },  //middle
+        new BoneLineData { vertices = new Vector3[6], indices = new int[] { 1, 16, 17, 18, 19, 20 } },  //ring
+        new BoneLineData { vertices = new Vector3[6], indices = new int[] { 1, 21, 22, 23, 24, 25 } }   //pinky
+    };
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        if (!EnableDebug)
+            return;
+        for(int i = 0; i < boneLines.Length; i++)
+        {
+            GameObject lineObj = new GameObject("Line");
+            lineObj.transform.parent = transform;
+            BoneLineData bld = boneLines[i];
+            bld.r = lineObj.AddComponent<LineRenderer>();
+            bld.r.startWidth = 0.01f;
+            bld.r.endWidth = 0.01f;
+            bld.r.sharedMaterial = mat;
+            bld.r.positionCount = bld.vertices.Length;
+            boneLines[i] = bld;
+        }
+    }
 
     // Update is called once per frame
     void Update()
@@ -59,30 +95,40 @@ public class HandGetter : MonoBehaviour
             if (positions.Length == 0) return;
             if (!initializedOrientations)
             {
-                List<Quaternion> thumb = new();
-                List<Quaternion> index = new();
-                List<Quaternion> middle = new();
-                List<Quaternion> ring = new();
-                List<Quaternion> little = new();
-                thumb.Add(orientations[7]);
-                thumb.Add(orientations[8]);
-                index.Add(orientations[10]);
-                index.Add(orientations[11]);
-                index.Add(orientations[12]);
-                middle.Add(orientations[14]);
-                middle.Add(orientations[15]);
-                middle.Add(orientations[16]);
-                ring.Add(orientations[18]);
-                ring.Add(orientations[19]);
-                ring.Add(orientations[20]);
-                little.Add(orientations[22]);
-                little.Add(orientations[23]);
-                little.Add(orientations[24]);
-                FingerCalibration.InitialXRThumbs = thumb.ToArray();
-                FingerCalibration.InitialXRIndex = index.ToArray();
-                FingerCalibration.InitialXRMiddle = middle.ToArray();
-                FingerCalibration.InitialXRRing = ring.ToArray();
-                FingerCalibration.InitialXRLittle = little.ToArray();
+                if (HandIndex == HandTrackingFeature.Hand_Index.L)
+                {
+                    FingerCalibration.InitialXRThumbs[0] = orientations[3];
+                    FingerCalibration.InitialXRThumbs[1] = orientations[4];
+                    FingerCalibration.InitialXRIndex[0] = orientations[7];
+                    FingerCalibration.InitialXRIndex[1] = orientations[8];
+                    FingerCalibration.InitialXRIndex[2] = orientations[9];
+                    FingerCalibration.InitialXRMiddle[0] = orientations[12];
+                    FingerCalibration.InitialXRMiddle[1] = orientations[13];
+                    FingerCalibration.InitialXRMiddle[2] = orientations[14];
+                    FingerCalibration.InitialXRRing[0] = orientations[17];
+                    FingerCalibration.InitialXRRing[1] = orientations[18];
+                    FingerCalibration.InitialXRRing[2] = orientations[19];
+                    FingerCalibration.InitialXRLittle[0] = orientations[22];
+                    FingerCalibration.InitialXRLittle[1] = orientations[23];
+                    FingerCalibration.InitialXRLittle[2] = orientations[24];
+                }
+                else
+                {
+                    FingerCalibration.InitialXRThumbs[2] = orientations[3];
+                    FingerCalibration.InitialXRThumbs[3] = orientations[4];
+                    FingerCalibration.InitialXRIndex[3] = orientations[7];
+                    FingerCalibration.InitialXRIndex[4] = orientations[8];
+                    FingerCalibration.InitialXRIndex[5] = orientations[9];
+                    FingerCalibration.InitialXRMiddle[3] = orientations[12];
+                    FingerCalibration.InitialXRMiddle[4] = orientations[13];
+                    FingerCalibration.InitialXRMiddle[5] = orientations[14];
+                    FingerCalibration.InitialXRRing[3] = orientations[17];
+                    FingerCalibration.InitialXRRing[4] = orientations[18];
+                    FingerCalibration.InitialXRRing[5] = orientations[19];
+                    FingerCalibration.InitialXRLittle[3] = orientations[22];
+                    FingerCalibration.InitialXRLittle[4] = orientations[23];
+                    FingerCalibration.InitialXRLittle[5] = orientations[24];
+                }
                 initializedOrientations = true;
             }
             if(joints == null || joints.Length == 0)
@@ -191,6 +237,17 @@ public class HandGetter : MonoBehaviour
             for(int i = 0; i < 5; i++)
             {
                 Curls[i] = RemapClamped(localCurls[i], _localCurlsOpen[i], _localCurlsClosed[i]);
+            }
+
+            if (!EnableDebug)
+                return;
+            //draw lines in game view
+            for(int i = 0; i < boneLines.Length; i++)
+            {
+                BoneLineData bld = boneLines[i];
+                for(int v = 0; v < bld.vertices.Length; v++) { bld.vertices[v] = positions[bld.indices[v]]; }
+                bld.r.SetPositions(bld.vertices);
+                boneLines[i] = bld;
             }
         }
     }

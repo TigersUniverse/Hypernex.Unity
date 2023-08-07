@@ -813,6 +813,7 @@ namespace Hypernex.Game
                 };
                 a = true;
             }
+            fingerCalibration?.Update();
         }
 
         internal void LateUpdate(bool isVR, Transform cameraTransform, bool lockCamera)

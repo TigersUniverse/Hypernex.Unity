@@ -9,6 +9,20 @@ namespace Hypernex.Game
     /// </summary>
     public class FingerCalibration
     {
+        private const int UNKNOWN_GESTURE = 0;
+        private const int FIST_GESTURE = 1;
+        private const int OPEN_HAND_GESTURE = 2;
+        private const int POINT_GESTURE = 3;
+        private const int PEACE_GESTURE = 4;
+        private const int OK_HAND_GESTURE = 5;
+        private const int GUN_GESTURE = 6;
+        private const int THUMBS_UP_GESTURE = 7;
+
+        /// <summary>
+        /// How much pressure is required to activate a curl
+        /// </summary>
+        public static float CurlAmount { get; set; } = 0.29f;
+        
         private AvatarCreator AvatarCreator;
 
         private Quaternion[] InitialThumbs = Array.Empty<Quaternion>();
@@ -16,56 +30,61 @@ namespace Hypernex.Game
         private Quaternion[] InitialMiddle = Array.Empty<Quaternion>();
         private Quaternion[] InitialRing = Array.Empty<Quaternion>();
         private Quaternion[] InitialLittle = Array.Empty<Quaternion>();
-        internal static Quaternion[] InitialXRThumbs = Array.Empty<Quaternion>();
-        internal static Quaternion[] InitialXRIndex = Array.Empty<Quaternion>();
-        internal static Quaternion[] InitialXRMiddle = Array.Empty<Quaternion>();
-        internal static Quaternion[] InitialXRRing = Array.Empty<Quaternion>();
-        internal static Quaternion[] InitialXRLittle = Array.Empty<Quaternion>();
+        internal static Quaternion[] InitialXRThumbs = new Quaternion[4];
+        internal static Quaternion[] InitialXRIndex = new Quaternion[6];
+        internal static Quaternion[] InitialXRMiddle = new Quaternion[6];
+        internal static Quaternion[] InitialXRRing = new Quaternion[6];
+        internal static Quaternion[] InitialXRLittle = new Quaternion[6];
 
         public FingerCalibration(AvatarCreator a)
         {
             AvatarCreator = a;
             for (int x = 0; x < 5; x++)
             {
-                if(TryGetFingers(0, out Transform[] avatarBones))
+                if(TryGetFingers(x, out Transform[] avatarBones))
                 {
                     List<Quaternion> initialAvatarBones = new();
-                    List<Quaternion> initialXRBones = new();
+                    //List<Quaternion> initialXRBones = new();
                     for (int y = 0; y < avatarBones.Length; y++)
                     {
-                        int hl = avatarBones.Length / 2;
                         Transform t = avatarBones[y];
-                        HandGetter h = hl > y + 1
-                            ? LocalPlayer.Instance.LeftHandGetter
-                            : LocalPlayer.Instance.RightHandGetter;
                         initialAvatarBones.Add(t.localRotation);
-                        initialXRBones.Add(h.orientations[GetIndexFromFingerTransforms(x, y)]);
+                        //initialXRBones.Add(h.orientations[GetIndexFromFingerTransforms(x, y)]);
                     }
                     switch (x)
                     {
                         case 0:
                             InitialThumbs = initialAvatarBones.ToArray();
-                            InitialXRThumbs = initialXRBones.ToArray();
+                            //InitialXRThumbs = initialXRBones.ToArray();
                             break;
                         case 1:
                             InitialIndex = initialAvatarBones.ToArray();
-                            InitialXRIndex = initialXRBones.ToArray();
+                            //InitialXRIndex = initialXRBones.ToArray();
                             break;
                         case 2:
                             InitialMiddle = initialAvatarBones.ToArray();
-                            InitialXRMiddle = initialXRBones.ToArray();
+                            //InitialXRMiddle = initialXRBones.ToArray();
                             break;
                         case 3:
                             InitialRing = initialAvatarBones.ToArray();
-                            InitialXRRing = initialXRBones.ToArray();
+                            //InitialXRRing = initialXRBones.ToArray();
                             break;
                         case 4:
                             InitialLittle = initialAvatarBones.ToArray();
-                            InitialXRLittle = initialXRBones.ToArray();
+                            //InitialXRLittle = initialXRBones.ToArray();
                             break;
                     }
                 }
             }
+        }
+
+        internal void Update()
+        {
+            // Update Finger Gestures
+            AvatarCreator.SetParameter("GestureLeft",
+                GetGestureNumberFromHandGetter(LocalPlayer.Instance.LeftHandGetter));
+            AvatarCreator.SetParameter("GestureRight",
+                GetGestureNumberFromHandGetter(LocalPlayer.Instance.RightHandGetter));
         }
 
         internal void LateUpdate()
@@ -76,7 +95,38 @@ namespace Hypernex.Game
                     ApplyFingerTracking(i, fingers);
             }
         }
-        
+
+        private bool IsCurled(float amount) => amount > CurlAmount;
+
+        private int GetGestureNumberFromHandGetter(HandGetter handGetter)
+        {
+            float thumb = handGetter.Curls[0];
+            float index = handGetter.Curls[1];
+            float middle = handGetter.Curls[2];
+            float ring = handGetter.Curls[3];
+            float little = handGetter.Curls[4];
+            // 5
+            if (IsCurled(thumb) && IsCurled(index) && IsCurled(middle) && IsCurled(ring) && IsCurled(little))
+                return FIST_GESTURE;
+            // 4
+            if (IsCurled(index) && IsCurled(middle) && IsCurled(ring) && IsCurled(little))
+                return THUMBS_UP_GESTURE;
+            if (IsCurled(thumb) && IsCurled(middle) && IsCurled(ring) && IsCurled(little))
+                return POINT_GESTURE;
+            // 3
+            if (IsCurled(middle) && IsCurled(ring) && IsCurled(little))
+                return GUN_GESTURE;
+            if (IsCurled(thumb) && IsCurled(ring) && IsCurled(middle))
+                return PEACE_GESTURE;
+            // 2
+            if (IsCurled(thumb) && IsCurled(index))
+                return OK_HAND_GESTURE;
+            // 0
+            if (!IsCurled(thumb) && !IsCurled(index) && !IsCurled(middle) && !IsCurled(ring) && !IsCurled(little))
+                return OPEN_HAND_GESTURE;
+            return UNKNOWN_GESTURE;
+        }
+
         private int GetIndexFromFingerTransforms(int finger, int i)
         {
             switch (finger)
@@ -87,9 +137,9 @@ namespace Hypernex.Game
                     switch (i)
                     {
                         case 0 or 2:
-                            return 7;
+                            return 3;
                         case 1 or 3:
-                            return 8;
+                            return 4;
                         default:
                             throw new IndexOutOfRangeException();
                     }
@@ -100,11 +150,11 @@ namespace Hypernex.Game
                     switch (i)
                     {
                         case 0 or 3:
-                            return 10;
+                            return 7;
                         case 1 or 4:
-                            return 11;
+                            return 8;
                         case 2 or 5:
-                            return 12;
+                            return 9;
                         default:
                             throw new IndexOutOfRangeException();
                     }
@@ -115,26 +165,26 @@ namespace Hypernex.Game
                     switch (i)
                     {
                         case 0 or 3:
-                            return 14;
+                            return 12;
                         case 1 or 4:
-                            return 15;
+                            return 13;
                         case 2 or 5:
-                            return 16;
+                            return 14;
                         default:
                             throw new IndexOutOfRangeException();
                     }
                 }
                 case 3:
                 {
-                    // Middle
+                    // Ring
                     switch (i)
                     {
                         case 0 or 3:
-                            return 18;
+                            return 17;
                         case 1 or 4:
-                            return 19;
+                            return 18;
                         case 2 or 5:
-                            return 20;
+                            return 19;
                         default:
                             throw new IndexOutOfRangeException();
                     }
@@ -304,7 +354,7 @@ namespace Hypernex.Game
                         throw new IndexOutOfRangeException();
                 }
                 Quaternion difference = Quaternion.Inverse(initialXRRotation) * xrRotation;
-                avatarBone.localRotation = initialAvatarBoneRotation * difference;
+                avatarBone.localRotation = xrRotation; //initialAvatarBoneRotation * difference;
                 return true;
             }
             catch (Exception)
@@ -319,11 +369,9 @@ namespace Hypernex.Game
             foreach (Transform t in ts)
             {
                 int x = GetIndexFromFingerTransforms(finger, i);
-                HandGetter h = ts.Length / 2 > i + 1
+                HandGetter h = ts.Length / 2 > i
                     ? LocalPlayer.Instance.LeftHandGetter
                     : LocalPlayer.Instance.RightHandGetter;
-                /*Quaternion r = Quaternion.Euler(h.orientations[x].eulerAngles);
-                t.localRotation = r;*/
                 TryCalibrate(finger, i, h.orientations[x], t);
                 i++;
             }

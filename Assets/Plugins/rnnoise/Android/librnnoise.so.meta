@@ -28,7 +28,7 @@ PluginImporter:
       enabled: 1
       settings:
         AndroidSharedLibraryType: Symbol
-        CPU: ARM64
+        CPU: ARMv7
   - first:
       Any: 
     second:
@@ -47,7 +47,7 @@ PluginImporter:
     second:
       enabled: 1
       settings:
-        CPU: x86_64
+        CPU: AnyCPU
   - first:
       Standalone: OSXUniversal
     second:
