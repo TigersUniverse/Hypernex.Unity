@@ -76,7 +76,7 @@ namespace Hypernex.UIActions
         {
             if(worldMeta == null || creator == null)
                 return;
-            GameObject worldCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject worldCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("WorldCardTemplate").gameObject;
             GameObject newWorldCard = Instantiate(worldCard);
             RectTransform c = newWorldCard.GetComponent<RectTransform>();
@@ -89,7 +89,7 @@ namespace Hypernex.UIActions
         {
             if(worldMeta == null)
                 return;
-            GameObject worldSearch = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject worldSearch = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("WorldSearchTemplate").gameObject;
             GameObject newWorldSearch = Instantiate(worldSearch);
             RectTransform c = newWorldSearch.GetComponent<RectTransform>();

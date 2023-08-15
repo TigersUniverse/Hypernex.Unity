@@ -13,13 +13,12 @@ using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
-using MessagePack;
-using MessagePack.Resolvers;
 using Nexbox;
-using Nexport;
 using TMPro;
 using UnityEngine;
+#if UNITY_ANDROID
 using UnityEngine.Android;
+#endif
 using UnityEngine.Audio;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
@@ -27,9 +26,12 @@ using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
+    public const string VERSION = "2023.08.1b1";
+
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
-    
+
+    public LocalPlayer LocalPlayer;
     public UITheme DefaultTheme;
     public bool UseHTTP;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
@@ -37,15 +39,9 @@ public class Init : MonoBehaviour
     public List<TMP_SpriteAsset> EmojiSprites = new ();
     public AudioMixerGroup VoiceGroup;
     public OverlayManager OverlayManager;
+    public List<TMP_Text> VersionLabels = new();
 
-    private string GetPluginLocation() =>
-#if UNITY_EDITOR
-        Path.Combine(Application.persistentDataPath, "Plugins");
-#elif UNITY_ANDROID
-        Path.Combine(Application.persistentDataPath, "Plugins");
-#else
-        Path.Combine(Application.dataPath, "Plugins");
-#endif
+    private string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
     internal void StartVR()
     {
@@ -53,7 +49,7 @@ public class Init : MonoBehaviour
         XRGeneralSettings.Instance.Manager.InitializeLoaderSync();
         XRGeneralSettings.Instance.Manager.StartSubsystems();
         LocalPlayer.IsVR = true;
-        LocalPlayer.Instance.StartVR();
+        LocalPlayer.StartVR();
     }
 
     internal void StopVR()
@@ -62,7 +58,7 @@ public class Init : MonoBehaviour
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
         LocalPlayer.IsVR = false;
-        LocalPlayer.Instance.StopVR();
+        LocalPlayer.StopVR();
     }
 
     private void Start()
@@ -111,9 +107,18 @@ public class Init : MonoBehaviour
                 break;
         }
         DefaultTheme.ApplyThemeToUI();
+        VersionLabels.ForEach(x => x.text = VERSION);
         DiscordTools.StartDiscord();
-        
-        int pluginsLoaded = PluginLoader.LoadAllPlugins(GetPluginLocation());
+
+        int pluginsLoaded;
+        try
+        {
+            pluginsLoaded = PluginLoader.LoadAllPlugins(GetPluginLocation());
+        }
+        catch (Exception)
+        {
+            pluginsLoaded = 0;
+        }
         Logger.CurrentLogger.Log($"Loaded {pluginsLoaded} Plugins!");
         gameObject.AddComponent<PluginLoader>();
         APIPlayer.OnUser += user =>
@@ -134,12 +139,12 @@ public class Init : MonoBehaviour
             }
         };
         GetComponent<CoroutineRunner>()
-            .Run(LocalPlayer.Instance.SafeSwitchScene(1, null,
+            .Run(LocalPlayer.SafeSwitchScene(1, null,
                 s =>
                 {
-                    LocalPlayer.Instance.transform.position =
+                    LocalPlayer.transform.position =
                         s.GetRootGameObjects().First(x => x.name == "Spawn").transform.position;
-                    LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+                    LocalPlayer.Dashboard.PositionDashboard(LocalPlayer);
                 }));
     }
 
@@ -174,11 +179,11 @@ public class Init : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.Instance.OwnedAvatarIdTokens)
+        foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.OwnedAvatarIdTokens)
             APIPlayer.APIObject.RemoveAssetToken(_ => { }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarIdToken.Key,
                 avatarIdToken.Value);
-        if(LocalPlayer.Instance != null)
-            LocalPlayer.Instance.Dispose();
+        if(LocalPlayer != null)
+            LocalPlayer.Dispose();
         if(GameInstance.FocusedInstance != null)
             GameInstance.FocusedInstance.Dispose();
         if (APIPlayer.UserSocket != null && APIPlayer.UserSocket.IsOpen)

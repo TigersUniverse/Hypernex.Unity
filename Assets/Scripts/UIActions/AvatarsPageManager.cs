@@ -75,7 +75,7 @@ namespace Hypernex.UIActions
         {
             if(avatarMeta == null || creator == null)
                 return;
-            GameObject avatarCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject avatarCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("AvatarCardTemplate").gameObject;
             GameObject newAvatarCard = Instantiate(avatarCard);
             RectTransform c = newAvatarCard.GetComponent<RectTransform>();
@@ -88,7 +88,7 @@ namespace Hypernex.UIActions
         {
             if(avatarMeta == null)
                 return;
-            GameObject avatarSearch = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject avatarSearch = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("AvatarSearchTemplate").gameObject;
             GameObject newAvatarSearch = Instantiate(avatarSearch);
             RectTransform c = newAvatarSearch.GetComponent<RectTransform>();

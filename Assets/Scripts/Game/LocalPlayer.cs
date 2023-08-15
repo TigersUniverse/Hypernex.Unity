@@ -98,6 +98,8 @@ namespace Hypernex.Game
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
         public CurrentAvatar CurrentAvatarDisplay;
+        
+        private const float MESSAGE_UPDATE_TIME = 0.05f;
 
         private Denoiser denoiser;
         private float verticalVelocity;
@@ -300,6 +302,20 @@ namespace Hypernex.Game
                     Size = NetworkConversionTools.Vector3Tofloat3(Camera.transform.localScale)
                 }
             };
+            foreach (HandleCamera handleCamera in HandleCamera.allCameras)
+            {
+                networkedObjects.Add(new NetworkedObject
+                {
+                    ObjectLocation = "*" + handleCamera.gameObject.name,
+                    IgnoreObjectLocation = true,
+                    Position = NetworkConversionTools.Vector3Tofloat3(handleCamera.transform.position),
+                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
+                        handleCamera.transform.eulerAngles.x,
+                        handleCamera.transform.eulerAngles.y,
+                        handleCamera.transform.eulerAngles.z, 0)),
+                    Size = NetworkConversionTools.Vector3Tofloat3(handleCamera.transform.localScale)
+                });
+            }
             /*foreach (PathDescriptor child in new List<PathDescriptor>(pathsWaiting.Dequeue()))
             {
                 if (child == null)
@@ -555,7 +571,7 @@ namespace Hypernex.Game
                         mutex.ReleaseMutex();
                     }
                 }
-                yield return new WaitForSeconds(0.075f);
+                yield return new WaitForSeconds(MESSAGE_UPDATE_TIME);
             }
         }
 
@@ -853,25 +869,6 @@ namespace Hypernex.Game
             RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
             foreach (XRInteractorLineVisual lineVisual in XRRays)
                 lineVisual.enabled = vr;
-            switch (vr)
-            {
-                case true when avatar == null:
-                    XRTracker.Trackers.ForEach(x =>
-                    {
-                        Renderer r = x.renderer;
-                        if (r != null)
-                            r.enabled = true;
-                    });
-                    break;
-                case false:
-                    XRTracker.Trackers.ForEach(x =>
-                    {
-                        Renderer r = x.renderer;
-                        if (r != null)
-                            r.enabled = false;
-                    });
-                    break;
-            }
             Cursor.lockState = vr || LockCamera ? CursorLockMode.None : CursorLockMode.Locked;
             bool groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)

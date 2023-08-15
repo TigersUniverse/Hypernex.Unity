@@ -31,7 +31,7 @@ namespace Hypernex.UIActions
         
         private void CreateMessageTemplate(MessageMeta messageMeta)
         {
-            GameObject message = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject message = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("MessageTemplate").gameObject;
             GameObject newMessage = Instantiate(message);
             RectTransform c = newMessage.GetComponent<RectTransform>();

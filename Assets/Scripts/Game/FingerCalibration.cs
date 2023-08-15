@@ -353,8 +353,9 @@ namespace Hypernex.Game
                     default:
                         throw new IndexOutOfRangeException();
                 }
-                Quaternion difference = Quaternion.Inverse(initialXRRotation) * xrRotation;
-                avatarBone.localRotation = xrRotation; //initialAvatarBoneRotation * difference;
+                //Quaternion difference = Quaternion.Inverse(initialXRRotation) * xrRotation;
+                //avatarBone.localRotation = xrRotation; //initialAvatarBoneRotation * difference;*/
+                avatarBone.localRotation = initialAvatarBoneRotation * (Quaternion.Inverse(initialXRRotation) * xrRotation);
                 return true;
             }
             catch (Exception)
@@ -372,7 +373,7 @@ namespace Hypernex.Game
                 HandGetter h = ts.Length / 2 > i
                     ? LocalPlayer.Instance.LeftHandGetter
                     : LocalPlayer.Instance.RightHandGetter;
-                TryCalibrate(finger, i, h.orientations[x], t);
+                TryCalibrate(finger, i, h.joints[x].rotation, t);
                 i++;
             }
         }

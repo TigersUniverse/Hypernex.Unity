@@ -27,18 +27,19 @@ namespace Hypernex.UI.Templates
                 foreach (AnimatorControllerParameter animatorControllerParameter in animatorPlayable
                              .AnimatorControllerParameters)
                 {
-                    switch (animatorControllerParameter.type)
-                    {
-                        case AnimatorControllerParameterType.Bool:
-                            CreateBoolParameterBox(animatorPlayable, animatorControllerParameter.name);
-                            break;
-                        case AnimatorControllerParameterType.Int:
-                            CreateIntParameterBox(animatorPlayable, animatorControllerParameter.name);
-                            break;
-                        case AnimatorControllerParameterType.Float:
-                            CreateFloatParameterBox(animatorPlayable, animatorControllerParameter.name);
-                            break;
-                    }
+                    if(avatarCreator.Avatar.ShowAllParameters || avatarCreator.Avatar.VisibleParameters.Contains(animatorControllerParameter.name))
+                        switch (animatorControllerParameter.type)
+                        {
+                            case AnimatorControllerParameterType.Bool:
+                                CreateBoolParameterBox(animatorPlayable, animatorControllerParameter.name);
+                                break;
+                            case AnimatorControllerParameterType.Int:
+                                CreateIntParameterBox(animatorPlayable, animatorControllerParameter.name);
+                                break;
+                            case AnimatorControllerParameterType.Float:
+                                CreateFloatParameterBox(animatorPlayable, animatorControllerParameter.name);
+                                break;
+                        }
                 }
             }
         }
@@ -78,7 +79,7 @@ namespace Hypernex.UI.Templates
         
         private void CreateIntParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("IntParameter").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
@@ -88,7 +89,7 @@ namespace Hypernex.UI.Templates
         
         private void CreateFloatParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("FloatParameter").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
@@ -98,7 +99,7 @@ namespace Hypernex.UI.Templates
         
         private void CreateBoolParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("BoolParameter").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();

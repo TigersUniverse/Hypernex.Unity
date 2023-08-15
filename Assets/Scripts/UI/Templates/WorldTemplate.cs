@@ -54,7 +54,7 @@ namespace Hypernex.UI.Templates
         
         private void CreateWorldListInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host, User creator)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("WorldListInstanceCardTemplate").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();

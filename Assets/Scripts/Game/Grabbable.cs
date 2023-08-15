@@ -15,16 +15,19 @@ namespace Hypernex.Game
         public float VelocityThreshold = 0.05f;
         public bool GrabByLaser = true;
         public float LaserGrabDistance = 5f;
+        public bool IgnoreLaserColoring;
         public bool GrabByDistance = true;
         public float GrabDistance = 3f;
         [HideInInspector] public Transform CurrentGrabbed;
         public IBinding CurrentGrabbedFromBinding;
+        public Action<IBinding> OnBindingGrab = binding => { };
+        public Action<IBinding> OnBindingRelease = binding => { };
 
         private static List<Grabbable> allGrabbables = new();
         private static List<Grabbable> highlightedGrabbables = new();
         private Transform ObjectGrabbing;
         private NetworkSync NetworkSync;
-        private MeshRenderer meshRenderer;
+        private List<Renderer> meshRenderers = new();
         internal Rigidbody rb;
         private Collider cd;
         private Vector3 previousPosition;
@@ -75,6 +78,7 @@ namespace Hypernex.Game
                 //rb.detectCollisions = false;
             }
             CurrentGrabbedFromBinding = instanceBinding;
+            OnBindingGrab.Invoke(CurrentGrabbedFromBinding);
             ObjectGrabbing = from;
             if (NetworkSync != null && (!NetworkSync.IsOwned() || NetworkSync.NetworkSteal))
                 NetworkSync.Claim();
@@ -107,6 +111,7 @@ namespace Hypernex.Game
                 rb.isKinematic = false;
                 //rb.detectCollisions = true;
             }
+            OnBindingRelease.Invoke(CurrentGrabbedFromBinding);
             CurrentGrabbedFromBinding = null;
             ObjectGrabbing = null;
             if (NetworkSync != null && NetworkSync.IsOwnedByLocalPlayer())
@@ -119,23 +124,28 @@ namespace Hypernex.Game
             highlighted = true;
             if(!HighlightedGrabbables.Contains(this))
                 highlightedGrabbables.Add(this);
-            if (meshRenderer == null) return;
-            List<Material> materials = meshRenderer.materials.ToList();
-            materials.Add(Init.Instance.OutlineMaterial);
-            meshRenderer.materials = materials.ToArray();
-            if (t != null && specificResult.Item1)
+            meshRenderers.ForEach(meshRenderer =>
             {
-                XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
-                LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
-                if (lineVisual != null && lineRenderer != null)
-                    lineRenderer.colorGradient = lineVisual.validColorGradient;
-            }
-            else if (t != null && !specificResult.Item1)
+                List<Material> materials = meshRenderer.materials.ToList();
+                materials.Add(Init.Instance.OutlineMaterial);
+                meshRenderer.materials = materials.ToArray();
+            });
+            if (!IgnoreLaserColoring)
             {
-                XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
-                LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
-                if (lineVisual != null && lineRenderer != null)
-                    lineRenderer.colorGradient = lineVisual.invalidColorGradient;
+                if (t != null && specificResult.Item1)
+                {
+                    XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
+                    LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
+                    if (lineVisual != null && lineRenderer != null)
+                        lineRenderer.colorGradient = lineVisual.validColorGradient;
+                }
+                else if (t != null && !specificResult.Item1)
+                {
+                    XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
+                    LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
+                    if (lineVisual != null && lineRenderer != null)
+                        lineRenderer.colorGradient = lineVisual.invalidColorGradient;
+                }
             }
         }
 
@@ -145,25 +155,36 @@ namespace Hypernex.Game
             highlighted = false;
             if(HighlightedGrabbables.Contains(this))
                 highlightedGrabbables.Remove(this);
-            if (meshRenderer == null) return;
-            List<Material> materials = meshRenderer.materials.ToList();
-            Material matToRemove = materials.ElementAt(materials.Count - 1);
-            if (matToRemove.shader != Init.Instance.OutlineMaterial.shader)
-                return;
-            materials.Remove(matToRemove);
-            meshRenderer.materials = materials.ToArray();
-            highlighted = false;
-            GameObject[] gs = {
-                LocalPlayer.Instance.Camera.gameObject, 
-                LocalPlayer.Instance.LeftHandReference.gameObject,
-                LocalPlayer.Instance.RightHandReference.gameObject
-            };
-            foreach (GameObject t in gs)
+            if (meshRenderers == null) return;
+            meshRenderers.ForEach(meshRenderer =>
             {
-                XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
-                LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
-                if (lineVisual != null && lineRenderer != null)
-                    lineRenderer.colorGradient = lineVisual.invalidColorGradient;
+                List<Material> materials = meshRenderer.materials.ToList();
+                Material matToRemove = materials.ElementAt(materials.Count - 1);
+                if (matToRemove.shader != Init.Instance.OutlineMaterial.shader)
+                    return;
+                materials.Remove(matToRemove);
+                meshRenderer.materials = materials.ToArray();
+            });
+            highlighted = false;
+            if (!IgnoreLaserColoring)
+            {
+                try
+                {
+                    GameObject[] gs = {
+                        LocalPlayer.Instance.Camera.gameObject, 
+                        LocalPlayer.Instance.LeftHandReference.gameObject,
+                        LocalPlayer.Instance.RightHandReference.gameObject
+                    };
+                    foreach (GameObject t in gs)
+                    {
+                        XRInteractorLineVisual lineVisual = t.GetComponent<XRInteractorLineVisual>();
+                        LineRenderer lineRenderer = t.GetComponent<LineRenderer>();
+                        if (lineVisual != null && lineRenderer != null)
+                            lineRenderer.colorGradient = lineVisual.invalidColorGradient;
+                    }
+                }
+                // Happening when the game is closing (probably)
+                catch(MissingReferenceException){}
             }
         }
 
@@ -205,7 +226,10 @@ namespace Hypernex.Game
                         Deregister(true);
                 };
             }
-            meshRenderer = GetComponent<MeshRenderer>();
+            meshRenderers.Clear();
+            foreach (Renderer r in transform.GetComponentsInChildren<Renderer>())
+                if(!meshRenderers.Contains(r) && r.GetComponent<CanvasRenderer>() == null)
+                    meshRenderers.Add(r);
         }
 
         private void OnEnable()

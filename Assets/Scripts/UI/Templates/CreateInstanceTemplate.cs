@@ -67,7 +67,7 @@ namespace Hypernex.UI.Templates
         
         private void CreateGameServerTemplate(GameServer gameServer)
         {
-            GameObject g = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject g = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("GameServer").gameObject;
             GameObject newG = Instantiate(g);
             RectTransform c = newG.GetComponent<RectTransform>();

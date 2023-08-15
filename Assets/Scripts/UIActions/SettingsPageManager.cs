@@ -168,7 +168,7 @@ namespace Hypernex.UIActions
 
         private UnifiedMutationPanel CreateUnifiedMutationPanel(UnifiedMutation unifiedMutation, string n)
         {
-            GameObject panel = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject panel = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("UnifiedMutationPanel").gameObject;
             GameObject newPanel = Instantiate(panel);
             RectTransform c = newPanel.GetComponent<RectTransform>();

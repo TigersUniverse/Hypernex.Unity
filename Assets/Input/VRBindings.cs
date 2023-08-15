@@ -821,6 +821,33 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""CameraTrackerIsTracked"",
+                    ""type"": ""Button"",
+                    ""id"": ""95ffd7c2-ac91-414a-b746-8dd29bb918bc"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CameraTrackerPosition"",
+                    ""type"": ""Value"",
+                    ""id"": ""d21ee01e-7cd6-4a8e-9846-cb49f230aaed"",
+                    ""expectedControlType"": ""Vector3"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""CameraTrackerRotation"",
+                    ""type"": ""Value"",
+                    ""id"": ""a08a5211-9da7-46e4-b74f-1dc9224a68ee"",
+                    ""expectedControlType"": ""Quaternion"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -1032,6 +1059,39 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
                     ""action"": ""HipTrackerIsTracked"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e73aa0dd-da55-4e5d-8eb6-e3bf13c6f88b"",
+                    ""path"": ""<XRViveTracker>{Camera}/isTracked"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CameraTrackerIsTracked"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""66e0e7bb-3f48-45b6-87cb-37ae10957ee1"",
+                    ""path"": ""<XRViveTracker>{Camera}/devicePose/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CameraTrackerPosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3b386839-9a32-4a76-8810-527e283cfebe"",
+                    ""path"": ""<XRViveTracker>{Camera}/deviceRotation"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""CameraTrackerRotation"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -1095,6 +1155,9 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         m_Unknown_HipTrackerIsTracked = m_Unknown.FindAction("HipTrackerIsTracked", throwIfNotFound: true);
         m_Unknown_HipTrackerPosition = m_Unknown.FindAction("HipTrackerPosition", throwIfNotFound: true);
         m_Unknown_HipTrackerRotation = m_Unknown.FindAction("HipTrackerRotation", throwIfNotFound: true);
+        m_Unknown_CameraTrackerIsTracked = m_Unknown.FindAction("CameraTrackerIsTracked", throwIfNotFound: true);
+        m_Unknown_CameraTrackerPosition = m_Unknown.FindAction("CameraTrackerPosition", throwIfNotFound: true);
+        m_Unknown_CameraTrackerRotation = m_Unknown.FindAction("CameraTrackerRotation", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -1529,6 +1592,9 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
     private readonly InputAction m_Unknown_HipTrackerIsTracked;
     private readonly InputAction m_Unknown_HipTrackerPosition;
     private readonly InputAction m_Unknown_HipTrackerRotation;
+    private readonly InputAction m_Unknown_CameraTrackerIsTracked;
+    private readonly InputAction m_Unknown_CameraTrackerPosition;
+    private readonly InputAction m_Unknown_CameraTrackerRotation;
     public struct UnknownActions
     {
         private @VRBindings m_Wrapper;
@@ -1552,6 +1618,9 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         public InputAction @HipTrackerIsTracked => m_Wrapper.m_Unknown_HipTrackerIsTracked;
         public InputAction @HipTrackerPosition => m_Wrapper.m_Unknown_HipTrackerPosition;
         public InputAction @HipTrackerRotation => m_Wrapper.m_Unknown_HipTrackerRotation;
+        public InputAction @CameraTrackerIsTracked => m_Wrapper.m_Unknown_CameraTrackerIsTracked;
+        public InputAction @CameraTrackerPosition => m_Wrapper.m_Unknown_CameraTrackerPosition;
+        public InputAction @CameraTrackerRotation => m_Wrapper.m_Unknown_CameraTrackerRotation;
         public InputActionMap Get() { return m_Wrapper.m_Unknown; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1618,6 +1687,15 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
             @HipTrackerRotation.started += instance.OnHipTrackerRotation;
             @HipTrackerRotation.performed += instance.OnHipTrackerRotation;
             @HipTrackerRotation.canceled += instance.OnHipTrackerRotation;
+            @CameraTrackerIsTracked.started += instance.OnCameraTrackerIsTracked;
+            @CameraTrackerIsTracked.performed += instance.OnCameraTrackerIsTracked;
+            @CameraTrackerIsTracked.canceled += instance.OnCameraTrackerIsTracked;
+            @CameraTrackerPosition.started += instance.OnCameraTrackerPosition;
+            @CameraTrackerPosition.performed += instance.OnCameraTrackerPosition;
+            @CameraTrackerPosition.canceled += instance.OnCameraTrackerPosition;
+            @CameraTrackerRotation.started += instance.OnCameraTrackerRotation;
+            @CameraTrackerRotation.performed += instance.OnCameraTrackerRotation;
+            @CameraTrackerRotation.canceled += instance.OnCameraTrackerRotation;
         }
 
         private void UnregisterCallbacks(IUnknownActions instance)
@@ -1679,6 +1757,15 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
             @HipTrackerRotation.started -= instance.OnHipTrackerRotation;
             @HipTrackerRotation.performed -= instance.OnHipTrackerRotation;
             @HipTrackerRotation.canceled -= instance.OnHipTrackerRotation;
+            @CameraTrackerIsTracked.started -= instance.OnCameraTrackerIsTracked;
+            @CameraTrackerIsTracked.performed -= instance.OnCameraTrackerIsTracked;
+            @CameraTrackerIsTracked.canceled -= instance.OnCameraTrackerIsTracked;
+            @CameraTrackerPosition.started -= instance.OnCameraTrackerPosition;
+            @CameraTrackerPosition.performed -= instance.OnCameraTrackerPosition;
+            @CameraTrackerPosition.canceled -= instance.OnCameraTrackerPosition;
+            @CameraTrackerRotation.started -= instance.OnCameraTrackerRotation;
+            @CameraTrackerRotation.performed -= instance.OnCameraTrackerRotation;
+            @CameraTrackerRotation.canceled -= instance.OnCameraTrackerRotation;
         }
 
         public void RemoveCallbacks(IUnknownActions instance)
@@ -1756,5 +1843,8 @@ public partial class @VRBindings: IInputActionCollection2, IDisposable
         void OnHipTrackerIsTracked(InputAction.CallbackContext context);
         void OnHipTrackerPosition(InputAction.CallbackContext context);
         void OnHipTrackerRotation(InputAction.CallbackContext context);
+        void OnCameraTrackerIsTracked(InputAction.CallbackContext context);
+        void OnCameraTrackerPosition(InputAction.CallbackContext context);
+        void OnCameraTrackerRotation(InputAction.CallbackContext context);
     }
 }

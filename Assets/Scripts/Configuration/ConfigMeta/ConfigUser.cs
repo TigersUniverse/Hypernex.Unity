@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 
 namespace Hypernex.Configuration.ConfigMeta
@@ -32,6 +33,8 @@ namespace Hypernex.Configuration.ConfigMeta
         public float SmoothTurnSpeed = 1f;
 
         public Dictionary<string, float> UserVolumes = new();
+
+        public float2 DefaultCameraDimensions = new(1920, 1080);
 
         public void Clone(ConfigUser c)
         {

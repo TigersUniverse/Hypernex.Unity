@@ -1,0 +1,4 @@
++ Changed VRCFaceTracking.Core to run on netstandard2.1
+  + This allows VRCFaceTracking.Core to run in Unity
++ Does not load the OSC library
++ Added a class specifically for Internal Applications

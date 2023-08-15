@@ -24,7 +24,7 @@ namespace Hypernex.UI.Templates
 
         private void CreateUserInstanceCard(User user, GameObject overlay)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("UserInstanceCard").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();

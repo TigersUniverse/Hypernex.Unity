@@ -1,4 +1,6 @@
-﻿using Hypernex.Tools;
+﻿using System;
+using Hypernex.Game;
+using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -8,6 +10,7 @@ namespace Hypernex.UI.Templates
 {
     public class NameplateTemplate : MonoBehaviour
     {
+        public NetPlayer np;
         public RawImage Banner;
         public RawImage Pfp;
         public Image Status;
@@ -18,9 +21,10 @@ namespace Hypernex.UI.Templates
         public Texture2D DefaultBanner;
 
         public Camera MainCamera;
-        public Transform FollowTransform;
+        private Transform FollowTransform;
         
         private TMP_Text pronounText;
+        private AvatarCreator lastAvatar;
 
         public void Render(User user)
         {
@@ -86,12 +90,43 @@ namespace Hypernex.UI.Templates
                 Banner.texture = DefaultBanner;
         }
 
-        private void Update()
+        public void OnNewAvatar(AvatarCreator avatarCreator)
         {
+            if (lastAvatar == avatarCreator)
+                return;
+            lastAvatar = avatarCreator;
+            if(FollowTransform != null)
+                Destroy(FollowTransform.gameObject);
+            FollowTransform = new GameObject("nametagalign_" + Guid.NewGuid()).transform;
+            Transform head = avatarCreator.GetBoneFromHumanoid(HumanBodyBones.Head);
+            if (head == null)
+            {
+                FollowTransform.parent = transform;
+                FollowTransform.transform.localPosition = new Vector3(0, transform.localScale.y + 1.5f, 0);
+                return;
+            }
+            FollowTransform.transform.parent = head;
+            FollowTransform.transform.localPosition = new Vector3(0, head.localPosition.y + 1f, 0);
+            FollowTransform.transform.SetParent(avatarCreator.Avatar.transform, true);
+        }
+        
+        private void Update() => transform.localScale = new Vector3(0.003f, 0.003f, 0.003f);
+
+        private void FixedUpdate()
+        {
+            if (FollowTransform != null)
+                transform.position = FollowTransform.position;
+            else if (np != null)
+                transform.position = new Vector3(np.transform.position.x,
+                    np.transform.position.y + np.transform.localScale.y + 1, np.transform.position.z);
             transform.rotation =
                 Quaternion.LookRotation((transform.position - MainCamera.transform.position).normalized);
+        }
+
+        private void OnDestroy()
+        {
             if(FollowTransform != null)
-                transform.position = FollowTransform.position;
+                Destroy(FollowTransform.gameObject);
         }
     }
 }

@@ -1,9 +1,8 @@
 using System.Collections.Generic;
+using Hypernex.Game;
 using Hypernex.Player;
-using HypernexSharp.SocketObjects;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Hypernex.UIActions
@@ -13,6 +12,7 @@ namespace Hypernex.UIActions
         public List<GameObject> LoggedInObjects;
         public TMP_Text WelcomeText;
         public Button PowerButton;
+        public Button CameraButton;
         public GameObject ExitPage;
         public TMP_Text ButtonText;
 
@@ -34,8 +34,9 @@ namespace Hypernex.UIActions
 
         public void PointerEnterExit() => ButtonText.text = ":(";
         public void PointerExitExit() => ButtonText.text = "Exit";
+        public void CameraButtonClicked() => HandleCamera.Create();
     
-        void Start()
+        private void Start()
         {
             APIPlayer.OnUser += user =>
             {
@@ -45,6 +46,11 @@ namespace Hypernex.UIActions
             };
             APIPlayer.OnLogout += () => LoggedInObjects.ForEach(x => x.SetActive(false));
             PowerButton.onClick.AddListener(() => ExitPage.SetActive(true));
+        }
+
+        private void Update()
+        {
+            CameraButton.gameObject.SetActive(LocalPlayer.IsVR);
         }
     }
 }

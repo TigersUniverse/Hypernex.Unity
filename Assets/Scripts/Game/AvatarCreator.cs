@@ -37,11 +37,10 @@ namespace Hypernex.Game
         private VRIK vrik;
         private VRIKCalibrator.Settings vrikSettings = new()
         {
-            scaleMlp = 1,
+            scaleMlp = 0.9f,
             handOffset = new Vector3(0, 0.01f, -0.1f),
         };
         private GameObject headAlign;
-        internal Transform nametagAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
         internal OpusHandler opusHandler;
@@ -105,7 +104,7 @@ namespace Hypernex.Game
                     Transform child = LocalPlayer.Instance.RightHandVRIKTarget.GetChild(i);
                     Object.Destroy(child.gameObject);
                 }
-                if (XRTracker.Trackers.Count(x => x.IsTracked) != 3)
+                if (!XRTracker.CanFBT)
                 {
                     RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
                         GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
@@ -113,8 +112,10 @@ namespace Hypernex.Game
                 }
             }
             else
+            {
                 SetupAnimators();
-            calibrated = false;
+                calibrated = true;
+            }
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
             {
@@ -128,13 +129,14 @@ namespace Hypernex.Game
                     bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
             InitMaterialDescriptors(a.transform);
+            SetLayer(7);
         }
 
-        public AvatarCreator(NetPlayer netPlayer, Avatar a)
+        public AvatarCreator(NetPlayer np, Avatar a)
         {
             a = Object.Instantiate(a.gameObject).GetComponent<Avatar>();
             Avatar = a;
-            SceneManager.MoveGameObjectToScene(a.gameObject, netPlayer.gameObject.scene);
+            SceneManager.MoveGameObjectToScene(a.gameObject, np.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
             MainAnimator.runtimeAnimatorController = null;
             voiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
@@ -150,19 +152,9 @@ namespace Hypernex.Game
             audioSource.minDistance = 0;
             audioSource.maxDistance = 10;
             audioSource.outputAudioMixerGroup = Init.Instance.VoiceGroup;
-            nametagAlign = new GameObject("nametagalign_" + Guid.NewGuid()).transform;
-            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
-            if (head != null)
-            {
-                nametagAlign.transform.parent = head;
-                nametagAlign.transform.localPosition = new Vector3(0,
-                    head.localPosition.y + 1.6f, 0);
-                nametagAlign.transform.SetParent(netPlayer.transform, false);
-                netPlayer.nameplateTemplate.FollowTransform = nametagAlign.transform;
-            }
-            else
-                Object.Destroy(nametagAlign.gameObject);
-            a.transform.SetParent(netPlayer.transform);
+            if(np.nameplateTemplate != null)
+                np.nameplateTemplate.OnNewAvatar(this);
+            a.transform.SetParent(np.transform);
             a.gameObject.name = "avatar";
             a.transform.SetLocalPositionAndRotation(new Vector3(0, -1, 0), new Quaternion(0, 0, 0, 0));
             foreach (CustomPlayableAnimator customPlayableAnimator in a.Animators)
@@ -187,8 +179,15 @@ namespace Hypernex.Game
                 });
                 playableGraph.Play();
             }
+#if DYNAMIC_BONE
+            foreach (DynamicBone dynamicBone in Avatar.transform.GetComponentsInChildren<DynamicBone>())
+            {
+                dynamicBone.m_UpdateMode = DynamicBone.UpdateMode.AnimatePhysics;
+            }
+#endif
             SetupLipSyncNetPlayer();
             InitMaterialDescriptors(a.transform);
+            SetLayer(10);
         }
 
         private void SetupAnimators()
@@ -215,6 +214,12 @@ namespace Hypernex.Game
                 });
                 playableGraph.Play();
             }
+        }
+
+        private void SetLayer(int layer)
+        {
+            foreach (Transform transform in Avatar.transform.GetComponentsInChildren<Transform>())
+                transform.gameObject.layer = layer;
         }
 
         private OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(
@@ -687,33 +692,22 @@ namespace Hypernex.Game
                     break;
                 }
             }
-            if (vrik != null && vrik.solver.initiated && (XRTracker.Trackers.Count(x => x.IsTracked) != 3 || MainAnimator.avatar == null) && !calibrated)
+            if (vrik != null && vrik.solver.initiated && (!XRTracker.CanFBT || MainAnimator.avatar == null) && !calibrated)
             {
-                XRTracker.Trackers.ForEach(x =>
-                {
-                    Renderer r = x.renderer;
-                    if (r != null)
-                        r.enabled = false;
-                });
                 VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
                     RightHandReference.transform);
                 SetupAnimators();
                 calibrated = true;
             }
-            else if (vrik != null && XRTracker.Trackers.Count(x => x.IsTracked) == 3 && !calibrated)
+            else if (vrik != null && XRTracker.CanFBT && !calibrated)
             {
-                XRTracker.Trackers.ForEach(x =>
-                {
-                    Renderer r = x.renderer;
-                    if (r != null)
-                        r.enabled = true;
-                });
                 if (areTwoTriggersClicked)
                 {
                     GameObject[] ts = new GameObject[3];
                     int i = 0;
                     foreach (XRTracker tracker in XRTracker.Trackers)
                     {
+                        if(tracker.TrackerRole == XRTrackerRole.Camera) continue;
                         ts[i] = tracker.gameObject;
                         i++;
                     }
@@ -737,27 +731,15 @@ namespace Hypernex.Game
                                     GetBoneFromHumanoid(HumanBodyBones.RightHand));
                                 SetupAnimators();
                                 calibrated = true;
-                                XRTracker.Trackers.ForEach(x =>
-                                {
-                                    Renderer r = x.renderer;
-                                    if (r != null)
-                                        r.enabled = false;
-                                });
                             }
                         }
                     }
                 }
             }
-            else if (calibrated)
+            else if (vrik != null && calibrated)
             {
-                XRTracker.Trackers.ForEach(x =>
-                {
-                    Renderer r = x.renderer;
-                    if (r != null)
-                        r.enabled = false;
-                });
-                vrik.solver.locomotion.weight = isMoving || XRTracker.Trackers.Count(x => x.IsTracked) == 3 ? 0f : 1f;
-                if (XRTracker.Trackers.Count(x => x.IsTracked) != 3)
+                vrik.solver.locomotion.weight = isMoving || XRTracker.CanFBT ? 0f : 1f;
+                if (!XRTracker.CanFBT)
                 {
                     float scale = LocalPlayer.Instance.transform.localScale.y;
                     float height = LocalPlayer.Instance.CharacterController.height;
@@ -827,7 +809,8 @@ namespace Hypernex.Game
             }
             if (isVR)
             {
-                fingerCalibration?.LateUpdate();
+                // TODO: Properly Rotate Finger Bones on Avatars
+                //fingerCalibration?.LateUpdate();
             }
             if (!isVR)
             {
@@ -1095,11 +1078,6 @@ namespace Hypernex.Game
             }
             if(opusHandler != null)
                 opusHandler.OnDecoded -= opusHandler.PlayDecodedToVoice;
-            if(nametagAlign != null)
-            {
-                Object.Destroy(nametagAlign.gameObject);
-                nametagAlign = null;
-            }
             Object.Destroy(Avatar.gameObject);
         }
     }

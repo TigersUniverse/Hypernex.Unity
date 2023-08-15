@@ -75,7 +75,7 @@ namespace Hypernex.UIActions
 
         private void CreateFriendCardFromUser(User user)
         {
-            GameObject friendCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject friendCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("FriendCardTemplate").gameObject;
             GameObject newFriendCard = Instantiate(friendCard);
             newFriendCard.GetComponent<FriendCardTemplate>().Render(this, user);
@@ -84,7 +84,7 @@ namespace Hypernex.UIActions
 
         private void CreateFriendRequestCardFromUser(User user)
         {
-            GameObject friendRequestCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject friendRequestCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("FriendRequestCardTemplate").gameObject;
             GameObject newFriendRequestCard = Instantiate(friendRequestCard);
             RectTransform c = newFriendRequestCard.GetComponent<RectTransform>();
@@ -101,7 +101,7 @@ namespace Hypernex.UIActions
         private void CreateInstanceCard(SafeInstance safeInstance, WorldMeta worldMeta, User host = null,
             User creator = null)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("Templates").transform
+            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("InstanceCardTemplate").gameObject;
             GameObject newInstanceCard = Instantiate(instanceCard);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();

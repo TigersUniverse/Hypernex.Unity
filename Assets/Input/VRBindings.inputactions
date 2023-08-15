@@ -799,6 +799,33 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "CameraTrackerIsTracked",
+                    "type": "Button",
+                    "id": "95ffd7c2-ac91-414a-b746-8dd29bb918bc",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "CameraTrackerPosition",
+                    "type": "Value",
+                    "id": "d21ee01e-7cd6-4a8e-9846-cb49f230aaed",
+                    "expectedControlType": "Vector3",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "CameraTrackerRotation",
+                    "type": "Value",
+                    "id": "a08a5211-9da7-46e4-b74f-1dc9224a68ee",
+                    "expectedControlType": "Quaternion",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
                 }
             ],
             "bindings": [
@@ -1008,6 +1035,39 @@
                     "processors": "",
                     "groups": "",
                     "action": "HipTrackerIsTracked",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e73aa0dd-da55-4e5d-8eb6-e3bf13c6f88b",
+                    "path": "<XRViveTracker>{Camera}/isTracked",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CameraTrackerIsTracked",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "66e0e7bb-3f48-45b6-87cb-37ae10957ee1",
+                    "path": "<XRViveTracker>{Camera}/devicePose/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CameraTrackerPosition",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3b386839-9a32-4a76-8810-527e283cfebe",
+                    "path": "<XRViveTracker>{Camera}/deviceRotation",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "CameraTrackerRotation",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
