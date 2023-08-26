@@ -246,7 +246,10 @@ namespace Hypernex.UI
                 if (img != null)
                 {
                     if (theme.BackgroundImage == null)
+                    {
                         img.color = theme.PrimaryColor;
+                        img.sprite = null;
+                    }
                     else
                     {
                         img.color = new Color(1, 1, 1, theme.PrimaryColor.a);
@@ -257,7 +260,10 @@ namespace Hypernex.UI
                 if(rawimg != null)
                 {
                     if (theme.BackgroundImage == null)
+                    {
                         rawimg.color = theme.PrimaryColor;
+                        rawimg.texture = null;
+                    }
                     else
                     {
                         rawimg.color = new Color(1, 1, 1, theme.PrimaryColor.a);

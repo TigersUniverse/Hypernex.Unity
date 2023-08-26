@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Networking.Messages.Data;
 using UnityEngine;
 
@@ -10,7 +12,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public ReadonlyItem()
         {
-            throw new Exception("Item cannot be created by a Script!");
+            throw new Exception("ReadonlyItem cannot be created by a Script!");
         }
 
         internal ReadonlyItem(Transform transform) => item = new Item(transform);
@@ -25,6 +27,23 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public float3 LocalPosition => item.LocalPosition;
         public float4 LocalRotation => item.LocalRotation;
         public float3 LocalSize => item.LocalSize;
+        
+        public int ChildCount => item.t.childCount;
+
+        public ReadonlyItem[] Children
+        {
+            get
+            {
+                List<ReadonlyItem> items = new();
+                foreach (Item itemChild in item.Children)
+                    items.Add(new ReadonlyItem(itemChild.t));
+                return items.ToArray();
+            }
+        }
+
+        public ReadonlyItem GetChildByIndex(int i) => Children[i];
+
+        public ReadonlyItem GetChildByName(string name) => Children.First(x => x.Name == name);
 
         public static bool operator ==(ReadonlyItem x, ReadonlyItem y) => x?.Equals(y) ?? false;
         public static bool operator !=(ReadonlyItem x, ReadonlyItem y) => !(x == y);

@@ -79,6 +79,7 @@ namespace Hypernex.UI.Templates
         {
             GameServersDisplay.Clear();
             LastGameServers = result.result.GameServers;
+            GeoTools.SortGameServers(ref LastGameServers);
             foreach (GameServer gameServer in LastGameServers)
                 CreateGameServerTemplate(gameServer);
             if (LastGameServers.Count > 0)

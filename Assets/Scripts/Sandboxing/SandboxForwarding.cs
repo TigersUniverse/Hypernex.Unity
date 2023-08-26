@@ -10,6 +10,7 @@ using UnityEngine;
 using Bounds = Hypernex.Sandboxing.SandboxedTypes.Bounds;
 using Collider = Hypernex.Sandboxing.SandboxedTypes.Collider;
 using Collision = Hypernex.Sandboxing.SandboxedTypes.Collision;
+using Color = Hypernex.Sandboxing.SandboxedTypes.Color;
 using Physics = Hypernex.Sandboxing.SandboxedTypes.Physics;
 using Ray = Hypernex.Sandboxing.SandboxedTypes.Ray;
 using RaycastHit = Hypernex.Sandboxing.SandboxedTypes.RaycastHit;
@@ -60,6 +61,8 @@ namespace Hypernex.Sandboxing
             ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
             ["Runtime"] = typeof(Runtime),
             ["UI"] = typeof(LocalUI),
+            ["Color"] = typeof(Color),
+            ["ColorBlock"] = typeof(ColorBlock),
             ["World"] = typeof(LocalWorld),
             ["Time"] = typeof(Time),
             ["UtcTime"] = typeof(UtcTime),
@@ -75,7 +78,8 @@ namespace Hypernex.Sandboxing
             ["Interactables"] = typeof(Interactables),
             ["PronounObject"] = typeof(PronounObject),
             ["PronounCases"] = typeof(PronounCases),
-            ["Pronouns"] = typeof(Pronouns)
+            ["Pronouns"] = typeof(Pronouns),
+            ["ScriptEvents"] = typeof(ScriptEvents)
         });
 
         public static void Forward(IInterpreter interpreter, SandboxRestriction restriction, Transform playerRoot, 
@@ -94,6 +98,7 @@ namespace Hypernex.Sandboxing
                         interpreter.ForwardType(forwardingType.Key, forwardingType.Value);
                     interpreter.CreateGlobal("NetworkEvent", new ClientNetworkEvent(gameInstance));
                     interpreter.CreateGlobal("Players", new LocalNetAvatar(gameInstance));
+                    interpreter.CreateGlobal("Events", gameInstance.ScriptEvents);
                     break;
             }
             interpreter.CreateGlobal("Physics", new Physics(restriction));

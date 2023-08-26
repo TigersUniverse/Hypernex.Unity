@@ -50,6 +50,8 @@ namespace Hypernex.UIActions
         public GameObject RestartPanel;
         public DynamicScroll FaceConfig;
 
+        private Action lastVisiblePanel;
+
         public void OnGeneralSettings()
         {
             // AudioDevices
@@ -73,6 +75,7 @@ namespace Hypernex.UIActions
             MMSCInput.text = ConfigManager.LoadedConfig.MaxMemoryStorageCache.ToString();
             AllPanels.ForEach(x => x.SetActive(false));
             GeneralPanel.SetActive(true);
+            lastVisiblePanel = OnGeneralSettings;
         }
 
         public void ApplyGeneralSettings()
@@ -101,9 +104,11 @@ namespace Hypernex.UIActions
                 WorldAudioSlider.value = waRounded;
                 WorldAudioSliderValueText.text = waRounded.ToString(CultureInfo.InvariantCulture);
                 NoiseSuppressionToggle.isOn = ConfigManager.SelectedConfigUser.NoiseSuppression;
+                AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
             }
             AllPanels.ForEach(x => x.SetActive(false));
             AudioPanel.SetActive(true);
+            lastVisiblePanel = OnAudioSettings;
         }
 
         public void OnUserSettings()
@@ -122,10 +127,10 @@ namespace Hypernex.UIActions
                         ThemeSelection.value = i;
                 }
                 EmojiTypeSelection.value = ConfigManager.SelectedConfigUser.EmojiType;
-                AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
             }
             AllPanels.ForEach(x => x.SetActive(false));
             UserPanel.SetActive(true);
+            lastVisiblePanel = OnUserSettings;
         }
 
         public void OnVRSettings()
@@ -143,6 +148,7 @@ namespace Hypernex.UIActions
             }
             AllPanels.ForEach(x => x.SetActive(false));
             VRPanel.SetActive(true);
+            lastVisiblePanel = OnVRSettings;
         }
 
         public void SetSnapTurn(bool value)
@@ -163,6 +169,7 @@ namespace Hypernex.UIActions
             FaceConfig.Clear();
             AllPanels.ForEach(x => x.SetActive(false));
             FaceTrackingPanel.SetActive(true);
+            lastVisiblePanel = OnFaceTrackingSettings;
             DisplayMutations();
         }
 
@@ -241,7 +248,9 @@ namespace Hypernex.UIActions
                     ConfigManager.LoadedConfig.SelectedMicrophone = device;
                     ConfigManager.SaveConfigToFile();
                 }
-                LocalPlayer.Instance.MicrophoneEnabled = v;
+                LocalPlayer.Instance.MicrophoneEnabled = true;
+                if(!v)
+                    LocalPlayer.Instance.MicrophoneEnabled = false;
             });
             ThemeSelection.onValueChanged.RemoveAllListeners();
             ThemeSelection.onValueChanged.AddListener(i =>
@@ -318,7 +327,10 @@ namespace Hypernex.UIActions
                 RestartPanel.SetActive(FaceTrackingManager.HasInitialized != b);
                 ConfigManager.SelectedConfigUser.UseFacialTracking = b;
             });
-            OnGeneralSettings();
+            if(lastVisiblePanel != null)
+                lastVisiblePanel.Invoke();
+            else
+                OnGeneralSettings();
         }
 
         private void Update()

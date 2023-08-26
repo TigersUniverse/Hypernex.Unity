@@ -16,8 +16,8 @@ TagManager:
   - LocalPlayer
   - Line Renderers
   - NetAvatar
-  - 
-  - 
+  - MainCamera
+  - ExtraCamera
   - 
   - 
   - 

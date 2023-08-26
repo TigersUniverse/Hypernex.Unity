@@ -111,6 +111,7 @@ namespace Hypernex.Game
         internal bool isHost { get; private set; }
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
+        internal ScriptEvents ScriptEvents;
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
@@ -154,6 +155,7 @@ namespace Hypernex.Game
 
         private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
         {
+            ScriptEvents = new ScriptEvents(this);
             ClientSettings clientSettings = new ClientSettings(ip, port, instanceProtocol == InstanceProtocol.UDP, 1);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
@@ -178,6 +180,7 @@ namespace Hypernex.Game
                 if (!isHost)
                     usersBeforeMe.Add(user);
             };
+            OnClientConnect += user => ScriptEvents?.OnUserJoin.Invoke(user.Id);
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
             OnClientDisconnect += user =>
             {
@@ -540,6 +543,8 @@ namespace Hypernex.Game
                 return;
             isDisposed = true;
             FocusedInstance = null;
+            foreach (SandboxFunc sandboxAction in Runtime.OnFixedUpdates)
+                Runtime.RemoveOnFixedUpdate(sandboxAction);
             foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
                 Runtime.RemoveOnUpdate(sandboxAction);
             foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)

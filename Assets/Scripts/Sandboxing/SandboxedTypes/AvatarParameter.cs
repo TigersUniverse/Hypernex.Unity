@@ -42,6 +42,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             }
         }
 
+        public bool IsVisible => avatarCreator.Avatar.VisibleParameters.Contains(Name);
+
         public object GetValue() => avatarCreator.GetParameter(parameter.name, animatorPlayable.CustomPlayableAnimator);
 
         public void SetValue(bool value)

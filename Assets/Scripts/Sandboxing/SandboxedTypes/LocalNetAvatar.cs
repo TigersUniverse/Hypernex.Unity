@@ -17,6 +17,20 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         }
         internal LocalNetAvatar(GameInstance instance) => gameInstance = instance;
         
+        public static string[] ActiveUserIds
+        {
+            get
+            {
+                if (GameInstance.FocusedInstance == null)
+                    return Array.Empty<string>();
+                List<User> l = GameInstance.FocusedInstance.ConnectedUsers;
+                List<string> s = new List<string>();
+                foreach (User user in l)
+                    s.Add(user.Id);
+                return s.ToArray();
+            }
+        }
+        
         private NetPlayer GetNetPlayer(string userid)
         {
             if (gameInstance == null)
@@ -56,7 +70,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public static bool IsAvatarItem(ReadonlyItem item) =>
             AnimationUtility.GetRootOfChild(item.item.t).gameObject.GetComponent<NetPlayer>() != null;
         
-        public ReadonlyItem[] GetAllChildrenInAvatar(string userid, string path)
+        public ReadonlyItem[] GetAllChildrenInAvatar(string userid)
         {
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
@@ -97,7 +111,23 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return netPlayer.Avatar.GetParameter(parameterName);
         }
 
-        public Pronouns GetUserPronouns(string userid)
+        public string GetUsername(string userid)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return String.Empty;
+            return netPlayer.User?.Username ?? String.Empty;
+        }
+        
+        public string GetDisplayName(string userid)
+        {
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null || netPlayer.User == null || netPlayer.User.Bio == null)
+                return String.Empty;
+            return netPlayer.User.Bio.DisplayName ?? String.Empty;
+        }
+
+        public Pronouns GetPronouns(string userid)
         {
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)

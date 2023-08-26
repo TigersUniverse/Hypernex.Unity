@@ -1,5 +1,6 @@
 ﻿using System;
 using Hypernex.Networking.Messages;
+using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Nexport;
 using UnityEngine;
@@ -72,6 +73,14 @@ namespace Hypernex.Game
                 case "Hypernex.Networking.Messages.PlayerMessage":
                 {
                     // TODO: Implement chatbox system (this will go in NetPlayer)
+                    break;
+                }
+                case "Hypernex.Networking.Messages.NetworkedEvent":
+                {
+                    NetworkedEvent networkedEvent =
+                        (NetworkedEvent) Convert.ChangeType(msgMeta.Data, typeof(NetworkedEvent));
+                    gameInstance.ScriptEvents.OnServerNetworkEvent.Invoke(networkedEvent.EventName,
+                        networkedEvent.Data.ToArray());
                     break;
                 }
             }

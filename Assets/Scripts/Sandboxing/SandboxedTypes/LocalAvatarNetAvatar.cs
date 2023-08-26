@@ -168,6 +168,30 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return netPlayer.Avatar.GetParameter(parameterName);
         }
+        
+        public static string GetUsername(string userid)
+        {
+            if (userid == APIPlayer.APIUser.Id)
+                return APIPlayer.APIUser.Username;
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null)
+                return String.Empty;
+            return netPlayer.User?.Username ?? String.Empty;
+        }
+        
+        public static string GetDisplayName(string userid)
+        {
+            if (userid == APIPlayer.APIUser.Id)
+            {
+                if(APIPlayer.APIUser.Bio == null)
+                    return String.Empty;
+                return APIPlayer.APIUser.Bio.DisplayName ?? String.Empty;
+            }
+            NetPlayer netPlayer = GetNetPlayer(userid);
+            if (netPlayer == null || netPlayer.User == null || netPlayer.User.Bio == null)
+                return String.Empty;
+            return netPlayer.User.Bio.DisplayName ?? String.Empty;
+        }
 
         public static Pronouns GetPronouns(string userid)
         {

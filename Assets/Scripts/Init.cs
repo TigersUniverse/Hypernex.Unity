@@ -109,6 +109,7 @@ public class Init : MonoBehaviour
         DefaultTheme.ApplyThemeToUI();
         VersionLabels.ForEach(x => x.text = VERSION);
         DiscordTools.StartDiscord();
+        GeoTools.Init();
 
         int pluginsLoaded;
         try
@@ -146,6 +147,19 @@ public class Init : MonoBehaviour
                         s.GetRootGameObjects().First(x => x.name == "Spawn").transform.position;
                     LocalPlayer.Dashboard.PositionDashboard(LocalPlayer);
                 }));
+    }
+
+    private void FixedUpdate()
+    {
+        foreach (SandboxFunc sandboxAction in Runtime.OnFixedUpdates)
+            try
+            {
+                SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
     }
 
     private void Update()

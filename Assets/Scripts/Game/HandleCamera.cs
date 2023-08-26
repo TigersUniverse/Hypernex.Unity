@@ -90,9 +90,13 @@ namespace Hypernex.Game
             {
                 rt.DiscardContents();
                 rt.Release();
-                Destroy(rt);
+                //Destroy(rt);
             }
-            rt = new RenderTexture(width, height, 16, RenderTextureFormat.ARGB32);
+            rt = new RenderTexture(width, height, 16);
+            rt.useDynamicScale = false;
+            rt.Create();
+            CameraRenderOutput.texture = rt;
+            StreamRenderOutput.texture = rt;
             /*if (antialiasing != AntialiasingMode.None)
                 switch (antialiasing)
                 {
@@ -106,6 +110,7 @@ namespace Hypernex.Game
                         rt.antiAliasing = 8;
                         break;
                 }*/
+            // TODO: bad frames (unity URP 14 bug)
             LinkedCamera.targetTexture = rt;
         }
 
@@ -193,7 +198,7 @@ namespace Hypernex.Game
             }
         }
 
-        public string GetPhotoPath()
+        public static string GetPhotoPath()
         {
             DateTime dateTime = DateTime.Now;
             string photosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
@@ -255,7 +260,7 @@ namespace Hypernex.Game
             grabbable.OnBindingRelease += binding => binding.TriggerClick -= __capture;
             dontDestroyMe = GetComponent<DontDestroyMe>();
             LinkedCamera = transform.Find("Camera").GetComponent<Camera>();
-            LinkedCamera.targetTexture = rt;
+            LinkedCamera.stereoTargetEye = StereoTargetEyeMask.None;
             StreamRenderOutput = DontDestroyMe.GetNotDestroyedObject(CAMERA_CANVAS_NAME).transform.GetChild(0)
                 .GetComponent<RawImage>();
             HandleCameraCanvas = transform.Find(HANDLE_CAMERA_CANVAS_NAME).GetComponent<Canvas>();
@@ -325,14 +330,11 @@ namespace Hypernex.Game
             {
                 if (requestCapture && rt.width == (int)d.x && rt.height == (int)d.y)
                 {
-                    RenderTexture currentRT = RenderTexture.active;
-                    RenderTexture.active = rt;
                     TextureFormat tf = RTFormatToTFormat(rt.format);
                     Texture2D copiedRt = new Texture2D(rt.width, rt.height, tf, false);
                     copiedRt.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
                     copiedRt.Apply();
                     byte[] data = copiedRt.EncodeToPNG();
-                    Debug.Log(data.Length);
                     string file = GetPhotoPath();
                     FileStream fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.ReadWrite,
                         FileShare.ReadWrite | FileShare.Delete);
@@ -344,12 +346,7 @@ namespace Hypernex.Game
                     Logger.CurrentLogger.Log("Saved Photo to " + file);
                     requestCapture = false;
                     isCapturing = false;
-                    RenderTexture.active = currentRT;
                 }
-                if (CameraRenderOutput != null && CameraRenderOutput.texture != rt)
-                    CameraRenderOutput.texture = rt;
-                if (IsOutputting && StreamRenderOutput.texture != rt)
-                    StreamRenderOutput.texture = rt;
             }
         }
 
@@ -402,8 +399,6 @@ namespace Hypernex.Game
         private void OnDestroy()
         {
             RenderPipelineManager.endCameraRendering -= OnCameraEndRender;
-            if(IsOutputting)
-                ToggleOutput();
             if (rt != null)
             {
                 rt.DiscardContents();
@@ -412,6 +407,8 @@ namespace Hypernex.Game
             }
             StopAllCoroutines();
             handleCameras.Remove(this);
+            if(IsOutputting)
+                ToggleOutput();
         }
 
         public void Dispose() => Destroy(gameObject);

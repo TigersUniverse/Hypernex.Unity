@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 using UnityEngine;
@@ -54,11 +55,33 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             set => t.localScale = NetworkConversionTools.float3ToVector3(value);
         }
 
+        public int ChildCount => t.childCount;
+
+        public Item[] Children
+        {
+            get
+            {
+                List<Item> items = new();
+                for (int i = 0; i < t.childCount; i++)
+                {
+                    Item item = GetChildByIndex(i);
+                    if(item == null) continue;
+                    items.Add(item);
+                }
+                return items.ToArray();
+            }
+        }
+
         public Item GetChildByIndex(int i)
         {
             Transform tr = t.GetChild(i);
             if (tr != null)
-                return new Item(tr);
+            {
+                Item item = new Item(tr);
+                if (LocalLocalAvatar.IsAvatarItem(item) || LocalNetAvatar.IsAvatarItem(item))
+                    return null;
+                return item;
+            }
             return null;
         }
 
@@ -66,7 +89,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             Transform tr = t.Find(name);
             if (tr != null)
-                return new Item(tr);
+            {
+                Item item = new Item(tr);
+                if (LocalLocalAvatar.IsAvatarItem(item) || LocalNetAvatar.IsAvatarItem(item))
+                    return null;
+                return item;
+            }
             return null;
         }
         
