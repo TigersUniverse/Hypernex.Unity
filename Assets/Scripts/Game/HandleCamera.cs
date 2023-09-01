@@ -81,36 +81,21 @@ namespace Hypernex.Game
 
         public void UpdateDimensions(float2 dd) => d = dd;
 
-        public void SetCameraProperties(float2 dimensions) => SetCameraProperties((int) dimensions.x,
-            (int) dimensions.y, Camera.main.GetUniversalAdditionalCameraData().antialiasing);
+        public void SetCameraProperties(float2 dimensions) =>
+            SetCameraProperties((int) dimensions.x, (int) dimensions.y);
 
-        public void SetCameraProperties(int width, int height, AntialiasingMode antialiasing)
+        public void SetCameraProperties(int width, int height)
         {
             if (rt != null)
             {
                 rt.DiscardContents();
                 rt.Release();
-                //Destroy(rt);
             }
             rt = new RenderTexture(width, height, 16);
             rt.useDynamicScale = false;
             rt.Create();
             CameraRenderOutput.texture = rt;
             StreamRenderOutput.texture = rt;
-            /*if (antialiasing != AntialiasingMode.None)
-                switch (antialiasing)
-                {
-                    case AntialiasingMode.FastApproximateAntialiasing:
-                        rt.antiAliasing = 2;
-                        break;
-                    case AntialiasingMode.SubpixelMorphologicalAntiAliasing:
-                        rt.antiAliasing = 4;
-                        break;
-                    case AntialiasingMode.TemporalAntiAliasing:
-                        rt.antiAliasing = 8;
-                        break;
-                }*/
-            // TODO: bad frames (unity URP 14 bug)
             LinkedCamera.targetTexture = rt;
         }
 
@@ -133,6 +118,8 @@ namespace Hypernex.Game
                     UpdateDimensions(new float2(Screen.width, Screen.height));
                     SetCameraProperties(new float2(Screen.width, Screen.height));
                     StreamRenderOutput.transform.parent.gameObject.GetComponent<Canvas>().enabled = true;
+                    LinkedCamera.GetUniversalAdditionalCameraData().antialiasing =
+                        Camera.main.GetUniversalAdditionalCameraData().antialiasing;
                     IsOutputting = true;
                     break;
                 case true:
@@ -140,7 +127,8 @@ namespace Hypernex.Game
                     IsOutputting = false;
                     UpdateDimensions(lastD);
                     SetCameraProperties((int)CameraRenderOutput.rectTransform.rect.width / 2,
-                        (int)CameraRenderOutput.rectTransform.rect.height / 2, AntialiasingMode.None);
+                        (int)CameraRenderOutput.rectTransform.rect.height / 2);
+                    LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
                     break;
             }
             OutputButton.UIThemeObject.ButtonType = IsOutputting ? ButtonType.Primary : ButtonType.Secondary;
@@ -266,7 +254,7 @@ namespace Hypernex.Game
             HandleCameraCanvas = transform.Find(HANDLE_CAMERA_CANVAS_NAME).GetComponent<Canvas>();
             CameraRenderOutput = HandleCameraCanvas.transform.GetChild(0).GetComponent<RawImage>();
             SetCameraProperties((int)CameraRenderOutput.rectTransform.rect.width / 2,
-                (int)CameraRenderOutput.rectTransform.rect.height / 2, AntialiasingMode.None);
+                (int)CameraRenderOutput.rectTransform.rect.height / 2);
             UpdateDimensions(ConfigManager.SelectedConfigUser != null
                 ? ConfigManager.SelectedConfigUser.DefaultCameraDimensions
                 : new(1920, 1080));
@@ -341,8 +329,14 @@ namespace Hypernex.Game
                     fs.Write(data, 0, data.Length);
                     fs.Dispose();
                     Destroy(copiedRt);
-                    SetCameraProperties((int)CameraRenderOutput.rectTransform.rect.width / 2,
-                        (int)CameraRenderOutput.rectTransform.rect.height / 2, AntialiasingMode.None);
+                    if(IsOutputting)
+                        SetCameraProperties(Screen.width, Screen.height);
+                    else
+                    {
+                        SetCameraProperties((int) CameraRenderOutput.rectTransform.rect.width / 2,
+                            (int) CameraRenderOutput.rectTransform.rect.height / 2);
+                        LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
+                    }
                     Logger.CurrentLogger.Log("Saved Photo to " + file);
                     requestCapture = false;
                     isCapturing = false;

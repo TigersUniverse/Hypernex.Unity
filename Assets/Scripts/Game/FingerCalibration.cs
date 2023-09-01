@@ -48,6 +48,7 @@ namespace Hypernex.Game
                     for (int y = 0; y < avatarBones.Length; y++)
                     {
                         Transform t = avatarBones[y];
+                        if(t == null) continue;
                         initialAvatarBones.Add(t.localRotation);
                         //initialXRBones.Add(h.orientations[GetIndexFromFingerTransforms(x, y)]);
                     }

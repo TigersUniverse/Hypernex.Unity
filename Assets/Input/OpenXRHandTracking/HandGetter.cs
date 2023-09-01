@@ -86,7 +86,9 @@ public class HandGetter : MonoBehaviour
         HandTrackingFeature hf=OpenXRSettings.Instance.GetFeature<HandTrackingFeature>();
         if(hf==null || hf.enabled==false)
         {
+#if !UNITY_ANDROID
             print("You need to enable the openXR hand tracking support extension ");
+#endif
         }
         
         if(hf)

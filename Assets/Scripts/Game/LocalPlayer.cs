@@ -77,6 +77,7 @@ namespace Hypernex.Game
 
         public List<IBinding> Bindings = new();
 
+        public CoroutineRunner CoroutineRunner;
         public DashboardManager Dashboard;
         public XROrigin XROrigin;
         public Camera Camera;
@@ -683,7 +684,7 @@ namespace Hypernex.Game
             }).Start();
         }
 
-        private void SwitchVR()
+        public void SwitchVR()
         {
             if(IsVR)
             {
@@ -729,7 +730,7 @@ namespace Hypernex.Game
             Bindings.Add(rightBinding);
             VRInputListener.AddXRBinding(rightBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
-            CoroutineRunner.Instance.Run(PositionDashboardOnVRSwitch());
+            CoroutineRunner.Run(PositionDashboardOnVRSwitch());
         }
 
         private IEnumerator PositionDashboardOnVRSwitch()
