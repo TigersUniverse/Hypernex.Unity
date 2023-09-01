@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
+using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
@@ -215,6 +216,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public void Respawn()
         {
+            if (!isLocalAvatar)
+                return;
             if (LocalPlayer.Instance == null || GameInstance.FocusedInstance == null)
                 return;
             if (!GameInstance.FocusedInstance.World.AllowRespawn)
@@ -227,6 +230,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (netPlayer != null)
                 return netPlayer.User.Bio.Pronouns;
             return APIPlayer.APIUser.Bio.Pronouns;
+        }
+
+        public void SetAvatar(string avatarId)
+        {
+            if (!isLocalAvatar)
+                return;
+            ConfigManager.SelectedConfigUser.CurrentAvatar = avatarId;
+            if(LocalPlayer.Instance != null)
+                LocalPlayer.Instance.LoadAvatar();
+            ConfigManager.SaveConfigToFile();
         }
     }
 }

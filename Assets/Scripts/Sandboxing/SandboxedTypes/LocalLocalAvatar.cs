@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
+using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
@@ -138,6 +139,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (APIPlayer.APIUser == null)
                 return null;
             return APIPlayer.APIUser.Bio.Pronouns;
+        }
+
+        public static void SetAvatar(string avatarId)
+        {
+            if (LocalPlayer.Instance == null || ConfigManager.SelectedConfigUser == null)
+                return;
+            ConfigManager.SelectedConfigUser.CurrentAvatar = avatarId;
+            if(LocalPlayer.Instance != null)
+                LocalPlayer.Instance.LoadAvatar();
+            ConfigManager.SaveConfigToFile();
         }
     }
 }

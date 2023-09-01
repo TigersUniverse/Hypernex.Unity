@@ -40,6 +40,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return items.ToArray();
             }
         }
+        
+        public bool CanCollide
+        {
+            get
+            {
+                UnityEngine.Collider c = item.t.GetComponent<UnityEngine.Collider>();
+                if (c == null)
+                    return false;
+                return c.enabled;
+            }
+        }
 
         public ReadonlyItem GetChildByIndex(int i) => Children[i];
 

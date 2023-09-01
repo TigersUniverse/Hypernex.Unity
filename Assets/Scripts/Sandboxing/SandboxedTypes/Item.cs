@@ -72,6 +72,24 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             }
         }
 
+        public bool CanCollide
+        {
+            get
+            {
+                UnityEngine.Collider c = t.GetComponent<UnityEngine.Collider>();
+                if (c == null)
+                    return false;
+                return c.enabled;
+            }
+            set
+            {
+                UnityEngine.Collider c = t.GetComponent<UnityEngine.Collider>();
+                if (c == null)
+                    return;
+                c.enabled = value;
+            }
+        }
+
         public Item GetChildByIndex(int i)
         {
             Transform tr = t.GetChild(i);
