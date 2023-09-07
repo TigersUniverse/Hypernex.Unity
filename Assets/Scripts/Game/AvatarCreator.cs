@@ -130,6 +130,7 @@ namespace Hypernex.Game
             SetupLipSyncLocalPlayer();
             InitMaterialDescriptors(a.transform);
             SetLayer(7);
+            CompleteBoth();
         }
 
         public AvatarCreator(NetPlayer np, Avatar a)
@@ -179,6 +180,12 @@ namespace Hypernex.Game
                 });
                 playableGraph.Play();
             }
+            foreach (SkinnedMeshRenderer skinnedMeshRenderer in Avatar.gameObject
+                         .GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                skinnedMeshRenderer.updateWhenOffscreen = true;
+                skinnedMeshRenderers.Add(skinnedMeshRenderer);
+            }
 #if DYNAMIC_BONE
             foreach (DynamicBone dynamicBone in Avatar.transform.GetComponentsInChildren<DynamicBone>())
             {
@@ -188,6 +195,13 @@ namespace Hypernex.Game
             SetupLipSyncNetPlayer();
             InitMaterialDescriptors(a.transform);
             SetLayer(10);
+            CompleteBoth();
+        }
+
+        private void CompleteBoth()
+        {
+            Animator an = Avatar.transform.GetComponent<Animator>();
+            an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
         }
 
         private void SetupAnimators()

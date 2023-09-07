@@ -79,9 +79,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public Collider[] OverlapBox(float3 center, float3 halfExtents)
         {
-            UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
+            /*UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
             UnityEngine.Physics.OverlapBoxNonAlloc(NetworkConversionTools.float3ToVector3(center),
-                NetworkConversionTools.float3ToVector3(halfExtents), results);
+                NetworkConversionTools.float3ToVector3(halfExtents), results);*/
+            UnityEngine.Collider[] results = UnityEngine.Physics.OverlapBox(
+                NetworkConversionTools.float3ToVector3(center), NetworkConversionTools.float3ToVector3(halfExtents));
             List<Collider> c = new List<Collider>();
             foreach (UnityEngine.Collider collider in results)
                 c.Add(new Collider(collider));
@@ -90,9 +92,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public Collider[] OverlapBox(float3 center, float3 halfExtents, float4 orientation)
         {
-            UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
+            /*UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
             UnityEngine.Physics.OverlapBoxNonAlloc(NetworkConversionTools.float3ToVector3(center),
                 NetworkConversionTools.float3ToVector3(halfExtents), results,
+                NetworkConversionTools.float4ToQuaternion(orientation));*/
+            UnityEngine.Collider[] results = UnityEngine.Physics.OverlapBox(
+                NetworkConversionTools.float3ToVector3(center), NetworkConversionTools.float3ToVector3(halfExtents),
                 NetworkConversionTools.float4ToQuaternion(orientation));
             List<Collider> c = new List<Collider>();
             foreach (UnityEngine.Collider collider in results)
@@ -102,9 +107,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public Collider[] OverlapCapsule(float3 point0, float3 point1, float radius)
         {
-            UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
+            /*UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
             UnityEngine.Physics.OverlapCapsuleNonAlloc(NetworkConversionTools.float3ToVector3(point0),
-                NetworkConversionTools.float3ToVector3(point1), radius, results);
+                NetworkConversionTools.float3ToVector3(point1), radius, results);*/
+            UnityEngine.Collider[] results = UnityEngine.Physics.OverlapCapsule(
+                NetworkConversionTools.float3ToVector3(point0), NetworkConversionTools.float3ToVector3(point1), radius);
             List<Collider> c = new List<Collider>();
             foreach (UnityEngine.Collider collider in results)
                 c.Add(new Collider(collider));
@@ -113,9 +120,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public Collider[] OverlapSphere(float3 position, float radius)
         {
-            UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
+            /*UnityEngine.Collider[] results = Array.Empty<UnityEngine.Collider>();
             UnityEngine.Physics.OverlapSphereNonAlloc(NetworkConversionTools.float3ToVector3(position), radius,
-                results);
+                results);*/
+            UnityEngine.Collider[] results =
+                UnityEngine.Physics.OverlapSphere(NetworkConversionTools.float3ToVector3(position), radius);
             List<Collider> c = new List<Collider>();
             foreach (UnityEngine.Collider collider in results)
                 c.Add(new Collider(collider));
@@ -124,8 +133,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public RaycastHit[] Raycast(Ray ray, float maxDistance = Mathf.Infinity)
         {
-            UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
-            UnityEngine.Physics.RaycastNonAlloc(ray.r, results, maxDistance);
+            //UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
+            //UnityEngine.Physics.RaycastNonAlloc(ray.r, results, maxDistance);
+            UnityEngine.RaycastHit[] results = UnityEngine.Physics.RaycastAll(ray.r, maxDistance);
             List<RaycastHit> c = new List<RaycastHit>();
             foreach (UnityEngine.RaycastHit raycastHit in results)
                 c.Add(new RaycastHit(raycastHit));
@@ -134,9 +144,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public RaycastHit[] SphereCast(float3 origin, float radius, float3 direction, float maxDistance = Mathf.Infinity)
         {
-            UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
+            /*UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
             UnityEngine.Physics.SphereCastNonAlloc(NetworkConversionTools.float3ToVector3(origin), radius,
-                NetworkConversionTools.float3ToVector3(direction), results, maxDistance);
+                NetworkConversionTools.float3ToVector3(direction), results, maxDistance);*/
+            UnityEngine.RaycastHit[] results = UnityEngine.Physics.SphereCastAll(
+                NetworkConversionTools.float3ToVector3(origin), radius,
+                NetworkConversionTools.float3ToVector3(direction), maxDistance);
             List<RaycastHit> c = new List<RaycastHit>();
             foreach (UnityEngine.RaycastHit raycastHit in results)
                 c.Add(new RaycastHit(raycastHit));

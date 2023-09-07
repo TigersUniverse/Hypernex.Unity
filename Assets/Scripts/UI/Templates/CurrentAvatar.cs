@@ -10,6 +10,8 @@ namespace Hypernex.UI.Templates
 {
     public class CurrentAvatar : MonoBehaviour
     {
+        public static CurrentAvatar Instance { get; internal set; }
+        
         public LoginPageTopBarButton CurrentAvatarPage;
         public DashboardManager DashboardManager;
         public TMP_Text AvatarNameLabel;
@@ -109,7 +111,10 @@ namespace Hypernex.UI.Templates
 
         private void Update()
         {
-            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null || !LocalPlayer.Instance.avatar.calibrated)
+            if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null ||
+                !LocalPlayer.Instance.avatar.calibrated || (GameInstance.FocusedInstance != null &&
+                                                            GameInstance.FocusedInstance.World != null &&
+                                                            !GameInstance.FocusedInstance.World.AllowScaling))
             {
                 AvatarScaleSlider.gameObject.SetActive(false);
                 return;

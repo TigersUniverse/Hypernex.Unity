@@ -63,6 +63,8 @@ namespace Hypernex.Game
             return (c, f);
         }
 
+        public bool IsGrabbed() => ObjectGrabbing != null;
+
         private void Register(Transform from, IBinding instanceBinding)
         {
             GameObject o = new GameObject(gameObject.name + "_" + Guid.NewGuid());

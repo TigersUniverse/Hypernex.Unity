@@ -6,6 +6,7 @@ using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 
@@ -39,6 +40,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return localPlayer.avatar;
             return netPlayer.Avatar;
         }
+        
+        public bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
 
         public Item GetAvatarObject(HumanBodyBones humanBodyBones)
         {
@@ -212,6 +215,20 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 AssignedTags.Remove(tag);
             if (LocalPlayer.MorePlayerAssignedTags.Contains(tag))
                 LocalPlayer.MorePlayerAssignedTags.Remove(tag);
+        }
+        
+        public void Scale(float scale)
+        {
+            if (!isLocalAvatar || (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null &&
+                                   !GameInstance.FocusedInstance.World.AllowScaling))
+                return;
+            if (LocalPlayer.Instance == null || CurrentAvatar.Instance == null)
+                return;
+            if(LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
+            CurrentAvatar.Instance.SizeAvatar(scale);
+            if(!LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
         }
 
         public void Respawn()

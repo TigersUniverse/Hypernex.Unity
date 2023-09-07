@@ -11,6 +11,7 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
 using Nexbox;
@@ -40,6 +41,7 @@ public class Init : MonoBehaviour
     public AudioMixerGroup VoiceGroup;
     public OverlayManager OverlayManager;
     public List<TMP_Text> VersionLabels = new();
+    public CurrentAvatar ca;
 
     private string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
@@ -139,6 +141,7 @@ public class Init : MonoBehaviour
                         FaceTrackingManager.Init(targetStreamingPath)));
             }
         };
+        CurrentAvatar.Instance = ca;
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.SafeSwitchScene(1, null,
                 s =>

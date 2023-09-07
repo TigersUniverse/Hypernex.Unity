@@ -21,15 +21,15 @@ namespace Hypernex.Game
         public Action<Vector3> OnForce = force => { };
         public Action OnSteal = () => { };
 
-        private string networkOwner;
+        public string NetworkOwner { get; private set; }
         private Coroutine lastCoroutine;
         private Queue<WorldObjectUpdate> msgs = new();
         private CancellationTokenSource cts;
         private Mutex mutex = new();
         private bool isAlwaysStealing;
 
-        public bool IsOwned() => !(string.IsNullOrEmpty(networkOwner) || networkOwner == String.Empty || networkOwner == "");
-        public bool IsOwnedByLocalPlayer() => networkOwner == APIPlayer.APIUser.Id;
+        public bool IsOwned() => !(string.IsNullOrEmpty(NetworkOwner) || NetworkOwner == String.Empty || NetworkOwner == "");
+        public bool IsOwnedByLocalPlayer() => NetworkOwner == APIPlayer.APIUser.Id;
 
         public void Claim()
         {
@@ -78,7 +78,7 @@ namespace Hypernex.Game
             }
             else
             {
-                QuickInvoke.InvokeActionOnMainThread(new Action(() => networkOwner = String.Empty));
+                QuickInvoke.InvokeActionOnMainThread(new Action(() => NetworkOwner = String.Empty));
                 Dispose();
                 if (GameInstance.FocusedInstance != null)
                 {
@@ -96,12 +96,12 @@ namespace Hypernex.Game
         internal void HandleNetworkUpdate(WorldObjectUpdate worldObjectUpdate)
         {
             QuickInvoke.InvokeActionOnMainThread(new Action(() => UpdateTransform(worldObjectUpdate)));
-            networkOwner = worldObjectUpdate.Auth.UserId;
+            NetworkOwner = worldObjectUpdate.Auth.UserId;
             NetworkSteal = worldObjectUpdate.CanBeStolen;
             switch (worldObjectUpdate.Action)
             {
                 case WorldObjectAction.Claim:
-                    networkOwner = worldObjectUpdate.Auth.UserId;
+                    NetworkOwner = worldObjectUpdate.Auth.UserId;
                     NetworkSteal = worldObjectUpdate.CanBeStolen;
                     //UpdateTransform(worldObjectUpdate);
                     break;
@@ -113,9 +113,9 @@ namespace Hypernex.Game
                         QuickInvoke.InvokeActionOnMainThread(OnSteal);
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                     {
-                        if(networkOwner == worldObjectUpdate.Auth.UserId)
+                        if(NetworkOwner == worldObjectUpdate.Auth.UserId)
                             Dispose();
-                        networkOwner = String.Empty;
+                        NetworkOwner = String.Empty;
                     }));
                     /*QuickInvoke.InvokeActionOnMainThread(OnForce,
                         NetworkConversionTools.float3ToVector3(worldObjectUpdate.Velocity));*/
@@ -126,7 +126,7 @@ namespace Hypernex.Game
 
         private void UpdateTransform(WorldObjectUpdate worldObjectUpdate)
         {
-            networkOwner = worldObjectUpdate.Auth.UserId;
+            NetworkOwner = worldObjectUpdate.Auth.UserId;
             NetworkSteal = worldObjectUpdate.CanBeStolen;
             if (transform.parent == null)
             {
@@ -170,7 +170,7 @@ namespace Hypernex.Game
                 CanBeStolen = CanSteal || isAlwaysStealing,
                 Object = new NetworkedObject
                 {
-                    ObjectLocation = root.name + '/' + AnimationUtility.CalculateTransformPath(transform, root),
+                    ObjectLocation = transform.parent != null ? root.name + '/' + AnimationUtility.CalculateTransformPath(transform, root) : transform.name,
                     Position = NetworkConversionTools.Vector3Tofloat3(pos),
                     Rotation = NetworkConversionTools.QuaternionTofloat4(
                         new Quaternion(ea.x, ea.y, ea.z, 0)),
@@ -186,7 +186,7 @@ namespace Hypernex.Game
                 return WorldObjectAction.Update;
             QuickInvoke.InvokeActionOnMainThread(new Action(() =>
             {
-                networkOwner = APIPlayer.APIUser.Id;
+                NetworkOwner = APIPlayer.APIUser.Id;
                 NetworkSteal = CanSteal;
             }));
             return WorldObjectAction.Claim;

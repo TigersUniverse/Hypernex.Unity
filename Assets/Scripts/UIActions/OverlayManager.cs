@@ -38,7 +38,7 @@ namespace Hypernex.UIActions
             Instance = this;
             cts = new CancellationTokenSource();
             coroutine = StartCoroutine(MessageShowLoop());
-            UnityLogger.OnLog += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+            /*UnityLogger.OnLog += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
             {
                 Header = "Info",
                 Description = o.ToString()
@@ -57,7 +57,11 @@ namespace Hypernex.UIActions
             {
                 Header = "Exception Raised",
                 Description = o.ToString()
-            });
+            });*/
+            UnityLogger.OnLog += o => ConsoleTemplate.AddMessage($"[GAME] {o}");
+            UnityLogger.OnWarn += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 1);
+            UnityLogger.OnError += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 2);
+            UnityLogger.OnCritical += o => ConsoleTemplate.AddMessage($"[CRITICAL-GAME] {o}", 2);
         }
 
         private IEnumerator MessageShowLoop()

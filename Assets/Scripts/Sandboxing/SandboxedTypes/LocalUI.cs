@@ -1,6 +1,4 @@
 ﻿using System;
-using Hypernex.CCK.Unity;
-using Hypernex.Game;
 using Nexbox;
 using TMPro;
 using UnityEngine;
@@ -11,21 +9,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public static class LocalUI
     {
-        private static Object GetObjectFromWorldResource(string asset)
-        {
-            if (GameInstance.FocusedInstance == null)
-                return null;
-            foreach (ScriptAsset worldScriptAsset in GameInstance.FocusedInstance.World.ScriptAssets)
-            {
-                if (worldScriptAsset.AssetName == asset)
-                    return worldScriptAsset.Asset;
-            }
-            return null;
-        }
-        
         public static void SetImageFromAsset(Item item, string asset)
         {
-            Object a = GetObjectFromWorldResource(asset);
+            Object a = SandboxTools.GetObjectFromWorldResource(asset);
             if (a == null)
                 return;
             Image i = item.t.gameObject.GetComponent<Image>();

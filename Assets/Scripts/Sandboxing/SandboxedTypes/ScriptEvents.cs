@@ -1,5 +1,6 @@
 ﻿using System;
 using Hypernex.Game;
+using Hypernex.Tools;
 using Nexbox;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -21,14 +22,23 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             switch (scriptEvent)
             {
                 case ScriptEvent.OnUserJoin:
-                    OnUserJoin += userid => SandboxFuncTools.InvokeSandboxFunc(callback, userid);
+                    OnUserJoin += userid => QuickInvoke.InvokeActionOnMainThread((Action) delegate
+                    {
+                        SandboxFuncTools.InvokeSandboxFunc(callback, userid);
+                    });
                     break;
                 case ScriptEvent.OnUserLeave:
-                    OnUserLeave += userid => SandboxFuncTools.InvokeSandboxFunc(callback, userid);
+                    OnUserLeave += userid => QuickInvoke.InvokeActionOnMainThread((Action) delegate
+                    {
+                        SandboxFuncTools.InvokeSandboxFunc(callback, userid);
+                    });
                     break;
                 case ScriptEvent.OnServerNetworkEvent:
-                    OnServerNetworkEvent += (eventName, eventArgs) =>
-                        SandboxFuncTools.InvokeSandboxFunc(callback, eventName, eventArgs);
+                    OnServerNetworkEvent += (eventName, eventArgs) => QuickInvoke.InvokeActionOnMainThread((Action)
+                        delegate
+                        {
+                            SandboxFuncTools.InvokeSandboxFunc(callback, eventName, eventArgs);
+                        });
                     break;
             }
         }

@@ -2,6 +2,8 @@
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UIActions;
+using Hypernex.UIActions.Data;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -21,6 +23,7 @@ namespace Hypernex.UI.Templates
 
         private SafeInstance Instance;
         private WorldMeta WorldMeta;
+        private User Host;
 
         private void CreateUserInstanceCard(User user, GameObject overlay)
         {
@@ -41,6 +44,7 @@ namespace Hypernex.UI.Templates
             InstanceVisibility.text = instance.InstancePublicity.ToString();
             Instance = instance;
             WorldMeta = worldMeta;
+            Host = host;
             foreach (string userId in instance.ConnectedUsers)
                 APIPlayer.APIObject.GetUser(result =>
                 {
@@ -58,6 +62,11 @@ namespace Hypernex.UI.Templates
                     GameInstance.FocusedInstance.gameServerId == Instance.GameServerId &&
                     GameInstance.FocusedInstance.instanceId == Instance.InstanceId)
                     return;
+                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                {
+                    Header = "Joining Instance",
+                    Description = $"Joining instance for World {WorldMeta.Name}, hosted by {Host.Username}, Please Wait"
+                });
                 gameObject.SetActive(false);
                 SocketManager.JoinInstance(Instance);
                 Users.Clear();

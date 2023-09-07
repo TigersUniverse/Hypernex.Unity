@@ -24,6 +24,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using Object = UnityEngine.Object;
+using Physics = UnityEngine.Physics;
 
 namespace Hypernex.Game
 {
@@ -101,6 +102,7 @@ namespace Hypernex.Game
         public Texture2D Thumbnail;
         public InstancePublicity Publicity;
         public Dictionary<AudioSource, float> worldAudios = new();
+        public bool lockAvatarSwitching;
 
         private HypernexInstanceClient client;
         internal Scene loadedScene;
@@ -477,7 +479,9 @@ namespace Hypernex.Game
                     if (open)
                         Open();
                     foreach (NexboxScript worldLocalScript in World.LocalScripts)
-                        sandboxes.Add(new Sandbox(worldLocalScript, this));
+                        sandboxes.Add(new Sandbox(worldLocalScript, this, World.gameObject));
+                    foreach (LocalScript ls in Object.FindObjectsByType<LocalScript>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                        sandboxes.Add(new Sandbox(ls.NexboxScript, this, ls.gameObject));
                     if (LocalPlayer.Instance.Dashboard.IsVisible)
                         LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
                 }
@@ -543,6 +547,7 @@ namespace Hypernex.Game
                 return;
             isDisposed = true;
             FocusedInstance = null;
+            Physics.gravity = new Vector3(0, LocalPlayer.Instance.Gravity, 0);
             foreach (SandboxFunc sandboxAction in Runtime.OnFixedUpdates)
                 Runtime.RemoveOnFixedUpdate(sandboxAction);
             foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)

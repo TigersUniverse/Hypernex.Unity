@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
+using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
@@ -112,7 +113,9 @@ namespace Hypernex.Game
                         weightedObjectUpdates.Clear();
                         Avatar = new AvatarCreator(this, a);
                         foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
+                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
+                        foreach (LocalScript ls in a.GetComponentsInChildren<LocalScript>())
+                            Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
                                 new Vector3(0, transform.localScale.y + 0.9f, 0),
@@ -367,7 +370,8 @@ namespace Hypernex.Game
                 LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
                 LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
                 Avatar.audioSource.volume = playerUpdate.IsSpeaking ? volume : 0f;
-                Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
+                if(Avatar != null && Avatar.lipSyncContext != null)
+                    Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
             }
         }
 

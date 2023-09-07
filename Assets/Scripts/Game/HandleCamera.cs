@@ -8,6 +8,7 @@ using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 using Hypernex.UI;
+using Hypernex.UIActions;
 using Hypernex.UIActions.Data;
 using TMPro;
 using UnityEngine;
@@ -337,7 +338,11 @@ namespace Hypernex.Game
                             (int) CameraRenderOutput.rectTransform.rect.height / 2);
                         LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
                     }
-                    Logger.CurrentLogger.Log("Saved Photo to " + file);
+                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    {
+                        Header = "Saved Photo",
+                        Description = "Saved Photo to " + file
+                    });
                     requestCapture = false;
                     isCapturing = false;
                 }

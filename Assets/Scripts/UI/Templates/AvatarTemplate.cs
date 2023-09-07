@@ -6,6 +6,7 @@ using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UIActions;
+using Hypernex.UIActions.Data;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -108,18 +109,39 @@ namespace Hypernex.UI.Templates
             AvatarPage.Show();
         }
 
-        public void Start()
+        private void Start()
         {
             APIPlayer.OnUserRefresh += u => CachedAvatarMeta.Clear();
             EquipAvatarButton.onClick.AddListener(() =>
             {
+                if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null &&
+                    GameInstance.FocusedInstance.World.LockAvatarSwitching)
+                    return;
                 //CreateInstanceTemplate.Render(lastAvatarMeta, lastCreator);
                 ConfigManager.SelectedConfigUser.CurrentAvatar = lastAvatarMeta.Id;
                 if(LocalPlayer.Instance != null)
+                {
                     LocalPlayer.Instance.LoadAvatar();
+                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    {
+                        Header = "Equipping Avatar",
+                        Description = $"Equipping Avatar {lastAvatarMeta.Name}, Please Wait."
+                    });
+                }
                 ConfigManager.SaveConfigToFile();
                 previousPage.Show();
             });
+        }
+
+        private void Update()
+        {
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null &&
+                GameInstance.FocusedInstance.World.LockAvatarSwitching)
+            {
+                EquipAvatarButton.gameObject.SetActive(false);
+                return;
+            }
+            EquipAvatarButton.gameObject.SetActive(true);
         }
     }
 }

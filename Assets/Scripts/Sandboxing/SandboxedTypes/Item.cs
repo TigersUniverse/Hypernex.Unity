@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 using UnityEngine;
@@ -23,6 +24,18 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             get => t.gameObject.activeSelf;
             set => t.gameObject.SetActive(value);
+        }
+
+        public Item Parent
+        {
+            get => new (t.parent);
+            set
+            {
+                Transform root = AnimationUtility.GetRootOfChild(t);
+                if (root.GetComponent<LocalPlayer>() != null || root.GetComponent<NetPlayer>() != null)
+                    return;
+                t.parent = value.t;
+            }
         }
         
         public float3 Position
@@ -66,7 +79,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 {
                     Item item = GetChildByIndex(i);
                     if(item == null) continue;
-                    items.Add(item);
+                    Transform root = AnimationUtility.GetRootOfChild(item.t);
+                    if (root.GetComponent<LocalPlayer>() == null && root.GetComponent<NetPlayer>() == null)
+                        items.Add(item);
                 }
                 return items.ToArray();
             }

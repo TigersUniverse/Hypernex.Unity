@@ -50,6 +50,8 @@ namespace Hypernex.UIActions
         public GameObject RestartPanel;
         public DynamicScroll FaceConfig;
 
+        public GameObject ConsolePanel;
+
         private Action lastVisiblePanel;
 
         public void OnGeneralSettings()
@@ -233,6 +235,13 @@ namespace Hypernex.UIActions
                 }
             }
             catch (Exception e){}
+        }
+        
+        public void OnConsoleSettings()
+        {
+            AllPanels.ForEach(x => x.SetActive(false));
+            ConsolePanel.SetActive(true);
+            lastVisiblePanel = OnConsoleSettings;
         }
 
         private void OnEnable()

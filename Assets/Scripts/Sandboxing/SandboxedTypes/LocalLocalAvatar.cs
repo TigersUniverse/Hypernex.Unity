@@ -7,6 +7,7 @@ using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 
@@ -54,14 +55,33 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             if (LocalPlayer.Instance == null)
                 return;
+            if(LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+            LocalPlayer.Instance.CharacterController.enabled = false;
             LocalPlayer.Instance.transform.position = NetworkConversionTools.float3ToVector3(position);
+            LocalPlayer.Instance.CharacterController.enabled = true;
         }
 
         public static void Rotate(float4 rotation)
         {
             if (LocalPlayer.Instance == null)
                 return;
+            if(LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
+            LocalPlayer.Instance.CharacterController.enabled = false;
             LocalPlayer.Instance.transform.rotation = NetworkConversionTools.float4ToQuaternion(rotation);
+            LocalPlayer.Instance.CharacterController.enabled = true;
+        }
+
+        public static void Scale(float scale)
+        {
+            if (LocalPlayer.Instance == null || CurrentAvatar.Instance == null)
+                return;
+            if(LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
+            CurrentAvatar.Instance.SizeAvatar(scale);
+            if(!LocalPlayer.Instance.Dashboard.IsVisible)
+                LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
         }
 
         public static AvatarParameter[] GetAvatarParameters()

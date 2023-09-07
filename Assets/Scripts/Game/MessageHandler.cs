@@ -2,6 +2,7 @@
 using Hypernex.Networking.Messages;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UI.Templates;
 using Nexport;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
@@ -81,6 +82,13 @@ namespace Hypernex.Game
                         (NetworkedEvent) Convert.ChangeType(msgMeta.Data, typeof(NetworkedEvent));
                     gameInstance.ScriptEvents.OnServerNetworkEvent.Invoke(networkedEvent.EventName,
                         networkedEvent.Data.ToArray());
+                    break;
+                }
+                case "Hypernex.Networking.Messages.ServerConsoleLog":
+                {
+                    ServerConsoleLog serverConsoleLog =
+                        (ServerConsoleLog) Convert.ChangeType(msgMeta.Data, typeof(ServerConsoleLog));
+                    ConsoleTemplate.AddMessage(serverConsoleLog);
                     break;
                 }
             }

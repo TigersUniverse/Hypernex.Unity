@@ -67,11 +67,55 @@ namespace Hypernex.Game
 
         //private Dictionary<InputDevice, GameObject> WorldTrackers = new();
         //private List<InputDevice> trackers = new();
+
+        private float _walkSpeed = 5f;
+        public float WalkSpeed
+        {
+            get
+            {
+                if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    return GameInstance.FocusedInstance.World.WalkSpeed;
+                return _walkSpeed;
+            }
+            set => _walkSpeed = value;
+        }
+
+        private float _runSpeed = 10f;
+        public float RunSpeed
+        {
+            get
+            {
+                if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    return GameInstance.FocusedInstance.World.RunSpeed;
+                return _runSpeed;
+            }
+            set => _runSpeed = value;
+        }
         
-        public float WalkSpeed { get; set; } = 5f;
-        public float RunSpeed { get; set; } = 10f;
-        public float JumpHeight { get; set; } = 1.0f;
-        public float Gravity { get; set; } = -9.87f;
+        private float _jumpHeight = 1.0f;
+        public float JumpHeight
+        {
+            get
+            {
+                if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    return GameInstance.FocusedInstance.World.JumpHeight;
+                return _jumpHeight;
+            }
+            set => _jumpHeight = value;
+        }
+        
+        private float _gravity = -9.87f;
+        public float Gravity
+        {
+            get
+            {
+                if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    return GameInstance.FocusedInstance.World.Gravity;
+                return _gravity;
+            }
+            set => _gravity = value;
+        }
+        
         public bool LockMovement { get; set; }
         public bool LockCamera { get; set; }
 
@@ -172,13 +216,17 @@ namespace Hypernex.Game
                 GameObject searchSpawn;
                 if (s == null)
                     searchSpawn = SceneManager.GetActiveScene().GetRootGameObjects()
-                        .FirstOrDefault(x => x.name.ToLower() == "Spawn");
+                        .FirstOrDefault(x => x.name.ToLower() == "spawn");
                 else
                     searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "Spawn");
                 if (searchSpawn != null)
                     spawnPosition = searchSpawn.transform.position;
             }
+            CharacterController.enabled = false;
             transform.position = spawnPosition;
+            if(Dashboard.IsVisible)
+                Dashboard.PositionDashboard(this);
+            CharacterController.enabled = true;
         }
 
         private void SetMicrophone()
@@ -444,7 +492,10 @@ namespace Hypernex.Game
                 CurrentAvatarDisplay.SizeAvatar(1f);
                 avatar = new AvatarCreator(this, a, IsVR);
                 foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
-                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform));
+                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
+                        avatar.Avatar.gameObject));
+                foreach (LocalScript ls in a.GetComponentsInChildren<LocalScript>())
+                    avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
@@ -580,7 +631,7 @@ namespace Hypernex.Game
         {
             if (Instance != null)
             {
-                Logger.CurrentLogger.Log("LocalPlayer already exists!");
+                Logger.CurrentLogger.Warn("LocalPlayer already exists!");
                 Destroy(this);
                 return;
             }
@@ -791,6 +842,7 @@ namespace Hypernex.Game
             else
                 move = transform.forward * (binding.Up + binding.Down * -1) +
                        transform.right * (binding.Left * -1 + binding.Right);
+            move = move.normalized;
             s_ = binding.Button2 ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)

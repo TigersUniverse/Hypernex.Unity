@@ -20,6 +20,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public string Name => item.Name;
 
         public bool Enabled => item.Enabled;
+        public ReadonlyItem Parent => new(item.t.parent);
         
         public float3 Position => item.Position;
         public float4 Rotation => item.Rotation;
