@@ -34,7 +34,7 @@ namespace Hypernex.Tools
                 SelectedDevice = device;
         }
 
-        public void StartRecording(int frequency = 48000)
+        public void StartRecording(int frequency = 24000)
         {
             if (IsRecording || string.IsNullOrEmpty(SelectedDevice))
                 return;
