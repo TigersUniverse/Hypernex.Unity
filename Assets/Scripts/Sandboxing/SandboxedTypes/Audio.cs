@@ -12,6 +12,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return a;
         }
 
+        public static bool IsValid(Item item) => GetAudioSource(item) != null;
+
         public static bool IsPlaying(Item item) => GetAudioSource(item)?.isPlaying ?? false;
         public static bool IsMuted(Item item) => GetAudioSource(item)?.mute ?? false;
         public static bool IsLooping(Item item) => GetAudioSource(item)?.loop ?? false;
