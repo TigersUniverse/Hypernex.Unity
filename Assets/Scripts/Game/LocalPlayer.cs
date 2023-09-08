@@ -843,7 +843,7 @@ namespace Hypernex.Game
             else
                 move = transform.forward * (binding.Up + binding.Down * -1) +
                        transform.right * (binding.Left * -1 + binding.Right);
-            move = move.normalized;
+            move = Vector3.ClampMagnitude(move, 1);
             s_ = binding.Button2 ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
