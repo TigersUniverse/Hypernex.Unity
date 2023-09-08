@@ -657,7 +657,8 @@ namespace Hypernex.Game
                 if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null &&
                     ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.Opus && opusHandler != null)
                     opusHandler.EncodeMicrophone(samples);
-                else if(ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.RAW)
+                else if(GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null && 
+                        ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.RAW)
                     OnAudioRAW(samples, samples.Length);
                 avatar?.ApplyAudioClipToLipSync(samples);
             };
