@@ -83,7 +83,8 @@ namespace Hypernex.Sandboxing
             ["Pronouns"] = typeof(Pronouns),
             ["ScriptEvent"] = typeof(ScriptEvent),
             ["ScriptEvents"] = typeof(ScriptEvents),
-            ["Audio"] = typeof(Audio)
+            ["Audio"] = typeof(Audio),
+            ["PhysicsBody"] = typeof(PhysicsBody)
         });
 
         public static void Forward(GameObject attached, IInterpreter interpreter, SandboxRestriction restriction,

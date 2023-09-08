@@ -133,6 +133,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public RaycastHit[] Raycast(Ray ray, float maxDistance = Mathf.Infinity)
         {
+            if (UnityEngine.Physics.Raycast(ray.r, out var hit, maxDistance))
+            {
+                return new RaycastHit[] { new RaycastHit(hit) };
+            }
+            return new RaycastHit[0];
+        }
+        
+        public RaycastHit[] RaycastAll(Ray ray, float maxDistance = Mathf.Infinity)
+        {
             //UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
             //UnityEngine.Physics.RaycastNonAlloc(ray.r, results, maxDistance);
             UnityEngine.RaycastHit[] results = UnityEngine.Physics.RaycastAll(ray.r, maxDistance);
@@ -143,6 +152,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         }
 
         public RaycastHit[] SphereCast(float3 origin, float radius, float3 direction, float maxDistance = Mathf.Infinity)
+        {
+            if (UnityEngine.Physics.SphereCast(
+                NetworkConversionTools.float3ToVector3(origin), radius,
+                NetworkConversionTools.float3ToVector3(direction), out var hit, maxDistance))
+                {
+                    return new RaycastHit[] { new RaycastHit(hit) };
+                }
+            return new RaycastHit[0];
+        }
+
+        public RaycastHit[] SphereCastAll(float3 origin, float radius, float3 direction, float maxDistance = Mathf.Infinity)
         {
             /*UnityEngine.RaycastHit[] results = Array.Empty<UnityEngine.RaycastHit>();
             UnityEngine.Physics.SphereCastNonAlloc(NetworkConversionTools.float3ToVector3(origin), radius,
