@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Hypernex.Networking.Messages;
 using UnityEngine;
 using UnityOpus;
@@ -11,12 +12,13 @@ namespace Hypernex.Tools
     public class OpusHandler : MonoBehaviour
     {
         public const int BITRATE = 96000;
-        private const int AUDIO_CLIP_LENGTH = 1024 * 6;
+        private const int AUDIO_CLIP_LENGTH = 512;
         private const int FRAME_SIZE = 120;
-        
+        private const int AUDIO_QUEUE_LENGTH = 5;
+
         public Action<byte[], int> OnEncoded = (bytes, i) => { };
         public Action<float[], int> OnDecoded = (floats, i) => { };
-        
+
         private Encoder encoder;
         private Decoder decoder;
         private Queue<float> pcmQueue = new();
@@ -26,6 +28,12 @@ namespace Hypernex.Tools
         private AudioSource source;
         private float[] audioClipData;
         private int head;
+        private int headAudio;
+        private int listIndex;
+        private int audioIndex;
+        private float[][] audioClipDataList;
+        private Queue<float> pcmQueueOut = new();
+        private Mutex listMutex = new();
 
         public static SamplingFrequency GetClosestFrequency(int frequency)
         {
@@ -48,11 +56,11 @@ namespace Hypernex.Tools
 
         public void EncodeMicrophone(float[] data)
         {
-            encoder ??= new Encoder(Mic.Frequency, NumChannels.Mono, OpusApplication.Audio)
+            encoder ??= new Encoder(Mic.Frequency, Mic.NumChannels, OpusApplication.Audio)
             {
                 Bitrate = BITRATE,
                 Complexity = 10,
-                Signal = OpusSignal.Music
+                Signal = OpusSignal.Voice
             };
             a(data);
         }
@@ -62,7 +70,9 @@ namespace Hypernex.Tools
             if (source.clip == null)
             {
                 source.clip = AudioClip.Create(playerVoice.Auth.UserId + "_voice", AUDIO_CLIP_LENGTH,
-                    playerVoice.Channels, playerVoice.SampleRate, false);
+                    playerVoice.Channels, playerVoice.SampleRate, true, ReaderCallback, PositionCallback);
+                source.loop = true;
+                source.Play();
             }
             switch (playerVoice.Encoder.ToLower())
             {
@@ -71,24 +81,94 @@ namespace Hypernex.Tools
                     PlayDecodedToVoice(d, playerVoice.EncodeLength);
                     break;
                 case "opus":
-                    decoder ??= new Decoder(GetClosestFrequency(playerVoice.SampleRate), NumChannels.Mono);
+                    decoder ??= new Decoder(GetClosestFrequency(playerVoice.SampleRate), playerVoice.Channels == 1 ? NumChannels.Mono : NumChannels.Stereo);
                     e(playerVoice.Bytes, playerVoice.EncodeLength);
                     break;
             }
         }
 
+        private void PositionCallback(int position)
+        {
+            if (listMutex.WaitOne(1))
+            {
+                headAudio = position;
+                listMutex.ReleaseMutex();
+            }
+        }
+
+        private void ReaderCallback(float[] data)
+        {
+            Array.Clear(data, 0, data.Length);
+            if (audioClipDataList == null)
+            {
+                return;
+            }
+            if (listMutex.WaitOne(1))
+            {
+                for (int i = 0; i < data.Length; i++)
+                {
+                    if (pcmQueueOut.Count > 0)
+                        data[i] = pcmQueueOut.Dequeue();
+                    // else
+                        // Debug.LogError("No more data!");
+                }
+                audioIndex = (audioIndex + 1) % audioClipDataList.Length;
+                headAudio += data.Length;
+                listMutex.ReleaseMutex();
+            }
+        }
+
+        /*
+        private void OnGUI()
+        {
+            if (source == null)
+                return;
+            GUILayout.BeginArea(Screen.safeArea);
+            GUILayout.Label($"Length: {audioClipData?.Length}");
+            GUILayout.Label($"Head: {head}");
+            GUILayout.Label($"HeadAudio: {headAudio}");
+            GUILayout.Label($"ListIndex: {listIndex}");
+            GUILayout.Label($"AudioIndex: {audioIndex}");
+            GUILayout.EndArea();
+        }
+        */
+
         public void PlayDecodedToVoice(float[] pcm, int pcmLength) {
-            if (audioClipData == null || audioClipData.Length != pcmLength) {
-                // assume that pcmLength will not change.
-                audioClipData = new float[pcmLength];
+            Debug.Assert(pcmLength > 0, $"pcmLength ({pcmLength}) < 0");
+            if (listMutex.WaitOne(0))
+            {
+                if (source != null && source.isPlaying && pcmQueueOut.Count == 0)
+                {
+                    // source.Stop();
+                    // Debug.Log("Stop", this);
+                    // head = 0;
+                }
+                if (audioClipDataList == null)
+                {
+                    audioClipDataList = new float[AUDIO_QUEUE_LENGTH][];
+                    for (int i = 0; i < audioClipDataList.Length; i++)
+                    {
+                        audioClipDataList[i] = new float[pcmLength];
+                    }
+                }
+                if (audioClipData == null || audioClipData.Length != pcmLength) {
+                    // assume that pcmLength will not change.
+                    audioClipData = new float[pcmLength];
+                }
+                Array.Copy(pcm, audioClipData, pcmLength);
+                // source.clip.SetData(audioClipData, head);
+                for (int i = 0; i < pcmLength; i++)
+                {
+                    pcmQueueOut.Enqueue(pcm[i]);
+                }
+                if (!source.isPlaying && pcmQueueOut.Count > 0) {
+                    // source.PlayDelayed(0.1f);
+                    source.Play();
+                    // Debug.Log("Play", this);
+                }
+                head += pcmLength;
+                listMutex.ReleaseMutex();
             }
-            Array.Copy(pcm, audioClipData, pcmLength);
-            source.clip.SetData(audioClipData, head);
-            head += pcmLength;
-            if (!source.isPlaying && head > AUDIO_CLIP_LENGTH / 2) {
-                source.Play();
-            }
-            head %= AUDIO_CLIP_LENGTH;
         }
 
         private void OnEnable()
@@ -122,6 +202,15 @@ namespace Hypernex.Tools
 
         private void Update()
         {
+            if (listMutex.WaitOne(0))
+            {
+                if (source != null && source.isPlaying && pcmQueueOut.Count == 0)
+                {
+                    source.Stop();
+                    // Debug.Log("Stop2", this);
+                }
+                listMutex.ReleaseMutex();
+            }
             if (pcmQueue.Count > FRAME_SIZE)
             {
                 for (int i = 0; i < FRAME_SIZE; i++)
