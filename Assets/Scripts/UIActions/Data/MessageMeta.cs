@@ -31,7 +31,7 @@ namespace Hypernex.UIActions.Data
             MessageUrgency = urgency;
             Buttons = buttons;
             OKText = "OK";
-            CancelText = "CancelText";
+            CancelText = "Cancel";
             YesText = "Yes";
             NoText = "No";
             Result = OnSubmit ?? (_ => { });

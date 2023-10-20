@@ -43,7 +43,6 @@ namespace Hypernex.Game
         private GameObject headAlign;
         internal GameObject voiceAlign;
         internal AudioSource audioSource;
-        internal OpusHandler opusHandler;
         private List<AvatarNearClip> avatarNearClips = new();
         internal OVRLipSyncContext lipSyncContext;
         private List<OVRLipSyncContextMorphTarget> morphTargets = new();
@@ -143,10 +142,7 @@ namespace Hypernex.Game
             voiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
             voiceAlign.transform.SetParent(a.SpeechPosition.transform);
             voiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, new Quaternion(0,0,0,0));
-            voiceAlign.AddComponent<AudioSource>();
-            opusHandler = voiceAlign.AddComponent<OpusHandler>();
-            opusHandler.OnDecoded += opusHandler.PlayDecodedToVoice;
-            audioSource = opusHandler.gameObject.GetComponent<AudioSource>();
+            audioSource = voiceAlign.AddComponent<AudioSource>();
             audioSource.spatialize = true;
             audioSource.spatialBlend = 1f;
             audioSource.rolloffMode = AudioRolloffMode.Linear;
@@ -1090,8 +1086,6 @@ namespace Hypernex.Game
                     if (s == extraneousObject.Key)
                         LocalPlayer.MoreExtraneousObjects.Remove(extraneousObject.Key);
             }
-            if(opusHandler != null)
-                opusHandler.OnDecoded -= opusHandler.PlayDecodedToVoice;
             Object.Destroy(Avatar.gameObject);
         }
     }

@@ -24,7 +24,10 @@ namespace Hypernex.Game
                 case "Hypernex.Networking.Messages.PlayerVoice":
                 {
                     PlayerVoice playerVoice = (PlayerVoice) Convert.ChangeType(msgMeta.Data, typeof(PlayerVoice));
-                    PlayerManagement.HandlePlayerVoice(gameInstance, playerVoice);
+                    try
+                    {
+                        PlayerManagement.HandlePlayerVoice(gameInstance, playerVoice);
+                    } catch(Exception){}
                     break;
                 }
                 case "Hypernex.Networking.Messages.PlayerObjectUpdate":

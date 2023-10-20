@@ -8,6 +8,7 @@ using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
+using Hypernex.Game.Audio;
 using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
@@ -35,7 +36,6 @@ using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
 namespace Hypernex.Game
 {
     [RequireComponent(typeof(DontDestroyMe))]
-    [RequireComponent(typeof(OpusHandler))]
     public class LocalPlayer : MonoBehaviour, IDisposable
     {
         public static LocalPlayer Instance;
@@ -154,7 +154,6 @@ namespace Hypernex.Game
         private string avatarFile;
         internal List<PathDescriptor> SavedTransforms = new();
         internal Dictionary<string, string> OwnedAvatarIdTokens = new();
-        private OpusHandler opusHandler;
         private bool didSnapTurn;
         private Scene? scene;
         internal float vrHeight;
@@ -243,7 +242,6 @@ namespace Hypernex.Game
             else
                 return;
             Mic.Instance.SetDevice(device);
-            opusHandler.OnMicStart();
         }
 
         private void AddSystemTags(ref List<string> tags)
@@ -403,44 +401,6 @@ namespace Hypernex.Game
                 });
             }
             return p;
-        }
-
-        private void OnOpusEncoded(byte[] pcmBytes, int pcmLength)
-        {
-            PlayerVoice playerVoice = new PlayerVoice
-            {
-                Auth = new JoinAuth
-                {
-                    UserId = APIPlayer.APIUser.Id,
-                    TempToken = GameInstance.FocusedInstance.userIdToken
-                },
-                Bitrate = OpusHandler.BITRATE,
-                SampleRate = (int) Mic.Frequency,
-                Channels = (int) Mic.NumChannels,
-                Encoder = "opus",
-                Bytes = pcmBytes,
-                EncodeLength = pcmLength
-            };
-            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice), MessageChannel.Unreliable);
-        }
-
-        private void OnAudioRAW(float[] data, int length)
-        {
-            PlayerVoice playerVoice = new PlayerVoice
-            {
-                Auth = new JoinAuth
-                {
-                    UserId = APIPlayer.APIUser.Id,
-                    TempToken = GameInstance.FocusedInstance.userIdToken
-                },
-                Bitrate = OpusHandler.BITRATE,
-                SampleRate = (int) Mic.Frequency,
-                Channels = (int) Mic.NumChannels,
-                Encoder = "raw",
-                Bytes = DataConversion.ConvertFloatToByte(data),
-                EncodeLength = length
-            };
-            GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
         }
 
         private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
@@ -637,13 +597,12 @@ namespace Hypernex.Game
             }
             Instance = this;
             DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
-            opusHandler = GetComponent<OpusHandler>();
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
             CreateDesktopBindings();
-            Mic.OnClipReady += s =>
+            Mic.OnClipReady += (s, clip) =>
             {
                 float[] samples = s;
                 if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.NoiseSuppression)
@@ -654,12 +613,27 @@ namespace Hypernex.Game
                     denoiser.Denoise(values, false);
                     samples = values.ToArray();
                 }
-                if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null &&
+                /*if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null &&
                     ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.Opus && opusHandler != null)
                     opusHandler.EncodeMicrophone(samples);
                 else if(GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null && 
                         ConfigManager.SelectedConfigUser.AudioCompression == AudioCompression.RAW)
-                    OnAudioRAW(samples, samples.Length);
+                    OnAudioRAW(samples, samples.Length);*/
+                if (GameInstance.FocusedInstance != null)
+                {
+                    IAudioCodec audioCodec = null;
+                    if(ConfigManager.SelectedConfigUser != null)
+                        audioCodec = AudioSourceDriver.GetAudioCodecByName(
+                            ConfigManager.SelectedConfigUser.AudioCompression.ToString());
+                    if (audioCodec == null)
+                        audioCodec = AudioSourceDriver.AudioCodecs[0];
+                    PlayerVoice playerVoice = audioCodec.Encode(samples, clip, new JoinAuth
+                    {
+                        UserId = APIPlayer.APIUser.Id,
+                        TempToken = GameInstance.FocusedInstance.userIdToken
+                    });
+                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+                }
                 avatar?.ApplyAudioClipToLipSync(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
@@ -686,7 +660,6 @@ namespace Hypernex.Game
                 if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(avatarMeta);
             };
-            opusHandler.OnEncoded += OnOpusEncoded;
             cts = new();
             new Thread(() =>
             {
@@ -1049,8 +1022,6 @@ namespace Hypernex.Game
                 lastCoroutine = null;
             }
             denoiser?.Dispose();
-            if(opusHandler != null)
-                opusHandler.OnEncoded -= OnOpusEncoded;
             if(cts != null && !cts.IsCancellationRequested)
                 cts.Cancel();
             mutex?.Dispose();

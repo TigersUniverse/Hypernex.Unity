@@ -165,7 +165,7 @@ namespace Hypernex.Tools
                 Renderer shadowClone = FindPossibleShadowClone(strayRenderer.transform);
                 // If it doesn't create a new one
                 if(shadowClone == null)
-                    Instantiate(strayRenderer.gameObject).GetComponent<SkinnedMeshRenderer>();
+                    shadowClone = Instantiate(strayRenderer.gameObject).GetComponent<Renderer>();
                 // Name it shadowclone_ so we know it's a Shadow Clone
                 shadowClone.name = "shadowclone_" + Guid.NewGuid();
                 // Make it a child of the Renderer

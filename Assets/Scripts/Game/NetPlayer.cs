@@ -5,6 +5,7 @@ using System.Linq;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
+using Hypernex.Game.Audio;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
@@ -331,7 +332,8 @@ namespace Hypernex.Game
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
-                Avatar.opusHandler.DecodeFromVoice(playerVoice);
+                //Avatar.opusHandler.DecodeFromVoice(playerVoice);
+                AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder)?.Decode(playerVoice, Avatar.audioSource);
         }
 
         private Dictionary<string, NetHandleCameraLife> HandleCameras => new(handleCameras);
