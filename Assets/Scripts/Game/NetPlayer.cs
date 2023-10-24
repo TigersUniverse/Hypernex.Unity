@@ -17,6 +17,7 @@ using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = System.Object;
 
 namespace Hypernex.Game
 {
@@ -83,6 +84,8 @@ namespace Hypernex.Game
             }));
         }
 
+        private bool firstJoin = true;
+
         private void OnAvatarDownload(Stream stream)
         {
             waitingForAvatarToken = false;
@@ -110,8 +113,11 @@ namespace Hypernex.Game
                         if (a == null)
                             return;
                         Avatar?.Dispose();
-                        avatarUpdates.Clear();
-                        weightedObjectUpdates.Clear();
+                        if (!firstJoin)
+                        {
+                            
+                        }
+                        firstJoin = false;
                         Avatar = new AvatarCreator(this, a);
                         foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
                             Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
@@ -200,10 +206,9 @@ namespace Hypernex.Game
             }
             foreach (string key in new List<string>(avatarUpdates.Keys))
                 UpdatePlayerObjectUpdate(key);
-            foreach (KeyValuePair<WeightedObjectUpdate, float> keyValuePair in
-                     new Dictionary<WeightedObjectUpdate, float>(weightedObjectUpdates))
-                weightedObjectUpdates[keyValuePair.Key] =
-                    Mathf.Lerp(keyValuePair.Value, keyValuePair.Key.Weight, interpolationFramesCount);
+            foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
+                         weightedObjectUpdates))
+                weightedObjectContainer.Update(interpolationFramesCount);
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 
@@ -307,16 +312,9 @@ namespace Hypernex.Game
             {
                 /*foreach (WeightedObjectUpdate w in new List<WeightedObjectUpdate>(weightedObjectUpdates))
                     Avatar?.HandleNetParameter(w);*/
-                foreach (KeyValuePair<WeightedObjectUpdate,float> keyValuePair in new Dictionary<WeightedObjectUpdate, float>(weightedObjectUpdates))
-                {
-                    Avatar?.HandleNetParameter(new WeightedObjectUpdate
-                    {
-                        PathToWeightContainer = keyValuePair.Key.PathToWeightContainer,
-                        TypeOfWeight = keyValuePair.Key.TypeOfWeight,
-                        WeightIndex = keyValuePair.Key.WeightIndex,
-                        Weight = keyValuePair.Value
-                    });
-                }
+                foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
+                             weightedObjectUpdates))
+                    Avatar?.HandleNetParameter(weightedObjectContainer.Weight);
             }
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
@@ -332,8 +330,11 @@ namespace Hypernex.Game
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
+            {
                 //Avatar.opusHandler.DecodeFromVoice(playerVoice);
-                AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder)?.Decode(playerVoice, Avatar.audioSource);
+                IAudioCodec codec = AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder);
+                codec.Decode(playerVoice, Avatar.audioSource);
+            }
         }
 
         private Dictionary<string, NetHandleCameraLife> HandleCameras => new(handleCameras);
@@ -364,6 +365,7 @@ namespace Hypernex.Game
             {
                 AvatarId = playerUpdate.AvatarId;
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
+                avatarUpdates.Clear();
             }
             if (Avatar != null && Avatar.Avatar.transform.parent == transform)
             {
@@ -377,25 +379,22 @@ namespace Hypernex.Game
             }
         }
 
-        private Dictionary<WeightedObjectUpdate, float> weightedObjectUpdates = new();
+        private List<WeightedObjectContainer> weightedObjectUpdates = new();
 
         public void WeightedObject(WeightedObjectUpdate weightedObjectUpdate)
         {
-            float last = 0f;
-            foreach (WeightedObjectUpdate x in new List<WeightedObjectUpdate>(weightedObjectUpdates.Keys))
+            foreach (WeightedObjectContainer x in new List<WeightedObjectContainer>(weightedObjectUpdates))
             {
-                if (x.PathToWeightContainer == weightedObjectUpdate.PathToWeightContainer &&
-                    x.TypeOfWeight == weightedObjectUpdate.TypeOfWeight &&
-                    x.WeightIndex == weightedObjectUpdate.WeightIndex)
+                if (x.Equals(weightedObjectUpdate))
                 {
-                    last = weightedObjectUpdates[x];
-                    weightedObjectUpdates.Remove(x);
+                    x.Update(weightedObjectUpdate);
+                    return;
                 }
             }
-            if (last <= 0f)
-                last = weightedObjectUpdate.Weight;
-            weightedObjectUpdates.Add(weightedObjectUpdate, last);
+            weightedObjectUpdates.Add(new WeightedObjectContainer(weightedObjectUpdate));
         }
+        
+        public void ResetWeightedObjects() => weightedObjectUpdates.Clear();
 
         /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
@@ -479,6 +478,51 @@ namespace Hypernex.Game
             public Vector3 ExpectedPosition;
             public Quaternion ExpectedRotation;
             public Vector3 ExpectedSize;
+        }
+
+        public class WeightedObjectContainer
+        {
+            public WeightedObjectUpdate Weight => new WeightedObjectUpdate
+            {
+                Auth = new JoinAuth(),
+                PathToWeightContainer = WeightedObjectUpdate.PathToWeightContainer,
+                TypeOfWeight = WeightedObjectUpdate.TypeOfWeight,
+                Weight = WeightedObjectUpdate.Weight,
+                WeightIndex = WeightedObjectUpdate.WeightIndex
+            };
+            
+            private WeightedObjectUpdate WeightedObjectUpdate;
+            private float last;
+
+            public WeightedObjectContainer(WeightedObjectUpdate w)
+            {
+                WeightedObjectUpdate = w;
+                last = w.Weight;
+            }
+
+            public void Update(WeightedObjectUpdate w)
+            {
+                last = WeightedObjectUpdate.Weight;
+                WeightedObjectUpdate = w;
+            }
+
+            public void Update(float interpolationFramesCount) =>
+                last = Mathf.Lerp(last, WeightedObjectUpdate.Weight, interpolationFramesCount);
+
+            public override bool Equals(object obj)
+            {
+                if (obj == null)
+                    return false;
+                if (obj.GetType() == typeof(WeightedObjectUpdate))
+                {
+                    WeightedObjectUpdate w = (WeightedObjectUpdate) obj;
+                    return WeightedObjectUpdate.WeightIndex == w.WeightIndex &&
+                        WeightedObjectUpdate.TypeOfWeight == w.TypeOfWeight &&
+                        WeightedObjectUpdate.PathToWeightContainer ==
+                        w.PathToWeightContainer;
+                }
+                return this == obj;
+            }
         }
     }
 }

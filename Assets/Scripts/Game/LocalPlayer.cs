@@ -152,7 +152,7 @@ namespace Hypernex.Game
         internal AvatarMeta avatarMeta;
         public AvatarCreator avatar;
         private string avatarFile;
-        internal List<PathDescriptor> SavedTransforms = new();
+        internal List<LocalPlayerSyncObject> SavedTransforms = new();
         internal Dictionary<string, string> OwnedAvatarIdTokens = new();
         private bool didSnapTurn;
         private Scene? scene;
@@ -314,95 +314,6 @@ namespace Hypernex.Game
             return playerUpdate;
         }
 
-        internal Dictionary<string, NetworkedObject> children = new();
-        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
-
-        private List<NetworkedObject> GetNetworkObjects()
-        {
-            Transform r = transform;
-            Vector3 rea = transform.eulerAngles;
-            List<NetworkedObject> networkedObjects = new()
-            {
-                new NetworkedObject
-                {
-                    ObjectLocation = String.Empty,
-                    Position = NetworkConversionTools.Vector3Tofloat3(r.position),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(rea.x, rea.y, rea.z, 0)),
-                    Size = NetworkConversionTools.Vector3Tofloat3(r.localScale)
-                },
-                new NetworkedObject
-                {
-                    ObjectLocation = "Camera Offset",
-                    Position = NetworkConversionTools.Vector3Tofloat3(Camera.transform.parent.localPosition),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
-                        Camera.transform.parent.localEulerAngles.x, Camera.transform.parent.localEulerAngles.y,
-                        Camera.transform.parent.localEulerAngles.z, 0)),
-                    Size = NetworkConversionTools.Vector3Tofloat3(Camera.transform.parent.localScale)
-                },
-                new NetworkedObject
-                {
-                    ObjectLocation = "Camera Offset/Main Camera",
-                    Position = NetworkConversionTools.Vector3Tofloat3(Camera.transform.localPosition),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
-                        Camera.transform.localEulerAngles.x, Camera.transform.localEulerAngles.y,
-                        Camera.transform.localEulerAngles.z, 0)),
-                    Size = NetworkConversionTools.Vector3Tofloat3(Camera.transform.localScale)
-                }
-            };
-            foreach (HandleCamera handleCamera in HandleCamera.allCameras)
-            {
-                networkedObjects.Add(new NetworkedObject
-                {
-                    ObjectLocation = "*" + handleCamera.gameObject.name,
-                    IgnoreObjectLocation = true,
-                    Position = NetworkConversionTools.Vector3Tofloat3(handleCamera.transform.position),
-                    Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(
-                        handleCamera.transform.eulerAngles.x,
-                        handleCamera.transform.eulerAngles.y,
-                        handleCamera.transform.eulerAngles.z, 0)),
-                    Size = NetworkConversionTools.Vector3Tofloat3(handleCamera.transform.localScale)
-                });
-            }
-            /*foreach (PathDescriptor child in new List<PathDescriptor>(pathsWaiting.Dequeue()))
-            {
-                if (child == null)
-                    SavedTransforms.Remove(child);
-                else
-                {
-                    Transform t = child.transform;
-                    Vector3 lea = t.localEulerAngles;
-                    networkedObjects.Add(new NetworkedObject
-                    {
-                        ObjectLocation = child.path,
-                        Position = NetworkConversionTools.Vector3Tofloat3(t.localPosition),
-                        Rotation = NetworkConversionTools.QuaternionTofloat4(new Quaternion(lea.x, lea.y, lea.z, 0)),
-                        Size = NetworkConversionTools.Vector3Tofloat3(t.localScale)
-                    });
-                }
-            }*/
-            foreach (NetworkedObject networkedObject in new List<NetworkedObject>(children.Values))
-                networkedObjects.Add(networkedObject);
-            return networkedObjects;
-        }
-
-        private List<PlayerObjectUpdate> GetPlayerObjectUpdates()
-        {
-            List<PlayerObjectUpdate> p = new List<PlayerObjectUpdate>();
-            foreach (NetworkedObject networkedObject in GetNetworkObjects())
-            {
-                p.Add(new PlayerObjectUpdate
-                {
-                    Auth = new JoinAuth
-                    {
-                        UserId = APIPlayer.APIUser.Id,
-                        TempToken = GameInstance.FocusedInstance.userIdToken
-                    },
-                    Object = networkedObject
-                });
-            }
-            return p;
-        }
-
         private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
         {
             // Share AvatarToken with unblocked users
@@ -459,15 +370,20 @@ namespace Hypernex.Game
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
-                children.Clear();
-                foreach (Transform child in avatar.Avatar.transform.GetComponentsInChildren<Transform>())
+                foreach (Transform child in avatar.Avatar.transform.GetComponentsInChildren<Transform>(true))
                 {
                     PathDescriptor pathDescriptor = child.gameObject.GetComponent<PathDescriptor>();
                     if (pathDescriptor == null)
                         pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
                     pathDescriptor.root = transform;
-                    SavedTransforms.Add(pathDescriptor);
+                    LocalPlayerSyncObject localPlayerSyncObject =
+                        child.gameObject.GetComponent<LocalPlayerSyncObject>();
+                    if (localPlayerSyncObject == null)
+                        localPlayerSyncObject = child.gameObject.AddComponent<LocalPlayerSyncObject>();
+                    localPlayerSyncObject.CheckTime = CheckTime.LateUpdate;
+                    SavedTransforms.Add(localPlayerSyncObject);
                 }
+                avatar.Avatar.gameObject.GetComponent<LocalPlayerSyncObject>().AlwaysSync = true;
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(am);
                 Dashboard.PositionDashboard(this);
@@ -537,10 +453,40 @@ namespace Hypernex.Game
         }
 
         private Coroutine lastCoroutine;
+        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
         private Queue<PlayerObjectUpdate> poumsgs = new();
         private Queue<WeightedObjectUpdate> woumsgs = new();
         private CancellationTokenSource cts;
         private Mutex mutex = new();
+
+        public void UpdateObject(NetworkedObject networkedObject)
+        {
+            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen) return;
+            if(mutex.WaitOne(1))
+            {
+                PlayerObjectUpdate playerObjectUpdate = new PlayerObjectUpdate
+                {
+                    Auth = new JoinAuth
+                    {
+                        UserId = APIPlayer.APIUser.Id,
+                        TempToken = GameInstance.FocusedInstance.userIdToken
+                    },
+                    Object = networkedObject
+                };
+                poumsgs.Enqueue(playerObjectUpdate);
+                mutex.ReleaseMutex();
+            }
+        }
+
+        public void UpdateWeight(WeightedObjectUpdate weightedObjectUpdate)
+        {
+            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen) return;
+            if (mutex.WaitOne(1))
+            {
+                woumsgs.Enqueue(weightedObjectUpdate);
+                mutex.ReleaseMutex();
+            }
+        }
 
         private IEnumerator UpdatePlayer(GameInstance gameInstance)
         {
@@ -550,38 +496,6 @@ namespace Hypernex.Game
                 {
                     PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
                     gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-                    if (poumsgs.Count <= 0 && mutex.WaitOne(1))
-                    {
-                        try
-                        {
-                            foreach (PlayerObjectUpdate playerObjectUpdate in GetPlayerObjectUpdates())
-                            {
-                                poumsgs.Enqueue(playerObjectUpdate);
-                                //byte[] g = Msg.Serialize(playerObjectUpdate);
-                                //gameInstance.SendMessage(g, MessageChannel.Unreliable);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.CurrentLogger.Error("Failed to get PlayerUpdate! Exception: " + e);
-                        }
-                        mutex.ReleaseMutex();
-                    }
-                    if (woumsgs.Count <= 0 && mutex.WaitOne(1))
-                    {
-                        try
-                        {
-                            foreach (WeightedObjectUpdate weightedObjectUpdate in weightedObjectUpdates)
-                            {
-                                woumsgs.Enqueue(weightedObjectUpdate);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.CurrentLogger.Error("Failed to get PlayerUpdate! Exception: " + e);
-                        }
-                        mutex.ReleaseMutex();
-                    }
                 }
                 yield return new WaitForSeconds(MESSAGE_UPDATE_TIME);
             }
@@ -993,11 +907,53 @@ namespace Hypernex.Game
                     avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
             }
             if(APIPlayer.APIUser != null && GameInstance.FocusedInstance != null)
-                weightedObjectUpdates = avatar?.GetAnimatorWeights(new JoinAuth
+            {
+                List<WeightedObjectUpdate> w = avatar?.GetAnimatorWeights(new JoinAuth
                 {
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = GameInstance.FocusedInstance.userIdToken
                 });
+                if(w != null)
+                    if (w.Count != weightedObjectUpdates.Count)
+                    {
+                        ResetWeightedObjects resetWeightedObjects = new ResetWeightedObjects
+                        {
+                            Auth = new JoinAuth
+                            {
+                                UserId = APIPlayer.APIUser.Id,
+                                TempToken = GameInstance.FocusedInstance.userIdToken
+                            }
+                        };
+                        GameInstance.FocusedInstance.SendMessage(Msg.Serialize(resetWeightedObjects));
+                        weightedObjectUpdates.Clear();
+                        w.ForEach(x =>
+                        {
+                            weightedObjectUpdates.Add(x);
+                            UpdateWeight(x);
+                        });
+                    }
+                    else
+                    {
+                        for (int x = 0; x < w.Count; x++)
+                        {
+                            WeightedObjectUpdate recent = w.ElementAt(x);
+                            try
+                            {
+                                WeightedObjectUpdate cached = weightedObjectUpdates.First(b =>
+                                    b.TypeOfWeight == recent.TypeOfWeight &&
+                                    b.PathToWeightContainer == recent.PathToWeightContainer &&
+                                    b.WeightIndex == recent.WeightIndex);
+                                if (recent.Weight != cached.Weight)
+                                {
+                                    int y = weightedObjectUpdates.IndexOf(cached);
+                                    weightedObjectUpdates[y] = recent;
+                                    UpdateWeight(recent);
+                                }
+                            }
+                            catch(Exception){}
+                        }
+                    }
+            }
         }
 
         private void OnDestroy() => Dispose();

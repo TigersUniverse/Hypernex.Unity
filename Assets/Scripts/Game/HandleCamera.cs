@@ -22,7 +22,7 @@ namespace Hypernex.Game
 {
     [RequireComponent(typeof(Grabbable))]
     [RequireComponent(typeof(DontDestroyMe))]
-    [RequireComponent(typeof(PathDescriptor))]
+    [RequireComponent(typeof(LocalPlayerSyncObject))]
     public class HandleCamera : MonoBehaviour, IDisposable
     {
         private const string TEMPLATE_CAMERA_NAME = "HandleCamera";
@@ -359,6 +359,10 @@ namespace Hypernex.Game
             transform.rotation = Quaternion.LookRotation((transform.position - reference.position).normalized);
             OriginalPosition = LinkedCamera.transform.localPosition;
             OriginalRotation = LinkedCamera.transform.localRotation;
+            LocalPlayerSyncObject localPlayerSyncObject = GetComponent<LocalPlayerSyncObject>();
+            localPlayerSyncObject.IgnoreObjectLocation = true;
+            localPlayerSyncObject.FallbackPath = "*" + gameObject.name;
+            localPlayerSyncObject.CheckLocal = false;
             handleCameras.Add(this);
         }
 

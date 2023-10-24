@@ -192,23 +192,38 @@ namespace Hypernex.Game
             return WorldObjectAction.Claim;
         }
 
+        private Vector3 lastPosition;
+        private Quaternion lastRotation;
+        private Vector3 lastScale;
+
         private IEnumerator UpdateNetwork()
         {
             while (true)
             {
-                if (GameInstance.FocusedInstance is {IsOpen: true})
+                bool avoidSync = lastPosition == transform.localPosition && lastRotation == transform.localRotation &&
+                                 lastScale == transform.localScale;
+                lastPosition = transform.localPosition;
+                lastRotation = transform.localRotation;
+                lastScale = transform.localScale;
+                if (avoidSync)
+                    yield return null;
+                else
                 {
-                    // TODO: Safe Handle has been closed
-                    // This is also causing issues with AlwaysSync not working after being picked up once
-                    if (mutex.WaitOne(1))
+                    if (GameInstance.FocusedInstance is {IsOpen: true})
                     {
-                        msgs.Enqueue(GetWorldObjectUpdate(GameInstance.FocusedInstance));
-                        mutex.ReleaseMutex();
+                        // TODO: Safe Handle has been closed
+                        // This is also causing issues with AlwaysSync not working after being picked up once
+                        if (mutex.WaitOne(1))
+                        {
+                            msgs.Enqueue(GetWorldObjectUpdate(GameInstance.FocusedInstance));
+                            mutex.ReleaseMutex();
+                        }
                     }
+                    else if (msgs.Count > 0)
+                        msgs.Clear();
+
+                    yield return new WaitForSeconds(0.05f);
                 }
-                else if(msgs.Count > 0)
-                    msgs.Clear();
-                yield return new WaitForSeconds(0.05f);
             }
         }
 

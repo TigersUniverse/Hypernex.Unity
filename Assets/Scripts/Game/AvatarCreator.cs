@@ -779,27 +779,17 @@ namespace Hypernex.Game
                 {
                     if (!LocalPlayer.IsVR)
                         return;
-                    foreach (PathDescriptor pathDescriptor in new List<PathDescriptor>(LocalPlayer.Instance.SavedTransforms))
+                    foreach (LocalPlayerSyncObject localPlayerSyncObject in new List<LocalPlayerSyncObject>(LocalPlayer.Instance.SavedTransforms))
                     {
-                        if (pathDescriptor == null)
-                            LocalPlayer.Instance.SavedTransforms.Remove(pathDescriptor);
+                        if (localPlayerSyncObject == null)
+                            LocalPlayer.Instance.SavedTransforms.Remove(localPlayerSyncObject);
                         else
                         {
-                            if(pathDescriptor.path == null) continue;
-                            NetworkedObject networkedObject = new NetworkedObject
-                            {
-                                ObjectLocation = pathDescriptor.path,
-                                Position = NetworkConversionTools.Vector3Tofloat3(
-                                    pathDescriptor.transform.localPosition),
-                                Rotation = new float4(pathDescriptor.transform.localEulerAngles.x,
-                                    pathDescriptor.transform.localEulerAngles.y,
-                                    pathDescriptor.transform.localEulerAngles.z, 0),
-                                Size = NetworkConversionTools.Vector3Tofloat3(pathDescriptor.transform.localScale)
-                            };
-                            if (!LocalPlayer.Instance.children.ContainsKey(pathDescriptor.path))
-                                LocalPlayer.Instance.children.Add(pathDescriptor.path, networkedObject);
-                            else
-                                LocalPlayer.Instance.children[pathDescriptor.path] = networkedObject;
+                            localPlayerSyncObject.CheckTime = CheckTime.InvokeManually;
+                            PathDescriptor pathDescriptor =
+                                localPlayerSyncObject.gameObject.GetComponent<PathDescriptor>();
+                            if(pathDescriptor == null || pathDescriptor.path == null) continue;
+                            localPlayerSyncObject.Check();
                         }
                     }
                 };
@@ -824,27 +814,14 @@ namespace Hypernex.Game
             }
             if (!isVR)
             {
-                foreach (PathDescriptor pathDescriptor in new List<PathDescriptor>(LocalPlayer.Instance.SavedTransforms))
+                foreach (LocalPlayerSyncObject localPlayerSyncObject in new List<LocalPlayerSyncObject>(LocalPlayer.Instance.SavedTransforms))
                 {
-                    if (pathDescriptor == null)
-                        LocalPlayer.Instance.SavedTransforms.Remove(pathDescriptor);
+                    if (localPlayerSyncObject == null)
+                        LocalPlayer.Instance.SavedTransforms.Remove(localPlayerSyncObject);
                     else
                     {
-                        if(pathDescriptor.path == null) continue;
-                        NetworkedObject networkedObject = new NetworkedObject
-                        {
-                            ObjectLocation = pathDescriptor.path,
-                            Position = NetworkConversionTools.Vector3Tofloat3(
-                                pathDescriptor.transform.localPosition),
-                            Rotation = new float4(pathDescriptor.transform.localEulerAngles.x,
-                                pathDescriptor.transform.localEulerAngles.y,
-                                pathDescriptor.transform.localEulerAngles.z, 0),
-                            Size = NetworkConversionTools.Vector3Tofloat3(pathDescriptor.transform.localScale)
-                        };
-                        if (!LocalPlayer.Instance.children.ContainsKey(pathDescriptor.path))
-                            LocalPlayer.Instance.children.Add(pathDescriptor.path, networkedObject);
-                        else
-                            LocalPlayer.Instance.children[pathDescriptor.path] = networkedObject;
+                        // Force Non-VR
+                        localPlayerSyncObject.CheckTime = CheckTime.LateUpdate;
                     }
                 }
             }
