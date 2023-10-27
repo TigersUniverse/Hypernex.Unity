@@ -809,7 +809,7 @@ PlayerSettings:
   webGLPowerPreference: 2
   scriptingDefineSymbols:
     Android: USE_INPUT_SYSTEM_POSE_CONTROL
-    Standalone: USE_INPUT_SYSTEM_POSE_CONTROL;DYNAMIC_BONE
+    Standalone: USE_INPUT_SYSTEM_POSE_CONTROL;DYNAMIC_BONE;MAGICACLOTH
     Windows Store Apps: USE_INPUT_SYSTEM_POSE_CONTROL
   additionalCompilerArguments:
     Standalone: []

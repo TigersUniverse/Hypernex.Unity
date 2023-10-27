@@ -1,5 +1,4 @@
-﻿using System;
-using Concentus.Enums;
+﻿using Concentus.Enums;
 using Concentus.Structs;
 using Hypernex.Networking.Messages;
 using Hypernex.Tools;
@@ -9,8 +8,6 @@ namespace Hypernex.Game.Audio
 {
     public class OpusAudioCodec : IAudioCodec
     {
-        private const int FRAME_SIZE = 960;
-        
         public string Name => "Opus";
 
         private static OpusEncoder encoder;
@@ -21,8 +18,8 @@ namespace Hypernex.Game.Audio
         {
             encoder ??= new(Mic.Frequency, clip.channels, OpusApplication.OPUS_APPLICATION_AUDIO);
             encoder.Bitrate = 12000;
-            byte[] outputBuffer = new byte[1000];
-            int packetSize = encoder.Encode(pcm, 0, FRAME_SIZE, outputBuffer, 0, outputBuffer.Length);
+            byte[] outputBuffer = new byte[1275];
+            int packetSize = encoder.Encode(pcm, 0, Mic.FRAME_SIZE, outputBuffer, 0, outputBuffer.Length);
             return new PlayerVoice
             {
                 Auth = joinAuth,

@@ -27,6 +27,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
+#if MAGICACLOTH
+using MagicaCloth2;
+#endif
 using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
 using Mic = Hypernex.Tools.Mic;
@@ -380,9 +383,44 @@ namespace Hypernex.Game
                         child.gameObject.GetComponent<LocalPlayerSyncObject>();
                     if (localPlayerSyncObject == null)
                         localPlayerSyncObject = child.gameObject.AddComponent<LocalPlayerSyncObject>();
-                    localPlayerSyncObject.CheckTime = CheckTime.LateUpdate;
                     SavedTransforms.Add(localPlayerSyncObject);
                 }
+#if DYNAMIC_BONE
+                foreach (DynamicBone dynamicBone in avatar.Avatar.transform.GetComponentsInChildren<DynamicBone>())
+                {
+                    dynamicBone.m_UpdateMode = DynamicBone.UpdateMode.AnimatePhysics;
+                    dynamicBone.m_Roots.ForEach(x =>
+                    {
+                        if (x == null) return;
+                        LocalPlayerSyncObject lp = x.GetComponent<LocalPlayerSyncObject>();
+                        if(lp != null)
+                            lp.MakeSpecial(dynamicBone);
+                    });
+                    if(dynamicBone.m_Root == null) continue;
+                    LocalPlayerSyncObject localPlayerSyncObject =
+                        dynamicBone.m_Root.GetComponent<LocalPlayerSyncObject>();
+                    if(localPlayerSyncObject != null)
+                        localPlayerSyncObject.MakeSpecial(dynamicBone);
+                }
+#endif
+#if MAGICACLOTH
+                foreach (MagicaCloth magicaCloth in avatar.Avatar.transform.GetComponentsInChildren<MagicaCloth>())
+                {
+                    // i don't *think* this could be null, but I'm not sure
+                    if(magicaCloth.SerializeData != null)
+                    {
+                        magicaCloth.SerializeData.updateMode = ClothUpdateMode.Normal;
+                        foreach (Transform rootBone in magicaCloth.SerializeData.rootBones)
+                        {
+                            if(rootBone == null) continue;
+                            LocalPlayerSyncObject localPlayerSyncObject =
+                                rootBone.GetComponent<LocalPlayerSyncObject>();
+                            if (localPlayerSyncObject != null)
+                                localPlayerSyncObject.MakeSpecial();
+                        }
+                    }
+                }
+#endif
                 avatar.Avatar.gameObject.GetComponent<LocalPlayerSyncObject>().AlwaysSync = true;
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(am);

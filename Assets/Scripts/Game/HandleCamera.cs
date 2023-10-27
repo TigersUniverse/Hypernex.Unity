@@ -319,10 +319,13 @@ namespace Hypernex.Game
             {
                 if (requestCapture && rt.width == (int)d.x && rt.height == (int)d.y)
                 {
+                    RenderTexture oldRT = RenderTexture.active;
+                    RenderTexture.active = rt;
                     TextureFormat tf = RTFormatToTFormat(rt.format);
                     Texture2D copiedRt = new Texture2D(rt.width, rt.height, tf, false);
                     copiedRt.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
                     copiedRt.Apply();
+                    RenderTexture.active = oldRT;
                     byte[] data = copiedRt.EncodeToPNG();
                     string file = GetPhotoPath();
                     FileStream fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.ReadWrite,
@@ -351,6 +354,7 @@ namespace Hypernex.Game
 
         private void OnEnable()
         {
+            RenderPipelineManager.beginCameraRendering += RenderPipelineManagerOnbeginCameraRendering;
             RenderPipelineManager.endCameraRendering += OnCameraEndRender;
             FindHandleCameraReferences();
             Transform reference = Camera.main.transform;
@@ -366,13 +370,28 @@ namespace Hypernex.Game
             handleCameras.Add(this);
         }
 
+        private void RenderPipelineManagerOnbeginCameraRendering(ScriptableRenderContext arg1, Camera arg2)
+        {
+            if(arg2 == LinkedCamera && requestCapture)
+            {
+                LinkedCamera.GetUniversalAdditionalCameraData().antialiasing =
+                    Camera.main.GetUniversalAdditionalCameraData().antialiasing;
+                return;
+            }
+            if (IsOutputting)
+                return;
+            LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
+        }
+
         private void Update()
         {
+#if !DEBUG
             if(!LocalPlayer.IsVR)
             {
                 Dispose();
                 return;
             }
+#endif
             LocalPlayer localPlayer = LocalPlayer.Instance;
             if (localPlayer != null && !IsAnchored)
                 transform.localScale = new Vector3(localPlayer.transform.localScale.x,

@@ -27,7 +27,7 @@ using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2023.09.1b7";
+    public const string VERSION = "2023.10.1b8";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }

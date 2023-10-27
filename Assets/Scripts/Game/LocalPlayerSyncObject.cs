@@ -14,6 +14,7 @@ namespace Hypernex.Game
         public CheckTime CheckTime = CheckTime.LateUpdate;
         public float RefreshTime { get; set; } = 0.05f;
         public bool AlwaysSync;
+        public bool IsSpecial { get; private set; }
         
         private PathDescriptor pathDescriptor;
         private Vector3 lastPosition;
@@ -29,7 +30,7 @@ namespace Hypernex.Game
                 LocalPlayer.Instance == null)
                 return;
             allowCheck = false;
-            bool needsUpdate = AlwaysSync;
+            bool needsUpdate = AlwaysSync || IsSpecial;
             NetworkedObject networkedObject = null;
             if (CheckLocal)
             {
@@ -88,6 +89,33 @@ namespace Hypernex.Game
             }
         }
 
+#if DYNAMIC_BONE
+        public void MakeSpecial(DynamicBone d)
+        {
+            IsSpecial = true;
+            foreach (LocalPlayerSyncObject localPlayerSyncObject in transform.GetComponentsInChildren<LocalPlayerSyncObject>(true))
+            {
+                if(d.m_Exclusions.Contains(localPlayerSyncObject.transform)) continue;
+                if(AnimationUtility.IsChildOfExclusion(d.m_Exclusions, localPlayerSyncObject.transform)) continue;
+                localPlayerSyncObject.IsSpecial = true;
+                localPlayerSyncObject.CheckTime = CheckTime.FixedUpdate;
+            }
+            CheckTime = CheckTime.FixedUpdate;
+        }
+#endif
+        
+#if MAGICACLOTH
+        public void MakeSpecial()
+        {
+            IsSpecial = true;
+            foreach (LocalPlayerSyncObject localPlayerSyncObject in transform.GetComponentsInChildren<LocalPlayerSyncObject>(true))
+            {
+                localPlayerSyncObject.IsSpecial = true;
+                localPlayerSyncObject.CheckTime = CheckTime.Update;
+            }
+        }
+#endif
+
         private IEnumerator _c()
         {
             while (!cts.IsCancellationRequested)
@@ -128,6 +156,7 @@ namespace Hypernex.Game
             cts.Cancel();
             if(c != null)
                 StopCoroutine(c);
+            IsSpecial = false;
         }
     }
 

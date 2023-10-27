@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using Hypernex.Game;
 using Hypernex.Player;
+using Hypernex.Tools;
+using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -50,7 +52,11 @@ namespace Hypernex.UIActions
 
         private void Update()
         {
-            CameraButton.gameObject.SetActive(LocalPlayer.IsVR);
+#if DEBUG
+            CameraButton.gameObject.SetActive(true);
+#else
+            CameraButton.gameObject.SetActive(LocalPlayer.IsVR && AssetBundleTools.Platform == BuildPlatform.Windows);
+#endif
         }
     }
 }

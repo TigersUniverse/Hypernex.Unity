@@ -5,7 +5,6 @@ using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages;
-using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
@@ -16,6 +15,9 @@ using UnityEngine.Animations;
 using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
 using VRCFaceTracking.Core.Params.Data;
+#if MAGICACLOTH
+using MagicaCloth2;
+#endif
 using Avatar = Hypernex.CCK.Unity.Avatar;
 using Object = UnityEngine.Object;
 
@@ -48,6 +50,7 @@ namespace Hypernex.Game
         private List<OVRLipSyncContextMorphTarget> morphTargets = new();
         private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
         private FingerCalibration fingerCalibration;
+        private LocalPlayerSyncObject AvatarSync;
 
         public AvatarCreator(LocalPlayer localPlayer, Avatar a, bool isVR)
         {
@@ -56,6 +59,7 @@ namespace Hypernex.Game
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
+            MainAnimator.updateMode = AnimatorUpdateMode.Normal;
             fingerCalibration = new FingerCalibration(this);
             headAlign = new GameObject("headalign_" + Guid.NewGuid());
             headAlign.transform.SetParent(a.ViewPosition.transform);
@@ -185,7 +189,14 @@ namespace Hypernex.Game
 #if DYNAMIC_BONE
             foreach (DynamicBone dynamicBone in Avatar.transform.GetComponentsInChildren<DynamicBone>())
             {
-                dynamicBone.m_UpdateMode = DynamicBone.UpdateMode.AnimatePhysics;
+                //dynamicBone.m_UpdateMode = DynamicBone.UpdateMode.AnimatePhysics;
+                dynamicBone.enabled = false;
+            }
+#endif
+#if MAGICACLOTH
+            foreach (MagicaCloth magicaCloth in Avatar.transform.GetComponentsInChildren<MagicaCloth>(true))
+            {
+                magicaCloth.enabled = false;
             }
 #endif
             SetupLipSyncNetPlayer();
@@ -683,6 +694,20 @@ namespace Hypernex.Game
         {
             if(MainAnimator != null && MainAnimator.isInitialized)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
+            if (AvatarSync != null)
+            {
+                AvatarSync.AlwaysSync = true;
+                AvatarSync.FallbackPath = "avatar";
+            }
+            else
+            {
+                AvatarSync = Avatar.gameObject.GetComponent<LocalPlayerSyncObject>();
+                if (AvatarSync != null)
+                {
+                    AvatarSync.AlwaysSync = true;
+                    AvatarSync.FallbackPath = "avatar";
+                }
+            }
             switch (calibrated)
             {
                 case false:
@@ -821,7 +846,8 @@ namespace Hypernex.Game
                     else
                     {
                         // Force Non-VR
-                        localPlayerSyncObject.CheckTime = CheckTime.LateUpdate;
+                        if(!localPlayerSyncObject.IsSpecial)
+                            localPlayerSyncObject.CheckTime = CheckTime.LateUpdate;
                     }
                 }
             }
