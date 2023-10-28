@@ -7,7 +7,7 @@ using Object = System.Object;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
-    public static class LocalUI
+    public static class UI
     {
         public static void SetImageFromAsset(Item item, string asset)
         {

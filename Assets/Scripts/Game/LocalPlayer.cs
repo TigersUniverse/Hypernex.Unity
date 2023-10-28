@@ -365,10 +365,10 @@ namespace Hypernex.Game
                 lastAvatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
                 avatar = new AvatarCreator(this, a, IsVR);
-                foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
+                foreach (NexboxScript localAvatarScript in avatar.Avatar.LocalAvatarScripts)
                     avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
                         avatar.Avatar.gameObject));
-                foreach (LocalScript ls in a.GetComponentsInChildren<LocalScript>())
+                foreach (LocalScript ls in avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
                     avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.

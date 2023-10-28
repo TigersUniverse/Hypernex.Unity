@@ -15,7 +15,9 @@ namespace Hypernex.Game
         public float RefreshTime { get; set; } = 0.05f;
         public bool AlwaysSync;
         public bool IsSpecial { get; private set; }
-        
+
+        private const float MAX_VALUE_VECTOR_DISTANCE = 0.1f;
+        private const float MAX_ANGLE_QUATERNION = 1f;
         private PathDescriptor pathDescriptor;
         private Vector3 lastPosition;
         private Quaternion lastRotation;
@@ -30,15 +32,15 @@ namespace Hypernex.Game
                 LocalPlayer.Instance == null)
                 return;
             allowCheck = false;
-            bool needsUpdate = AlwaysSync || IsSpecial;
+            bool needsUpdate = AlwaysSync;
             NetworkedObject networkedObject = null;
             if (CheckLocal)
             {
-                if (lastPosition != transform.localPosition)
+                if (IsDifferentByRange(lastPosition, transform.localPosition, MAX_VALUE_VECTOR_DISTANCE))
                     needsUpdate = true;
-                if (lastRotation != transform.localRotation)
+                if (IsDifferentByRange(lastRotation, transform.localRotation, MAX_ANGLE_QUATERNION))
                     needsUpdate = true;
-                if (lastSize != transform.localScale)
+                if (IsDifferentByRange(lastSize, transform.localScale, MAX_VALUE_VECTOR_DISTANCE))
                     needsUpdate = true;
                 lastPosition = transform.localPosition;
                 lastRotation = transform.localRotation;
@@ -56,11 +58,11 @@ namespace Hypernex.Game
             }
             else
             {
-                if (lastPosition != transform.position)
+                if (IsDifferentByRange(lastPosition, transform.position, MAX_VALUE_VECTOR_DISTANCE))
                     needsUpdate = true;
-                if (lastRotation != transform.rotation)
+                if (IsDifferentByRange(lastRotation, transform.rotation, MAX_ANGLE_QUATERNION))
                     needsUpdate = true;
-                if (lastSize != transform.localScale)
+                if (IsDifferentByRange(lastSize, transform.localScale, MAX_VALUE_VECTOR_DISTANCE))
                     needsUpdate = true;
                 lastPosition = transform.position;
                 lastRotation = transform.rotation;
@@ -87,6 +89,22 @@ namespace Hypernex.Game
                         : networkedObject.ObjectLocation = pathDescriptor.path;
                 LocalPlayer.Instance.UpdateObject(networkedObject);
             }
+        }
+
+        private bool IsDifferentByRange(Vector3 last, Vector3 current, float value)
+        {
+            if (last == current)
+                return false;
+            float v = Vector3.Distance(last, current);
+            return v > value;
+        }
+
+        private bool IsDifferentByRange(Quaternion last, Quaternion current, float value)
+        {
+            if (last == current)
+                return false;
+            float angle = Quaternion.Angle(current, last);
+            return angle > value;
         }
 
 #if DYNAMIC_BONE

@@ -83,9 +83,9 @@ namespace Hypernex.Game
         {
             // Update Finger Gestures
             AvatarCreator.SetParameter("GestureLeft",
-                GetGestureNumberFromHandGetter(LocalPlayer.Instance.LeftHandGetter));
+                GetGestureNumberFromHandGetter(LocalPlayer.Instance.LeftHandGetter), null, true);
             AvatarCreator.SetParameter("GestureRight",
-                GetGestureNumberFromHandGetter(LocalPlayer.Instance.RightHandGetter));
+                GetGestureNumberFromHandGetter(LocalPlayer.Instance.RightHandGetter), null, true);
         }
 
         internal void LateUpdate()

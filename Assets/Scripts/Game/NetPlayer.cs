@@ -119,9 +119,9 @@ namespace Hypernex.Game
                         }
                         firstJoin = false;
                         Avatar = new AvatarCreator(this, a);
-                        foreach (NexboxScript localAvatarScript in a.LocalAvatarScripts)
+                        foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
                             Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
-                        foreach (LocalScript ls in a.GetComponentsInChildren<LocalScript>())
+                        foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
                             Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(

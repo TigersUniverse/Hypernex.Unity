@@ -43,7 +43,7 @@ public class Init : MonoBehaviour
     public List<TMP_Text> VersionLabels = new();
     public CurrentAvatar ca;
 
-    private string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
+    public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
     internal void StartVR()
     {

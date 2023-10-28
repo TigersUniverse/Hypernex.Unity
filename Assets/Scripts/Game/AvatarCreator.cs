@@ -447,7 +447,8 @@ namespace Hypernex.Game
             return default;
         }
 
-        public void SetParameter<T>(string parameterName, T value, CustomPlayableAnimator target = null)
+        public void SetParameter<T>(string parameterName, T value, CustomPlayableAnimator target = null, 
+            bool force = false)
         {
             if (target != null)
             {
@@ -479,28 +480,53 @@ namespace Hypernex.Game
             }
             foreach (AnimatorPlayable playableAnimator in PlayableAnimators)
             {
-                if (playableAnimator.AnimatorControllerParameters.Count(x => x.name == parameterName) > 0)
+                if (force)
                 {
-                    switch (Type.GetTypeCode(typeof(T)))
+                    foreach (AnimatorControllerParameter animatorControllerParameter in playableAnimator
+                                 .AnimatorControllerParameters.Where(x => x.name == parameterName))
                     {
-                        case TypeCode.Boolean:
-                            playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
-                                (bool) Convert.ChangeType(value, typeof(bool)));
-                            break;
-                        case TypeCode.Int32:
-                            playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
-                                (int) Convert.ChangeType(value, typeof(int)));
-                            break;
-                        case TypeCode.Double:
-                        case TypeCode.Decimal:
-                            playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
-                                (float) Convert.ChangeType(value, typeof(float)));
-                            break;
-                        default:
-                            if(typeof(T) == typeof(float))
+                        switch (animatorControllerParameter.type)
+                        {
+                            case AnimatorControllerParameterType.Bool:
+                                playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
+                                    (bool) Convert.ChangeType(value, typeof(bool)));
+                                break;
+                            case AnimatorControllerParameterType.Int:
+                                playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
+                                    (int) Convert.ChangeType(value, typeof(int)));
+                                break;
+                            case AnimatorControllerParameterType.Float:
                                 playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
                                     (float) Convert.ChangeType(value, typeof(float)));
-                            break;
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    if (playableAnimator.AnimatorControllerParameters.Count(x => x.name == parameterName) > 0)
+                    {
+                        switch (Type.GetTypeCode(typeof(T)))
+                        {
+                            case TypeCode.Boolean:
+                                playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
+                                    (bool) Convert.ChangeType(value, typeof(bool)));
+                                break;
+                            case TypeCode.Int32:
+                                playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
+                                    (int) Convert.ChangeType(value, typeof(int)));
+                                break;
+                            case TypeCode.Double:
+                            case TypeCode.Decimal:
+                                playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
+                                    (float) Convert.ChangeType(value, typeof(float)));
+                                break;
+                            default:
+                                if (typeof(T) == typeof(float))
+                                    playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
+                                        (float) Convert.ChangeType(value, typeof(float)));
+                                break;
+                        }
                     }
                 }
             }

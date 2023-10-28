@@ -420,6 +420,7 @@ namespace Hypernex.Game
 
         private void OnDestroy()
         {
+            RenderPipelineManager.beginCameraRendering -= RenderPipelineManagerOnbeginCameraRendering;
             RenderPipelineManager.endCameraRendering -= OnCameraEndRender;
             if (rt != null)
             {

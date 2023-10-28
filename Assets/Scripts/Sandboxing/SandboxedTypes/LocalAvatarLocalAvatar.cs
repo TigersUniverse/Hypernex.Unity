@@ -142,6 +142,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             if (isLocalAvatar)
             {
+                if (GameInstance.FocusedInstance == null)
+                {
+                    if (LocalPlayer.MoreExtraneousObjects.ContainsKey(key))
+                        return LocalPlayer.MoreExtraneousObjects[key];
+                }
                 if (localPlayer == null || !localPlayer.LastExtraneousObjects.ContainsKey(key))
                     return null;
                 return localPlayer.LastExtraneousObjects[key];
