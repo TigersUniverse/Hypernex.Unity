@@ -353,16 +353,16 @@ namespace Hypernex.Game
         {
             if (!File.Exists(file))
                 return;
-            AvatarCreator lastAvatar = avatar;
+            //AvatarCreator lastAvatar = avatar;
             StartCoroutine(AssetBundleTools.LoadAvatarFromFile(file, a =>
             {
                 if (a == null)
                 {
-                    avatar = lastAvatar;
+                    //avatar = lastAvatar;
                     return;
                 }
                 avatarMeta = am;
-                lastAvatar?.Dispose();
+                avatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
                 avatar = new AvatarCreator(this, a, IsVR);
                 foreach (NexboxScript localAvatarScript in avatar.Avatar.LocalAvatarScripts)
@@ -526,6 +526,15 @@ namespace Hypernex.Game
             }
         }
 
+        public void ForceResync()
+        {
+            foreach (LocalPlayerSyncObject localPlayerSyncObject in SavedTransforms)
+            {
+                if(localPlayerSyncObject == null) continue;
+                localPlayerSyncObject.Check(true);
+            }
+        }
+
         private IEnumerator UpdatePlayer(GameInstance gameInstance)
         {
             while (true)
@@ -598,6 +607,7 @@ namespace Hypernex.Game
                 };
                 instance.OnClientConnect += user =>
                 {
+                    ForceResync();
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                         ShareAvatarTokenToUserId(user, avatarMeta);
                 };
@@ -931,6 +941,8 @@ namespace Hypernex.Game
                 }
             }
         }
+
+        public void ResetWeights() => weightedObjectUpdates.Clear();
 
         private void LateUpdate()
         {

@@ -1,6 +1,5 @@
 ﻿using System;
 using Hypernex.Networking.Messages;
-using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using Nexport;
@@ -78,7 +77,12 @@ namespace Hypernex.Game
                         break;
                     if (instance.gameServerId == respondAuth.GameServerId &&
                         instance.instanceId == respondAuth.InstanceId)
+                    {
                         instance.authed = true;
+                        // Resync weights in server
+                        if(LocalPlayer.Instance != null)
+                            LocalPlayer.Instance.ResetWeights();
+                    }
                     break;
                 }
                 case "Hypernex.Networking.Messages.PlayerMessage":

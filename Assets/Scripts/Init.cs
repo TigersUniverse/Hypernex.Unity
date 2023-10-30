@@ -152,47 +152,17 @@ public class Init : MonoBehaviour
                 }));
     }
 
-    private void FixedUpdate()
-    {
-        foreach (SandboxFunc sandboxAction in Runtime.OnFixedUpdates)
-            try
-            {
-                SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
-            }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
-    }
+    private void FixedUpdate() => Runtime.Instances.ForEach(x => x.FixedUpdate());
 
     private void Update()
     {
         DiscordTools.RunCallbacks();
         if (ConfigManager.SelectedConfigUser != null)
             VoiceGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.VoicesBoost);
-        foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
-            try
-            {
-                SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
-            }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
+        Runtime.Instances.ForEach(x => x.Update());
     }
 
-    private void LateUpdate()
-    {
-        foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)
-            try
-            {
-                SandboxFuncTools.InvokeSandboxFunc(sandboxAction);
-            }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
-    }
+    private void LateUpdate() => Runtime.Instances.ForEach(x => x.LateUpdate());
 
     private void OnApplicationQuit()
     {

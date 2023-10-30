@@ -548,14 +548,8 @@ namespace Hypernex.Game
             isDisposed = true;
             FocusedInstance = null;
             Physics.gravity = new Vector3(0, LocalPlayer.Instance.Gravity, 0);
-            foreach (SandboxFunc sandboxAction in Runtime.OnFixedUpdates)
-                Runtime.RemoveOnFixedUpdate(sandboxAction);
-            foreach (SandboxFunc sandboxAction in Runtime.OnUpdates)
-                Runtime.RemoveOnUpdate(sandboxAction);
-            foreach (SandboxFunc sandboxAction in Runtime.OnLateUpdates)
-                Runtime.RemoveOnLateUpdate(sandboxAction);
-            foreach (Sandbox sandbox in sandboxes)
-                sandbox.Dispose();
+            sandboxes.ForEach(x => x.Dispose());
+            sandboxes.Clear();
             Close();
         }
     }

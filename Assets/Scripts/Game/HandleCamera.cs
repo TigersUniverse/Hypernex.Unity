@@ -367,6 +367,7 @@ namespace Hypernex.Game
             localPlayerSyncObject.IgnoreObjectLocation = true;
             localPlayerSyncObject.FallbackPath = "*" + gameObject.name;
             localPlayerSyncObject.CheckLocal = false;
+            localPlayerSyncObject.AlwaysSync = true;
             handleCameras.Add(this);
         }
 

@@ -37,6 +37,7 @@ namespace Hypernex.Game
 
         public float interpolationFramesCount = 0.1f;
         private int elapsedFrames;
+        private bool firstJoin = true;
 
         public float volume
         {
@@ -84,8 +85,6 @@ namespace Hypernex.Game
             }));
         }
 
-        private bool firstJoin = true;
-
         private void OnAvatarDownload(Stream stream)
         {
             waitingForAvatarToken = false;
@@ -113,10 +112,8 @@ namespace Hypernex.Game
                         if (a == null)
                             return;
                         Avatar?.Dispose();
-                        if (!firstJoin)
-                        {
-                            
-                        }
+                        if(!firstJoin)
+                            avatarUpdates.Clear();
                         firstJoin = false;
                         Avatar = new AvatarCreator(this, a);
                         foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
@@ -129,6 +126,32 @@ namespace Hypernex.Game
                                 Quaternion.identity);
                     }));
                 }
+            }));
+        }
+        
+        private void OnAvatarDownload(string path)
+        {
+            waitingForAvatarToken = false;
+            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+            {
+                StartCoroutine(AssetBundleTools.LoadAvatarFromFile(path, a =>
+                {
+                    if (a == null)
+                        return;
+                    Avatar?.Dispose();
+                    if(!firstJoin)
+                        avatarUpdates.Clear();
+                    firstJoin = false;
+                    Avatar = new AvatarCreator(this, a);
+                    foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
+                        Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
+                    foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
+                        Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                    if (nameplateTemplate != null)
+                        nameplateTemplate.transform.SetLocalPositionAndRotation(
+                            new Vector3(0, transform.localScale.y + 0.9f, 0),
+                            Quaternion.identity);
+                }));
             }));
         }
 
@@ -167,11 +190,36 @@ namespace Hypernex.Game
                         }
                     }
 
+                    string file = $"{APIPlayer.APIObject.Settings.APIURL}file/{result.result.Meta.OwnerId}/{b.FileId}";
                     if (avatarFileToken == null)
-                        APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId);
+                    {
+                        //APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId);
+                        APIPlayer.APIObject.GetFileMeta(fmr =>
+                        {
+                            if (!fmr.success)
+                                APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId);
+                            else
+                            {
+                                DownloadTools.DownloadFile(file, $"{result.result.Meta.Id}.hna",
+                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                            }
+                        }, result.result.Meta.OwnerId, b.FileId);
+                    }
                     else
-                        APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId,
-                            avatarFileToken.avatarToken);
+                    {
+                        file += $"/{avatarFileToken}";
+                        APIPlayer.APIObject.GetFileMeta(fmr =>
+                        {
+                            if (!fmr.success)
+                                APIPlayer.APIObject.GetFile(OnAvatarDownload, result.result.Meta.OwnerId, b.FileId,
+                                    avatarFileToken.avatarToken);
+                            else
+                            {
+                                DownloadTools.DownloadFile(file, $"{result.result.Meta.Id}.hna",
+                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                            }
+                        }, result.result.Meta.OwnerId, b.FileId);
+                    }
                 }));
         }
 
@@ -187,8 +235,18 @@ namespace Hypernex.Game
                 {
                     waitingForAvatarToken = false;
                     avatarFileToken = token;
-                    APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId,
-                        avatarFileToken.avatarToken);
+                    string file = $"{APIPlayer.APIObject.Settings.APIURL}file/{avatarMeta.OwnerId}/{avatarBuild.FileId}";
+                    APIPlayer.APIObject.GetFileMeta(fmr =>
+                    {
+                        if (!fmr.success)
+                            APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId,
+                                avatarFileToken.avatarToken);
+                        else
+                        {
+                            DownloadTools.DownloadFile(file, $"{avatarMeta.Id}.hna",
+                                f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                        }
+                    }, avatarMeta.OwnerId, avatarBuild.FileId);
                 }
             };
         }
@@ -365,7 +423,6 @@ namespace Hypernex.Game
             {
                 AvatarId = playerUpdate.AvatarId;
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
-                avatarUpdates.Clear();
             }
             if (Avatar != null && Avatar.Avatar.transform.parent == transform)
             {
@@ -469,6 +526,7 @@ namespace Hypernex.Game
         {
             foreach (NetHandleCameraLife netHandleCameraLife in HandleCameras.Values)
                 netHandleCameraLife.Dispose();
+            Avatar?.Dispose();
         }
 
         private class PlayerObjectUpdateHolder

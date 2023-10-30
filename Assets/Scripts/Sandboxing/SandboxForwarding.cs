@@ -89,7 +89,7 @@ namespace Hypernex.Sandboxing
             ["PhysicsBody"] = typeof(PhysicsBody)
         });
 
-        public static void Forward(GameObject attached, IInterpreter interpreter, SandboxRestriction restriction,
+        public static Runtime Forward(GameObject attached, IInterpreter interpreter, SandboxRestriction restriction,
             Transform playerRoot, GameInstance gameInstance)
         {
             switch (restriction)
@@ -114,6 +114,9 @@ namespace Hypernex.Sandboxing
                     break;
             }
             interpreter.CreateGlobal("Physics", new Physics(restriction));
+            Runtime runtime = new Runtime();
+            interpreter.CreateGlobal("Runtime", runtime);
+            return runtime;
         }
     }
 }

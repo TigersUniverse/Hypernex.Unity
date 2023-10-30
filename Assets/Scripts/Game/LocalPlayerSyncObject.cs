@@ -26,13 +26,13 @@ namespace Hypernex.Game
         private CancellationTokenSource cts;
         private bool allowCheck;
         
-        public void Check()
+        public void Check(bool force = false)
         {
-            if (!allowCheck || GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen || 
-                LocalPlayer.Instance == null)
+            if (!force && (!allowCheck || GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen || 
+                LocalPlayer.Instance == null))
                 return;
             allowCheck = false;
-            bool needsUpdate = AlwaysSync;
+            bool needsUpdate = AlwaysSync || force;
             NetworkedObject networkedObject = null;
             if (CheckLocal)
             {

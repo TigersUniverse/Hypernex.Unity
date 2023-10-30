@@ -1,26 +1,75 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using Hypernex.CCK;
 using Nexbox;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
-    public static class Runtime
+    public class Runtime : IDisposable
     {
-        internal static List<SandboxFunc> OnFixedUpdates => new (onFixedUpdates);
-        private static List<SandboxFunc> onFixedUpdates = new ();
+        public static List<Runtime> Instances => new(instances);
+        private static List<Runtime> instances = new();
         
-        internal static List<SandboxFunc> OnUpdates => new (onUpdates);
-        private static List<SandboxFunc> onUpdates = new ();
+        internal List<SandboxFunc> OnFixedUpdates => new (onFixedUpdates);
+        private List<SandboxFunc> onFixedUpdates = new ();
+        
+        internal List<SandboxFunc> OnUpdates => new (onUpdates);
+        private List<SandboxFunc> onUpdates = new ();
 
-        internal static List<SandboxFunc> OnLateUpdates => new(onLateUpdates);
-        private static List<SandboxFunc> onLateUpdates = new();
+        internal List<SandboxFunc> OnLateUpdates => new(onLateUpdates);
+        private List<SandboxFunc> onLateUpdates = new();
+
+        internal Runtime() => instances.Add(this);
         
-        public static void OnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
-        public static void RemoveOnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
-        public static void OnUpdate(SandboxFunc s) => onUpdates.Add(s);
-        public static void RemoveOnUpdate(SandboxFunc s) => onUpdates.Remove(s);
-        public static void OnLateUpdate(SandboxFunc s) => onLateUpdates.Add(s);
-        public static void RemoveOnLateUpdate(SandboxFunc s) => onLateUpdates.Remove(s);
+        public void OnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
+        public void RemoveOnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
+        public void OnUpdate(SandboxFunc s) => onUpdates.Add(s);
+        public void RemoveOnUpdate(SandboxFunc s) => onUpdates.Remove(s);
+        public void OnLateUpdate(SandboxFunc s) => onLateUpdates.Add(s);
+        public void RemoveOnLateUpdate(SandboxFunc s) => onLateUpdates.Remove(s);
+
+        public void FixedUpdate() => OnFixedUpdates.ForEach(x =>
+        {
+            try
+            {
+                SandboxFuncTools.InvokeSandboxFunc(x);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
+        });
+
+        public void Update() => OnUpdates.ForEach(x =>
+        {
+            try
+            {
+                SandboxFuncTools.InvokeSandboxFunc(x);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
+        });
+        
+        public void LateUpdate() => OnLateUpdates.ForEach(x =>
+        {
+            try
+            {
+                SandboxFuncTools.InvokeSandboxFunc(x);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error(e);
+            }
+        });
+        
+        public void Dispose()
+        {
+            onFixedUpdates.Clear();
+            onUpdates.Clear();
+            onLateUpdates.Clear();
+            instances.Remove(this);
+        }
     }
 }

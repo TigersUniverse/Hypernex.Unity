@@ -44,7 +44,6 @@ namespace Hypernex.Tools
             Microphone.GetDeviceCaps(SelectedDevice, out _, out maxFrequency);
             Frequency = maxFrequency;
             Clip = Microphone.Start(SelectedDevice, true, 1, Frequency);
-            while(!(Microphone.GetPosition(SelectedDevice) > 0)){}
             //c = StartCoroutine(ClipListener());
         }
 
@@ -72,6 +71,7 @@ namespace Hypernex.Tools
         {
             // TODO: Fix lag sound
             int position = Microphone.GetPosition(SelectedDevice);
+            if (position < 0) return;
             if (position < lastPosition)
                 lastPosition = 0;
             if (position - lastPosition >= FRAME_SIZE)
