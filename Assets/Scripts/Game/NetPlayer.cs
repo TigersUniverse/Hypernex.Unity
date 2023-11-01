@@ -207,7 +207,7 @@ namespace Hypernex.Game
                     }
                     else
                     {
-                        file += $"/{avatarFileToken}";
+                        file += $"/{avatarFileToken.avatarToken}";
                         APIPlayer.APIObject.GetFileMeta(fmr =>
                         {
                             if (!fmr.success)
