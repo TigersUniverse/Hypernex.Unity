@@ -95,7 +95,7 @@ MonoBehaviour:
     bakingSets: []
     m_LightingScenario: Default
   m_PrefilteringModeMainLightShadows: 3
-  m_PrefilteringModeAdditionalLight: 3
+  m_PrefilteringModeAdditionalLight: 4
   m_PrefilteringModeAdditionalLightShadows: 0
   m_PrefilterXRKeywords: 0
   m_PrefilteringModeForwardPlus: 0

@@ -712,12 +712,17 @@ namespace Hypernex.Game
                 newTs.Add(distances[rightFoot].Value.Item2.transform.GetChild(0));
             return newTs.ToArray();
         }
+        
+        internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.FixedUpdate());
 
+        internal void Update() => localAvatarSandboxes.ForEach(x => x.Runtime.Update());
+        
         private bool a;
 
         internal void Update(bool areTwoTriggersClicked, Transform cameraTransform, Transform LeftHandReference, 
             Transform RightHandReference, bool isMoving)
         {
+            Update();
             if(MainAnimator != null && MainAnimator.isInitialized)
                 MainAnimator.SetFloat("MotionSpeed", 1f);
             if (AvatarSync != null)
@@ -848,9 +853,12 @@ namespace Hypernex.Game
             }
             fingerCalibration?.Update();
         }
+        
+        internal void LateUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.LateUpdate());
 
         internal void LateUpdate(bool isVR, Transform cameraTransform, bool lockCamera)
         {
+            LateUpdate();
             if (!isVR && headAlign != null && !lockCamera)
             {
                 cameraTransform.position = headAlign.transform.position;

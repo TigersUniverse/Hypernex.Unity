@@ -13,7 +13,7 @@ namespace Hypernex.Sandboxing
     public class Sandbox : IDisposable
     {
         private IInterpreter interpreter;
-        private Runtime Runtime;
+        internal Runtime Runtime;
 
         private void OnLog(bool avatar, NexboxScript script, object o)
         {

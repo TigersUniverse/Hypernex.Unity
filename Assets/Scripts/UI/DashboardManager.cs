@@ -1,4 +1,5 @@
 ﻿using Hypernex.Game;
+using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.UI
@@ -63,6 +64,8 @@ namespace Hypernex.UI
             Dashboard.SetActive(IsVisible);
             localPlayer.LockCamera = IsVisible;
             localPlayer.LockMovement = IsVisible;
+            if(!LocalPlayer.IsVR)
+                CursorTools.UpdateMouseIcon(!IsVisible);
         }
     }
 }

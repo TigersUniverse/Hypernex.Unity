@@ -7,9 +7,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public class Runtime : IDisposable
     {
-        public static List<Runtime> Instances => new(instances);
-        private static List<Runtime> instances = new();
-        
         internal List<SandboxFunc> OnFixedUpdates => new (onFixedUpdates);
         private List<SandboxFunc> onFixedUpdates = new ();
         
@@ -18,8 +15,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         internal List<SandboxFunc> OnLateUpdates => new(onLateUpdates);
         private List<SandboxFunc> onLateUpdates = new();
-
-        internal Runtime() => instances.Add(this);
         
         public void OnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
         public void RemoveOnFixedUpdate(SandboxFunc s) => onFixedUpdates.Add(s);
@@ -69,7 +64,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             onFixedUpdates.Clear();
             onUpdates.Clear();
             onLateUpdates.Clear();
-            instances.Remove(this);
         }
     }
 }

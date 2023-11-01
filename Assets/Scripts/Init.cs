@@ -9,12 +9,10 @@ using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
-using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
-using Nexbox;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
@@ -27,7 +25,7 @@ using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2023.10.1b8";
+    public const string VERSION = "2023.10.2b8";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -39,9 +37,12 @@ public class Init : MonoBehaviour
     public Material OutlineMaterial;
     public List<TMP_SpriteAsset> EmojiSprites = new ();
     public AudioMixerGroup VoiceGroup;
+    public AudioMixerGroup WorldGroup;
     public OverlayManager OverlayManager;
     public List<TMP_Text> VersionLabels = new();
     public CurrentAvatar ca;
+    public Texture2D MouseTexture;
+    public Texture2D CircleMouseTexture;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
@@ -68,6 +69,7 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
+        CursorTools.UpdateMouseIcon(true, DefaultTheme.PrimaryVectorColor);
         OverlayManager.Begin();
         Application.wantsToQuit += () =>
         {
@@ -152,17 +154,20 @@ public class Init : MonoBehaviour
                 }));
     }
 
-    private void FixedUpdate() => Runtime.Instances.ForEach(x => x.FixedUpdate());
+    private void FixedUpdate() => GameInstance.FocusedInstance?.FixedUpdate();
 
     private void Update()
     {
         DiscordTools.RunCallbacks();
         if (ConfigManager.SelectedConfigUser != null)
+        {
             VoiceGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.VoicesBoost);
-        Runtime.Instances.ForEach(x => x.Update());
+            WorldGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.WorldAudioVolume);
+        }
+        GameInstance.FocusedInstance?.Update();
     }
-
-    private void LateUpdate() => Runtime.Instances.ForEach(x => x.LateUpdate());
+    
+    private void LateUpdate() => GameInstance.FocusedInstance?.LateUpdate();
 
     private void OnApplicationQuit()
     {

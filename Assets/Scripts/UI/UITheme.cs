@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using Hypernex.Game;
+using Hypernex.Tools;
 using TMPro;
 using UnityEngine;
 
@@ -52,6 +54,7 @@ namespace Hypernex.UI
             {
                 UIThemeObject.ApplyTheme(this);
             }
+            CursorTools.UpdateMouseIcon(!LocalPlayer.Instance.Dashboard.IsVisible, PrimaryVectorColor);
         }
 
         public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>

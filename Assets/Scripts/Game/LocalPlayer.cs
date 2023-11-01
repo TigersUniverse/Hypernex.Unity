@@ -848,6 +848,8 @@ namespace Hypernex.Game
             return left && right;
         }
 
+        private void FixedUpdate() => avatar?.FixedUpdate();
+
         private void Update()
         {
             bool vr = IsVR;
@@ -858,7 +860,8 @@ namespace Hypernex.Game
             RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
             foreach (XRInteractorLineVisual lineVisual in XRRays)
                 lineVisual.enabled = vr;
-            Cursor.lockState = vr || LockCamera ? CursorLockMode.None : CursorLockMode.Locked;
+            CursorTools.ToggleMouseLock(vr || LockCamera);
+            CursorTools.ToggleMouseVisibility(!vr);
             bool groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)
             {
@@ -931,15 +934,6 @@ namespace Hypernex.Game
                 Respawn(scene);
             if (Input.GetKeyDown(KeyCode.F5))
                 SwitchVR();
-            if (GameInstance.FocusedInstance != null && ConfigManager.SelectedConfigUser != null)
-            {
-                foreach (KeyValuePair<AudioSource, float> keyValuePair in new Dictionary<AudioSource, float>(
-                             GameInstance.FocusedInstance.worldAudios))
-                {
-                    keyValuePair.Key.volume =
-                        ConfigManager.SelectedConfigUser.WorldAudioVolume * keyValuePair.Value;
-                }
-            }
         }
 
         public void ResetWeights() => weightedObjectUpdates.Clear();

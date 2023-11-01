@@ -225,7 +225,7 @@ namespace Hypernex.Game
 
         private bool waitingForAvatarToken;
 
-        public void Start()
+        private void Start()
         {
             GameObject g = new GameObject("VoicePosition");
             g.transform.SetParent(transform, false);
@@ -251,7 +251,9 @@ namespace Hypernex.Game
             };
         }
 
-        public void Update()
+        private void FixedUpdate() => Avatar?.FixedUpdate();
+
+        private void Update()
         {
             //float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
             if (instance != null && User == null)
@@ -268,6 +270,7 @@ namespace Hypernex.Game
                          weightedObjectUpdates))
                 weightedObjectContainer.Update(interpolationFramesCount);
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
+            Avatar?.Update();
         }
 
         private Dictionary<string, PlayerObjectUpdateHolder> avatarUpdates = new();
@@ -374,6 +377,7 @@ namespace Hypernex.Game
                              weightedObjectUpdates))
                     Avatar?.HandleNetParameter(weightedObjectContainer.Weight);
             }
+            Avatar?.LateUpdate();
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
         }
 

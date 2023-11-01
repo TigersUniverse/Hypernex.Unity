@@ -16,7 +16,6 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
-using Nexbox;
 using Nexport;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -101,7 +100,6 @@ namespace Hypernex.Game
         public User host;
         public Texture2D Thumbnail;
         public InstancePublicity Publicity;
-        public Dictionary<AudioSource, float> worldAudios = new();
         public bool lockAvatarSwitching;
 
         private HypernexInstanceClient client;
@@ -456,8 +454,7 @@ namespace Hypernex.Game
                             if (root != null && (root.GetComponent<NetPlayer>() != null ||
                                                  root.GetComponent<LocalPlayer>() != null))
                                 continue;
-                            if (!worldAudios.ContainsKey(audioSource))
-                                worldAudios.Add(audioSource, audioSource.volume);
+                            audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
                         }
                     }
                 }
@@ -481,7 +478,11 @@ namespace Hypernex.Game
                     foreach (NexboxScript worldLocalScript in World.LocalScripts)
                         sandboxes.Add(new Sandbox(worldLocalScript, this, World.gameObject));
                     foreach (LocalScript ls in Object.FindObjectsByType<LocalScript>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                        sandboxes.Add(new Sandbox(ls.NexboxScript, this, ls.gameObject));
+                    {
+                        Transform r = AnimationUtility.GetRootOfChild(ls.transform);
+                        if(r.GetComponent<LocalPlayer>() == null && r.GetComponent<NetPlayer>() == null)
+                            sandboxes.Add(new Sandbox(ls.NexboxScript, this, ls.gameObject));
+                    }
                     if (LocalPlayer.Instance.Dashboard.IsVisible)
                         LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
                 }
@@ -540,6 +541,10 @@ namespace Hypernex.Game
                 }, worldMeta.OwnerId, fileId);
             }
         }
+
+        internal void FixedUpdate() => sandboxes.ForEach(x => x.Runtime.FixedUpdate());
+        internal void Update() => sandboxes.ForEach(x => x.Runtime.Update());
+        internal void LateUpdate() => sandboxes.ForEach(x => x.Runtime.LateUpdate());
 
         public void Dispose()
         {

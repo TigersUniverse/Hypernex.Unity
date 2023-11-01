@@ -104,7 +104,7 @@ namespace Hypernex.UIActions
                 VoicesBoostSliderValueText.text = vbRounded.ToString(CultureInfo.InvariantCulture) + " dB";
                 float waRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.WorldAudioVolume, 2);
                 WorldAudioSlider.value = waRounded;
-                WorldAudioSliderValueText.text = waRounded.ToString(CultureInfo.InvariantCulture);
+                WorldAudioSliderValueText.text = waRounded.ToString(CultureInfo.InvariantCulture) + " dB";
                 NoiseSuppressionToggle.isOn = ConfigManager.SelectedConfigUser.NoiseSuppression;
                 AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
             }
@@ -303,7 +303,7 @@ namespace Hypernex.UIActions
                     return;
                 float rounded = (float) Math.Round(v, 2);
                 ConfigManager.SelectedConfigUser.WorldAudioVolume = rounded;
-                WorldAudioSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture);
+                WorldAudioSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture) + " dB";
             });
             NoiseSuppressionToggle.onValueChanged.RemoveAllListeners();
             NoiseSuppressionToggle.onValueChanged.AddListener(v =>
