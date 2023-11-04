@@ -16,7 +16,7 @@ namespace Hypernex.Configuration
         public int MaxMemoryStorageCache { get; set; } = 5120;
         
         [TomlProperty("SavedServers")]
-        public List<string> SavedServers { get; set; } = new();
+        public List<string> SavedServers { get; set; } = new(){"play.hypernex.dev"};
 
         [TomlProperty("SavedAccounts")]
         public List<ConfigUser> SavedAccounts { get; set; } = new();

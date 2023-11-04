@@ -15,8 +15,6 @@ namespace Hypernex.UI.Templates
             Header.text = h;
             if (Description != null)
                 Description.text = d;
-            else
-                Header.text = d;
             gameObject.SetActive(true);
         }
 

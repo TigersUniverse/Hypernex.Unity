@@ -25,6 +25,7 @@ namespace Hypernex.Tools
         private ShadowCastingMode skinnedMeshRendererShadowMode;
         private List<Renderer> strayRenderers = new();
         private Dictionary<Renderer, (Renderer, ShadowCastingMode)> strayRenderersShadows = new();
+        private bool isStraySMR;
 
         /// <summary>
         /// Prepares the AvatarClip for use
@@ -62,22 +63,24 @@ namespace Hypernex.Tools
             }
             if (!originalBones.Contains(head))
             {
-                if (AnimationUtility.IsChildOfTransform(skinnedMeshRenderer.rootBone, head))
+                if (skinnedMeshRenderer.rootBone != null &&
+                    AnimationUtility.IsChildOfTransform(skinnedMeshRenderer.rootBone, head))
                 {
                     // This SkinnedMeshRenderer's rootBone is apart of the head
                     head = skinnedMeshRenderer.rootBone;
                 }
                 else
                 {
-                    // If the Head isn't a bone in this SkinnedMeshRenderer, we don't need to clip anything
-                    Logger.CurrentLogger.Debug("No Head in this SkinnedMeshRenderer.");
-                    Destroy(this);
-                    return false;
+                    // Suspect that this is a stray SkinnedMeshRenderer, we will treat it like a stray but also
+                    // sync blendshapes
+                    isStraySMR = true;
                 }
             }
             // Make sure our target renderCamera is set
             r = renderCamera;
             isr = ignoreStrayRenderers;
+            if (isStraySMR)
+                return true;
             // For some reason, if bone counts don't match, the SMR wont actually render
             bonefiller = new GameObject("bonefiller_" + Guid.NewGuid()).transform;
             // We position this at the Head, because this is technically our new head bone
@@ -189,7 +192,10 @@ namespace Hypernex.Tools
             if (c == r)
             {
                 // If the Camera in this context is our renderCamera, then show the excludedBones
-                skinnedMeshRenderer.bones = excludedBones;
+                if (isStraySMR)
+                    skinnedMeshRenderer.enabled = false;
+                else
+                    skinnedMeshRenderer.bones = excludedBones;
                 // Hide any Renderers in the Avatar
                 strayRenderers.ForEach(x => x.enabled = false);
             }
@@ -198,7 +204,10 @@ namespace Hypernex.Tools
         private void OnEndCameraRendering(ScriptableRenderContext context, Camera c)
         {
             // Always revert back to the originalBones
-            skinnedMeshRenderer.bones = originalBones;
+            if (isStraySMR)
+                skinnedMeshRenderer.enabled = true;
+            else
+                skinnedMeshRenderer.bones = originalBones;
             // Show the Renderers in the Avatar again
             strayRenderers.ForEach(x => x.enabled = true);
         }
@@ -219,7 +228,7 @@ namespace Hypernex.Tools
 
         private void OnDisable()
         {
-            if (GetComponent<SkinnedMeshRenderer>().name.Contains("shadowclone_"))
+            if (gameObject.name.Contains("shadowclone_"))
                 return;
             // Revert all RenderPipeline Events
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;

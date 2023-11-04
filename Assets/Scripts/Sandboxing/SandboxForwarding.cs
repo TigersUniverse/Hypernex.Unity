@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using CobaltSharp;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing.SandboxedTypes;
@@ -8,6 +9,7 @@ using HypernexSharp.APIObjects;
 using Nexbox;
 using UnityEngine;
 using Bounds = Hypernex.Sandboxing.SandboxedTypes.Bounds;
+using Cobalt = Hypernex.Sandboxing.SandboxedTypes.Cobalt;
 using Collider = Hypernex.Sandboxing.SandboxedTypes.Collider;
 using Collision = Hypernex.Sandboxing.SandboxedTypes.Collision;
 using Color = Hypernex.Sandboxing.SandboxedTypes.Color;
@@ -86,6 +88,13 @@ namespace Hypernex.Sandboxing
             ["ScriptEvent"] = typeof(ScriptEvent),
             ["ScriptEvents"] = typeof(ScriptEvents),
             ["Audio"] = typeof(Audio),
+            ["GetMedia"] = typeof(GetMedia),
+            ["VideoCodec"] = typeof(VideoCodec),
+            ["AudioFormat"] = typeof(AudioFormat),
+            ["Cobalt"] = typeof(Cobalt),
+            ["CobaltOption"] = typeof(CobaltOption),
+            ["CobaltOptions"] = typeof(CobaltOptions),
+            ["CobaltDownload"] = typeof(CobaltDownload),
             ["PhysicsBody"] = typeof(PhysicsBody)
         });
 

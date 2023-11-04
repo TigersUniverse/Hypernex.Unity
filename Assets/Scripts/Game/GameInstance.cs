@@ -105,7 +105,7 @@ namespace Hypernex.Game
         private HypernexInstanceClient client;
         internal Scene loadedScene;
         internal bool authed;
-        private List<Sandbox> sandboxes = new ();
+        internal List<Sandbox> sandboxes = new ();
         private string hostId;
         public readonly string instanceCreatorId;
         internal bool isHost { get; private set; }

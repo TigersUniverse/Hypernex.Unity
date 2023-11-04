@@ -1,4 +1,9 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.IO;
+using Hypernex.Tools;
+using Nexbox;
+using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
@@ -80,6 +85,30 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if(audioSource == null || audioSource.clip == null)
                 return 0.0f;
             return audioSource.clip.length;
+        }
+
+        private static IEnumerator WaitForAudio(string pathToFile, AudioSource audioSource, SandboxFunc onLoad)
+        {
+            using (UnityWebRequest r = UnityWebRequestMultimedia.GetAudioClip(pathToFile, AudioType.MPEG))
+            {
+                yield return r.SendWebRequest();
+                if (r.result == UnityWebRequest.Result.Success)
+                {
+                    audioSource.clip = DownloadHandlerAudioClip.GetContent(r);
+                    SandboxFuncTools.InvokeSandboxFunc(onLoad);
+                }
+            }
+        }
+
+        public static void LoadFromCobalt(Item item, CobaltDownload cobaltDownload, SandboxFunc onLoad)
+        {
+            AudioSource audioSource = GetAudioSource(item);
+            if(audioSource == null)
+                return;
+            if (!File.Exists(cobaltDownload.PathToFile))
+                return;
+            CoroutineRunner.Instance.StartCoroutine(WaitForAudio("file://" + cobaltDownload.PathToFile, audioSource,
+                onLoad));
         }
     }
 }

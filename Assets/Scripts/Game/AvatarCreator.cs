@@ -41,6 +41,8 @@ namespace Hypernex.Game
         {
             scaleMlp = 0.9f,
             handOffset = new Vector3(0, 0.01f, -0.1f),
+            pelvisPositionWeight = 0,
+            pelvisRotationWeight = 0
         };
         private GameObject headAlign;
         internal GameObject voiceAlign;
@@ -762,6 +764,9 @@ namespace Hypernex.Game
             {
                 VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, null, LeftHandReference.transform,
                     RightHandReference.transform);
+                vrik.solver.locomotion.stepThreshold = 0.01f;
+                vrik.solver.locomotion.angleThreshold = 20;
+                vrik.solver.plantFeet = false;
                 SetupAnimators();
                 calibrated = true;
             }

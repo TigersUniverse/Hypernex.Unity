@@ -1,7 +1,12 @@
 ﻿using System.Collections.Generic;
+using Hypernex.CCK;
 using Hypernex.Game;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
+using Hypernex.Sandboxing;
+using Hypernex.UIActions;
+using Hypernex.UIActions.Data;
+using Nexport;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -30,6 +35,8 @@ namespace Hypernex.UI.Templates
         public GameObject ServerButton;
         public Sprite Warning;
         public Sprite Error;
+        public TMP_InputField ScriptText;
+        public TMP_Dropdown ScriptLanguageDropdown;
         
         private static List<(string, int)> ClientLogs = new ();
         private static List<ServerConsoleLog> ServerLogs = new ();
@@ -99,6 +106,46 @@ namespace Hypernex.UI.Templates
             }
 
             ResetMessages();
+        }
+
+        public void Execute()
+        {
+            if (GameInstance.FocusedInstance == null)
+                return;
+            if (GameInstance.FocusedInstance.worldMeta.OwnerId != APIPlayer.APIUser.Id)
+                return;
+            NexboxLanguage nexboxLanguage = (NexboxLanguage) ScriptLanguageDropdown.value;
+            switch (selected)
+            {
+                case 0:
+                    NexboxScript script = new NexboxScript(nexboxLanguage, ScriptText.text);
+                    GameInstance.FocusedInstance.sandboxes.Add(new Sandbox(script, GameInstance.FocusedInstance,
+                        GameInstance.FocusedInstance.World.gameObject));
+                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    {
+                        Header = "Executed Script!",
+                        Description = "Executed " + nexboxLanguage + " script on the client-side"
+                    });
+                    break;
+                case 1:
+                    ServerConsoleExecute serverConsoleExecute = new ServerConsoleExecute
+                    {
+                        Auth = new JoinAuth
+                        {
+                            UserId = APIPlayer.APIUser.Id,
+                            TempToken = GameInstance.FocusedInstance.userIdToken
+                        },
+                        Language = nexboxLanguage,
+                        ScriptText = ScriptText.text
+                    };
+                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(serverConsoleExecute));
+                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    {
+                        Header = "Executed Script!",
+                        Description = "Executed " + nexboxLanguage + " script on the server-side"
+                    });
+                    break;
+            }
         }
 
         private void ResetMessages()
