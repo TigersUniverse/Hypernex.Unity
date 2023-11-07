@@ -425,6 +425,7 @@ namespace Hypernex.Game
                                                  root.GetComponent<LocalPlayer>() != null))
                                 continue;
                             audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
+                            audioSource.spatialize = true;
                         }
                         VideoPlayer[] videoPlayers = transform.gameObject.GetComponents<VideoPlayer>();
                         foreach (VideoPlayer videoPlayer in videoPlayers)
@@ -433,6 +434,7 @@ namespace Hypernex.Game
                             if (audioSource == null)
                                 audioSource = videoPlayer.gameObject.AddComponent<AudioSource>();
                             audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
+                            audioSource.spatialize = true;
                             videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
                             videoPlayer.SetTargetAudioSource(0, audioSource);
                         }

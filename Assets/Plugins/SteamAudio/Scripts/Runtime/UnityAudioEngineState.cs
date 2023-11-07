@@ -10,11 +10,12 @@ namespace SteamAudio
 {
     public sealed class UnityAudioEngineState : AudioEngineState
     {
-        public override void Initialize(IntPtr context, IntPtr defaultHRTF, SimulationSettings simulationSettings)
+        public override void Initialize(IntPtr context, IntPtr defaultHRTF, SimulationSettings simulationSettings, PerspectiveCorrection correction)
         {
             API.iplUnityInitialize(context);
             API.iplUnitySetHRTF(defaultHRTF);
             API.iplUnitySetSimulationSettings(simulationSettings);
+            API.iplUnitySetPerspectiveCorrection(correction);
         }
 
         public override void Destroy()
@@ -27,6 +28,11 @@ namespace SteamAudio
             API.iplUnitySetHRTF(hrtf);
         }
 
+        public override void SetPerspectiveCorrection(PerspectiveCorrection correction)
+        {
+            API.iplUnitySetPerspectiveCorrection(correction);
+        }
+
         public override void SetReverbSource(Source reverbSource)
         {
             API.iplUnitySetReverbSource(reverbSource.Get());
@@ -37,7 +43,8 @@ namespace SteamAudio
     {
         public override Transform GetListenerTransform()
         {
-            return GameObject.FindObjectOfType<AudioListener>().transform;
+            var audioListener = GameObject.FindObjectOfType<AudioListener>();
+            return (audioListener != null) ? audioListener.transform : null;
         }
 
         public override AudioSettings GetAudioSettings()

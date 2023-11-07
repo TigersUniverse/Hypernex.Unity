@@ -14,7 +14,7 @@ namespace SteamAudio
     public static class Constants
     {
         public const uint kVersionMajor = 4;
-        public const uint kVersionMinor = 0;
+        public const uint kVersionMinor = 4;
         public const uint kVersionPatch = 0;
         public const uint kVersion = (kVersionMajor << 16) | (kVersionMinor << 8) | kVersionPatch;
     }
@@ -75,6 +75,12 @@ namespace SteamAudio
     {
         Default,
         SOFA
+    }
+
+    public enum HRTFNormType
+    {
+        None,
+        RMS
     }
 
     public enum ProbeGenerationType
@@ -209,6 +215,9 @@ namespace SteamAudio
 
     [UnmanagedFunctionPointer(CallingConvention.Winapi)]
     public delegate float DirectivityCallback(Vector3 direction, IntPtr userData);
+
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+    public delegate void PathingVisualizationCallback(Vector3 from, Vector3 to, Bool occluded, IntPtr userData);
 
     // STRUCTURES
 
@@ -407,6 +416,10 @@ namespace SteamAudio
     {
         public HRTFType type;
         public string sofaFileName;
+        public IntPtr sofaFileData;
+        public int sofaFileDataSize;
+        public float volume;
+        public HRTFNormType normType;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -548,6 +561,7 @@ namespace SteamAudio
         public int pathingOrder;
         public Bool enableValidation;
         public Bool findAlternatePaths;
+        public int numTransmissionRays;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -559,6 +573,8 @@ namespace SteamAudio
         public float duration;
         public int order;
         public float irradianceMinDistance;
+        public PathingVisualizationCallback pathingVisualizationCallback;
+        public IntPtr pathingUserData;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -603,6 +619,9 @@ namespace SteamAudio
         public float eqCoeffsHigh;
         public IntPtr shCoeffs;
         public int order;
+        public Bool binaural;
+        public IntPtr hrtf;
+        public CoordinateSpace3 listener;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -611,6 +630,15 @@ namespace SteamAudio
         public DirectEffectParams direct;
         public ReflectionEffectParams reflections;
         public PathEffectParams pathing;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PerspectiveCorrection
+    {
+        public Bool enabled;
+        public float xfactor;
+        public float yfactor;
+        public Matrix4x4 transform;
     }
 
     // FUNCTIONS
@@ -914,7 +942,10 @@ namespace SteamAudio
         public static extern void iplUnityInitialize(IntPtr context);
 
         [DllImport("audioplugin_phonon")]
-        public static extern void iplUnitySetHRTF(IntPtr hrtf);
+        public static extern void iplUnitySetPerspectiveCorrection(PerspectiveCorrection correction);
+
+        [DllImport("audioplugin_phonon")]
+        public static extern void  iplUnitySetHRTF(IntPtr hrtf);
 
         [DllImport("audioplugin_phonon")]
         public static extern void iplUnitySetSimulationSettings(SimulationSettings simulationSettings);
@@ -947,5 +978,11 @@ namespace SteamAudio
 
         [DllImport("phonon_fmod")]
         public static extern void iplFMODTerminate();
+
+        [DllImport("phonon_fmod")]
+        public static extern int iplFMODAddSource(IntPtr source);
+
+        [DllImport("phonon_fmod")]
+        public static extern void iplFMODRemoveSource(int handle);
     }
 }

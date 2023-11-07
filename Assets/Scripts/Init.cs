@@ -16,6 +16,8 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
+using System.Runtime.InteropServices;
+using Unity.XR.Oculus;
 using UnityEngine.Android;
 #endif
 using UnityEngine.Audio;
@@ -94,9 +96,17 @@ public class Init : MonoBehaviour
                 Permission.RequestUserPermission(Permission.ExternalStorageWrite);
         }
         catch(Exception){}
+        try
+        {
+            StartVR();
+            SystemHeadset systemHeadset = Utils.GetSystemHeadsetType();
+            bool isOculus = systemHeadset != SystemHeadset.None;
+            if (!isOculus)
+                StopVR();
+        } catch(Exception e){Logger.CurrentLogger.Critical(e);}
 #endif
         string[] args = Environment.GetCommandLineArgs();
-        if(args.Contains("-xr") || AssetBundleTools.Platform == BuildPlatform.Android)
+        if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;
         switch (AssetBundleTools.Platform)

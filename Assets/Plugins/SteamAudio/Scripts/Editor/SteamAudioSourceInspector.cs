@@ -13,6 +13,7 @@ namespace SteamAudio
     {
         SerializedProperty mDirectBinaural;
         SerializedProperty mInterpolation;
+        SerializedProperty mPerspectiveCorrection;
         SerializedProperty mDistanceAttenuation;
         SerializedProperty mDistanceAttenuationInput;
         SerializedProperty mAirAbsorption;
@@ -37,6 +38,7 @@ namespace SteamAudio
         SerializedProperty mTransmissionLow;
         SerializedProperty mTransmissionMid;
         SerializedProperty mTransmissionHigh;
+        SerializedProperty mTransmissionRays;
         SerializedProperty mDirectMixLevel;
         SerializedProperty mReflections;
         SerializedProperty mReflectionsType;
@@ -59,6 +61,7 @@ namespace SteamAudio
         {
             mDirectBinaural = serializedObject.FindProperty("directBinaural");
             mInterpolation = serializedObject.FindProperty("interpolation");
+            mPerspectiveCorrection = serializedObject.FindProperty("perspectiveCorrection");
             mDistanceAttenuation = serializedObject.FindProperty("distanceAttenuation");
             mDistanceAttenuationInput = serializedObject.FindProperty("distanceAttenuationInput");
             mAirAbsorption = serializedObject.FindProperty("airAbsorption");
@@ -83,6 +86,7 @@ namespace SteamAudio
             mTransmissionLow = serializedObject.FindProperty("transmissionLow");
             mTransmissionMid = serializedObject.FindProperty("transmissionMid");
             mTransmissionHigh = serializedObject.FindProperty("transmissionHigh");
+            mTransmissionRays = serializedObject.FindProperty("maxTransmissionSurfaces");
             mDirectMixLevel = serializedObject.FindProperty("directMixLevel");
             mReflections = serializedObject.FindProperty("reflections");
             mReflectionsType = serializedObject.FindProperty("reflectionsType");
@@ -108,6 +112,11 @@ namespace SteamAudio
             {
                 EditorGUILayout.PropertyField(mDirectBinaural);
                 EditorGUILayout.PropertyField(mInterpolation);
+            }
+
+            if (audioEngineIsUnity && SteamAudioSettings.Singleton.perspectiveCorrection)
+            {
+                EditorGUILayout.PropertyField(mPerspectiveCorrection);
             }
 
             if (audioEngineIsUnity)
@@ -196,6 +205,10 @@ namespace SteamAudio
                             {
                                 EditorGUILayout.PropertyField(mTransmissionMid);
                             }
+                        }
+                        else if ((TransmissionInput) mTransmissionInput.enumValueIndex == TransmissionInput.SimulationDefined)
+                        {
+                            EditorGUILayout.PropertyField(mTransmissionRays);
                         }
                     }
                 }

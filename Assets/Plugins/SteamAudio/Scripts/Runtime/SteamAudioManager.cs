@@ -60,6 +60,7 @@ namespace SteamAudio
         RaycastHit[] mRayHits = new RaycastHit[1];
         IntPtr mMaterialBuffer = IntPtr.Zero;
         Thread mSimulationThread = null;
+        EventWaitHandle mSimulationThreadWaitHandle = null;
         bool mStopSimulationThread = false;
         bool mSimulationCompleted = false;
         float mSimulationUpdateTimeElapsed = 0.0f;
@@ -189,6 +190,29 @@ namespace SteamAudio
             return reflectionEffectType;
         }
 
+        public static PerspectiveCorrection GetPerspectiveCorrection()
+        {
+            PerspectiveCorrection correction;
+            if (Camera.main != null && Camera.main.aspect > .0f)
+            {
+                correction.enabled = SteamAudioSettings.Singleton.perspectiveCorrection ? Bool.True : Bool.False;
+                correction.xfactor = 1.0f * SteamAudioSettings.Singleton.perspectiveCorrectionFactor;
+                correction.yfactor = correction.xfactor / Camera.main.aspect;
+
+                // Camera space matches OpenGL convention. No need to transform matrix to ConvertTransform.
+                correction.transform = Common.TransformMatrix(Camera.main.projectionMatrix * Camera.main.worldToCameraMatrix);
+            }
+            else
+            {
+                correction.enabled = Bool.False;
+                correction.xfactor = 1.0f;
+                correction.yfactor = 1.0f;
+                correction.transform = Common.TransformMatrix(UnityEngine.Matrix4x4.identity);
+            }
+
+            return correction;
+        }
+
         public static SimulationSettings GetSimulationSettings(bool baking)
         {
             var simulationSettings = new SimulationSettings { };
@@ -259,20 +283,29 @@ namespace SteamAudio
                 hrtfNames[0] = "Default";
                 for (var i = 0; i < SteamAudioSettings.Singleton.SOFAFiles.Length; ++i)
                 {
-                    hrtfNames[i + 1] = SteamAudioSettings.Singleton.SOFAFiles[i];
+                    if (SteamAudioSettings.Singleton.SOFAFiles[i])
+                        hrtfNames[i + 1] = SteamAudioSettings.Singleton.SOFAFiles[i].sofaName;
+                    else
+                        hrtfNames[i + 1] = null;
                 }
 
-                mHRTFs[0] = new HRTF(mContext, mAudioSettings, null);
+                mHRTFs[0] = new HRTF(mContext, mAudioSettings, null, null, SteamAudioSettings.Singleton.hrtfVolumeGainDB, SteamAudioSettings.Singleton.hrtfNormalizationType);
 
                 for (var i = 0; i < SteamAudioSettings.Singleton.SOFAFiles.Length; ++i)
                 {
-                    var sofaFileName = SteamAudioSettings.Singleton.SOFAFiles[i];
-                    if (!sofaFileName.EndsWith(".sofa"))
+                    if (SteamAudioSettings.Singleton.SOFAFiles[i])
                     {
-                        sofaFileName += ".sofa";
+                        mHRTFs[i + 1] = new HRTF(mContext, mAudioSettings, 
+                            SteamAudioSettings.Singleton.SOFAFiles[i].sofaName, 
+                            SteamAudioSettings.Singleton.SOFAFiles[i].data,
+                            SteamAudioSettings.Singleton.SOFAFiles[i].volume,
+                            SteamAudioSettings.Singleton.SOFAFiles[i].normType);
                     }
-
-                    mHRTFs[i + 1] = new HRTF(mContext, mAudioSettings, Common.GetStreamingAssetsFileName(sofaFileName));
+                    else
+                    {
+                        Debug.LogWarning("SOFA Asset File Missing. Assigning default HRTF.");
+                        mHRTFs[i + 1] = mHRTFs[0];
+                    }
                 }
             }
 
@@ -372,8 +405,11 @@ namespace SteamAudio
             if (reason == ManagerInitReason.Playing)
             {
                 var simulationSettings = GetSimulationSettings(false);
+                var perspectiveCorrection = GetPerspectiveCorrection();
 
                 mSimulator = new Simulator(mContext, simulationSettings);
+
+                mSimulationThreadWaitHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
 
                 mSimulationThread = new Thread(RunSimulation);
                 mSimulationThread.Start();
@@ -381,8 +417,16 @@ namespace SteamAudio
                 mAudioEngineState = AudioEngineState.Create(SteamAudioSettings.Singleton.audioEngine);
                 if (mAudioEngineState != null)
                 {
-                    mAudioEngineState.Initialize(mContext.Get(), mHRTFs[0].Get(), simulationSettings);
+                    mAudioEngineState.Initialize(mContext.Get(), mHRTFs[0].Get(), simulationSettings, perspectiveCorrection);
                 }
+
+#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+                // If the developer has disabled scene reload, SceneManager.sceneLoaded won't fire during initial load
+                if (EditorSettings.enterPlayModeOptions.HasFlag(EnterPlayModeOptions.DisableSceneReload))
+                {
+                    OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
+                }
+#endif
             }
         }
 
@@ -397,8 +441,7 @@ namespace SteamAudio
         {
             LoadScene(scene, mContext, additive: (loadSceneMode == LoadSceneMode.Additive));
 
-            mListener = AudioEngineStateHelpers.Create(SteamAudioSettings.Singleton.audioEngine).GetListenerTransform();
-            mListenerComponent = mListener.GetComponent<SteamAudioListener>();
+            NotifyAudioListenerChanged();
         }
 
         // This method is called when a scene is unloaded.
@@ -407,10 +450,24 @@ namespace SteamAudio
             RemoveAllDynamicObjects();
         }
 
+        // Call this function when you create a new AudioListener component (or its equivalent, if you are using
+        // third-party audio middleware).
+        public static void NotifyAudioListenerChanged()
+        {
+            sSingleton.mListener = AudioEngineStateHelpers.Create(SteamAudioSettings.Singleton.audioEngine).GetListenerTransform();
+            if (sSingleton.mListener)
+            {
+                sSingleton.mListenerComponent = sSingleton.mListener.GetComponent<SteamAudioListener>();
+            }
+        }
+
         private void LateUpdate()
         {
             if (mAudioEngineState == null)
                 return;
+
+            var perspectiveCorrection = GetPerspectiveCorrection();
+            mAudioEngineState.SetPerspectiveCorrection(perspectiveCorrection);
 
             mAudioEngineState.SetHRTF(CurrentHRTF.Get());
 
@@ -440,6 +497,8 @@ namespace SteamAudio
             sharedInputs.duration = SteamAudioSettings.Singleton.realTimeDuration;
             sharedInputs.order = SteamAudioSettings.Singleton.realTimeAmbisonicOrder;
             sharedInputs.irradianceMinDistance = SteamAudioSettings.Singleton.realTimeIrradianceMinDistance;
+            sharedInputs.pathingVisualizationCallback = null;
+            sharedInputs.pathingUserData = IntPtr.Zero;
 
             mSimulator.SetSharedInputs(SimulationFlags.Direct, sharedInputs);
 
@@ -509,7 +568,7 @@ namespace SteamAudio
                 }
                 else
                 {
-                    mSimulationThread.Interrupt();
+                    mSimulationThreadWaitHandle.Set();
                 }
             }
         }
@@ -529,12 +588,7 @@ namespace SteamAudio
         {
             while (!mStopSimulationThread)
             {
-                try
-                {
-                    Thread.Sleep(Timeout.Infinite);
-                }
-                catch (ThreadInterruptedException)
-                { }
+                mSimulationThreadWaitHandle.WaitOne();
 
                 if (mStopSimulationThread)
                     break;
@@ -563,7 +617,7 @@ namespace SteamAudio
             if (sSingleton.mSimulationThread != null)
             {
                 sSingleton.mStopSimulationThread = true;
-                sSingleton.mSimulationThread.Interrupt();
+                sSingleton.mSimulationThreadWaitHandle.Set();
                 sSingleton.mSimulationThread.Join();
             }
 
@@ -614,6 +668,9 @@ namespace SteamAudio
                 }
             }
 
+            SceneManager.sceneLoaded -= sSingleton.OnSceneLoaded;
+            SceneManager.sceneUnloaded -= sSingleton.OnSceneUnloaded;
+
             sSingleton.mContext.Release();
             sSingleton.mContext = null;
         }
@@ -623,7 +680,7 @@ namespace SteamAudio
             if (sSingleton.mSimulationThread != null)
             {
                 sSingleton.mStopSimulationThread = true;
-                sSingleton.mSimulationThread.Interrupt();
+                sSingleton.mSimulationThreadWaitHandle.Set();
                 sSingleton.mSimulationThread.Join();
             }
 
@@ -733,6 +790,7 @@ namespace SteamAudio
             }
 
             var simulationSettings = GetSimulationSettings(false);
+            var persPectiveCorrection = GetPerspectiveCorrection();
 
             sSingleton.mSimulator = new Simulator(sSingleton.mContext, simulationSettings);
 
@@ -743,7 +801,7 @@ namespace SteamAudio
             sSingleton.mAudioEngineState = AudioEngineState.Create(SteamAudioSettings.Singleton.audioEngine);
             if (sSingleton.mAudioEngineState != null)
             {
-                sSingleton.mAudioEngineState.Initialize(sSingleton.mContext.Get(), sSingleton.mHRTFs[0].Get(), simulationSettings);
+                sSingleton.mAudioEngineState.Initialize(sSingleton.mContext.Get(), sSingleton.mHRTFs[0].Get(), simulationSettings, persPectiveCorrection);
 
                 var listeners = new SteamAudioListener[sSingleton.mListeners.Count];
                 sSingleton.mListeners.CopyTo(listeners);
@@ -1000,8 +1058,8 @@ namespace SteamAudio
             var moveRequired = false;
             var moveSucceeded = false;
 
-            // Look for the FMOD Studio plugin files. The files are in the right place for FMOD Studio 2.0 through 2.1
-            // out of the box, but will need to be copied for 2.2.
+            // Look for the FMOD Studio plugin files. The files are in the right place for FMOD Studio 2.2
+            // out of the box, but will need to be copied for 2.1 or earlier.
             // 2.0 through 2.1 expect plugin files in Assets/Plugins/FMOD/lib/(platform)
             // 2.2 expects plugin files in Assets/Plugins/FMOD/platforms/(platform)/lib
             if (AssetExists("Assets/Plugins/FMOD/lib/win/x86_64/phonon_fmod.dll"))
@@ -1419,11 +1477,7 @@ namespace SteamAudio
         // This method is called as soon as scripts are loaded, which happens whenever play mode is started
         // (in the editor), or whenever the game is launched. We then create a Steam Audio Manager object
         // and move it to the Don't Destroy On Load list.
-#if UNITY_2018_1_OR_NEWER
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-#else
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-#endif
         static void AutoInitialize()
         {
             Initialize(ManagerInitReason.Playing);
