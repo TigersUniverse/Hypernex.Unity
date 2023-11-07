@@ -501,18 +501,21 @@ namespace Hypernex.Game
 
         public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
-            if (playerObjectUpdate.Object.ObjectLocation.Length > 0 && playerObjectUpdate.Object.ObjectLocation[0] == '*' &&
-                playerObjectUpdate.Object.ObjectLocation.Contains("*camera_"))
+            try
             {
-                NetHandleCameraLife n = GetHandleCamera(playerObjectUpdate.Object.ObjectLocation);
-                n.Ping();
-                Transform c = n.transform;
-                c.position = NetworkConversionTools.float3ToVector3(playerObjectUpdate.Object.Position);
-                c.rotation = Quaternion.Euler(new Vector3(playerObjectUpdate.Object.Rotation.x,
-                    playerObjectUpdate.Object.Rotation.y, playerObjectUpdate.Object.Rotation.z));
-                c.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                return;
-            }
+                if (playerObjectUpdate.Object.ObjectLocation.Length > 0 && playerObjectUpdate.Object.ObjectLocation[0] == '*' &&
+                    playerObjectUpdate.Object.ObjectLocation.Contains("*camera_"))
+                {
+                    NetHandleCameraLife n = GetHandleCamera(playerObjectUpdate.Object.ObjectLocation);
+                    n.Ping();
+                    Transform c = n.transform;
+                    c.position = NetworkConversionTools.float3ToVector3(playerObjectUpdate.Object.Position);
+                    c.rotation = Quaternion.Euler(new Vector3(playerObjectUpdate.Object.Rotation.x,
+                        playerObjectUpdate.Object.Rotation.y, playerObjectUpdate.Object.Rotation.z));
+                    c.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+                    return;
+                }
+            }catch(Exception){}
             if (string.IsNullOrEmpty(playerObjectUpdate.Object.ObjectLocation))
                 playerObjectUpdate.Object.ObjectLocation = "";
             if (!avatarUpdates.ContainsKey(playerObjectUpdate.Object.ObjectLocation))

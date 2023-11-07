@@ -17,6 +17,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     public static class LocalLocalAvatar
     {
         public static bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
+        public static bool IsHost() => GameInstance.FocusedInstance?.isHost ?? false;
         
         public static ReadonlyItem GetAvatarObject(HumanBodyBones humanBodyBones)
         {

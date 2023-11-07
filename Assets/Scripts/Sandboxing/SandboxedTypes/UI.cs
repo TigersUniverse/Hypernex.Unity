@@ -1,4 +1,6 @@
 ﻿using System;
+using Hypernex.Game;
+using Hypernex.UI.Templates;
 using Nexbox;
 using TMPro;
 using UnityEngine;
@@ -114,6 +116,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             if (slider != null)
                 slider.value = value;
         }
+
+        public static void SetSliderRange(Item item, float minimum, float maximum)
+        {
+            Slider slider = item.t.gameObject.GetComponent<Slider>();
+            if (slider != null)
+            {
+                slider.minValue = minimum;
+                slider.maxValue = maximum;
+                slider.value = Mathf.Clamp(slider.value, minimum, maximum);
+            }
+        }
         
         public static float GetScrollbar(Item item)
         {
@@ -142,6 +155,18 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             Scrollbar scrollbar = item.t.gameObject.GetComponent<Scrollbar>();
             if (scrollbar != null)
                 scrollbar.value = value;
+        }
+
+        public static void RegisterInputFieldVR(Item item)
+        {
+            TMP_InputField tif = item.t.gameObject.GetComponent<TMP_InputField>();
+            tif.onSelect.RemoveAllListeners();
+            tif.onSelect.AddListener(_ =>
+            {
+                if (!LocalPlayer.IsVR)
+                    return;
+                KeyboardTemplate.GetKeyboardTemplateByLanguage("en").RequestInput(s => tif.text = s);
+            });
         }
         
         public static string GetInputFieldText(Item item)

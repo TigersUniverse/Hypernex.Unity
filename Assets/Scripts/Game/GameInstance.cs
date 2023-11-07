@@ -11,8 +11,6 @@ using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
-using HypernexSharp.API;
-using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
@@ -21,6 +19,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using UnityEngine.Video;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using Object = UnityEngine.Object;
 using Physics = UnityEngine.Physics;
@@ -106,9 +105,20 @@ namespace Hypernex.Game
         internal Scene loadedScene;
         internal bool authed;
         internal List<Sandbox> sandboxes = new ();
-        private string hostId;
         public readonly string instanceCreatorId;
-        internal bool isHost { get; private set; }
+
+        private string hostId => client?.HostId ?? String.Empty;
+        internal bool isHost
+        {
+            get
+            {
+                if (APIPlayer.APIUser == null)
+                    return false;
+                if (client == null)
+                    return false;
+                return client.HostId == APIPlayer.APIUser.Id;
+            }
+        }
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
         internal ScriptEvents ScriptEvents;
@@ -120,8 +130,6 @@ namespace Hypernex.Game
             instanceId = joinInstance.instanceId;
             userIdToken = joinInstance.tempUserToken;
             this.worldMeta = worldMeta;
-            hostId = joinInstance.instanceCreatorId;
-            isHost = joinInstance.instanceCreatorId == APIPlayer.APIUser.Id;
             instanceCreatorId = joinInstance.instanceCreatorId;
             Publicity = joinInstance.InstancePublicity;
             Moderators = joinInstance.Moderators;
@@ -140,8 +148,6 @@ namespace Hypernex.Game
             instanceId = instanceOpened.instanceId;
             userIdToken = instanceOpened.tempUserToken;
             this.worldMeta = worldMeta;
-            hostId = APIPlayer.APIUser.Id;
-            isHost = true;
             instanceCreatorId = APIPlayer.APIUser.Id;
             Publicity = instanceOpened.InstancePublicity;
             Moderators = instanceOpened.Moderators;
@@ -175,27 +181,11 @@ namespace Hypernex.Game
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
-            OnUserLoaded += user =>
-            {
-                if (!isHost)
-                    usersBeforeMe.Add(user);
-            };
             OnClientConnect += user => ScriptEvents?.OnUserJoin.Invoke(user.Id);
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
-            OnClientDisconnect += user =>
-            {
-                if (!isHost)
-                {
-                    usersBeforeMe.Remove(user);
-                    if (usersBeforeMe.Count <= 0 && !ConnectedUsers.Contains(host))
-                        isHost = true;
-                }
-                PlayerManagement.PlayerLeave(this, user);
-            };
+            OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
             OnDisconnect += Dispose;
             PlayerManagement.CreateGameInstance(this);
-            if(isHost)
-                host = APIPlayer.APIUser;
             APIPlayer.UserSocket.OnOpen += () =>
             {
                 // Socket probably reconnected, rejoin instance
@@ -208,30 +198,10 @@ namespace Hypernex.Game
             APIPlayer.OnLogout += Dispose;
         }
 
-        private void OnUser(CallbackResult<GetUserResult> r, string hostId)
-        {
-            if (FocusedInstance != this)
-                return;
-            if (!r.success)
-            {
-                APIPlayer.APIObject.GetUser(rr => OnUser(rr, hostId), hostId, isUserId: true);
-                return;
-            }
-            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-            {
-                host = r.result.UserData;
-                DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
-            }));
-        }
-
         public void Open()
         {
             if(!client.IsOpen)
                 client.Open();
-            if(isHost)
-                DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
-            else
-                APIPlayer.APIObject.GetUser(r => OnUser(r, hostId), hostId, isUserId: true);
         }
         public void Close()
         {
@@ -456,6 +426,16 @@ namespace Hypernex.Game
                                 continue;
                             audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
                         }
+                        VideoPlayer[] videoPlayers = transform.gameObject.GetComponents<VideoPlayer>();
+                        foreach (VideoPlayer videoPlayer in videoPlayers)
+                        {
+                            AudioSource audioSource = videoPlayer.gameObject.GetComponent<AudioSource>();
+                            if (audioSource == null)
+                                audioSource = videoPlayer.gameObject.AddComponent<AudioSource>();
+                            audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
+                            videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+                            videoPlayer.SetTargetAudioSource(0, audioSource);
+                        }
                     }
                 }
                 if (World == null)
@@ -543,7 +523,27 @@ namespace Hypernex.Game
         }
 
         internal void FixedUpdate() => sandboxes.ForEach(x => x.Runtime.FixedUpdate());
-        internal void Update() => sandboxes.ForEach(x => x.Runtime.Update());
+
+        internal void Update()
+        {
+            if (!string.IsNullOrEmpty(hostId) && (host == null || (host != null && host.Id != hostId)))
+            {
+                if (hostId == APIPlayer.APIUser.Id)
+                    host = APIPlayer.APIUser;
+                else
+                    foreach (User connectedUser in ConnectedUsers)
+                    {
+                        if (connectedUser.Id == hostId)
+                        {
+                            host = connectedUser;
+                        }
+                    }
+                if(host != null)
+                    DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
+            }
+            sandboxes.ForEach(x => x.Runtime.Update());
+        }
+        
         internal void LateUpdate() => sandboxes.ForEach(x => x.Runtime.LateUpdate());
 
         public void Dispose()

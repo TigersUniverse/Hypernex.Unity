@@ -8,7 +8,8 @@ namespace Hypernex.Tools
     {
         public static CoroutineRunner Instance { get; private set; }
 
-        public void Run(IEnumerator enumerator) => StartCoroutine(enumerator);
+        public Coroutine Run(IEnumerator enumerator) => StartCoroutine(enumerator);
+        public void Stop(Coroutine c) => StopCoroutine(c);
 
         private void Start() => Instance = this;
     }

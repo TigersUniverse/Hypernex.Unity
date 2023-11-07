@@ -26,6 +26,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             set => t.gameObject.SetActive(value);
         }
 
+        public string Path => AnimationUtility.CalculateTransformPath(t, null);
+
         public Item Parent
         {
             get => new (t.parent);
