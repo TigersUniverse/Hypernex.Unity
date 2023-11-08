@@ -42,7 +42,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         }
         
         public bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
-        public bool IsHost() => GameInstance.FocusedInstance?.isHost ?? false;
+
+        public bool IsHost()
+        {
+            if(isLocalAvatar)
+                return GameInstance.FocusedInstance?.isHost ?? false;
+            return GameInstance.FocusedInstance?.host.Id == netPlayer.UserId;
+        }
 
         public Item GetAvatarObject(HumanBodyBones humanBodyBones)
         {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -20,6 +21,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public string Name => item.Name;
 
         public bool Enabled => item.Enabled;
+        public string Path => AnimationUtility.CalculateTransformPath(item.t, null);
         public ReadonlyItem Parent => new(item.t.parent);
         
         public float3 Position => item.Position;
