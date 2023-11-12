@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading;
 using Hypernex.Configuration;
+using HypernexSharp.APIObjects;
 using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Tools
@@ -13,9 +15,11 @@ namespace Hypernex.Tools
     public static class DownloadTools
     {
         internal static string DownloadsPath;
+        internal static bool forceHttpClient;
         private static readonly Dictionary<string, byte[]> Cache = new();
         private static readonly Queue<DownloadMeta> Queue = new();
         private static readonly Dictionary<DownloadMeta, Thread> RunningThreads = new();
+        private static HttpClient httpClient = new ();
 
         public static void DownloadBytes(string url, Action<byte[]> OnDownload, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool skipCache = false)
         {
@@ -54,11 +58,13 @@ namespace Hypernex.Tools
         }
 
         public static void DownloadFile(string url, string output, Action<string> OnDownload,
-            string knownFileHash = null, Action<DownloadProgressChangedEventArgs> DownloadProgress = null)
+            string knownFileHash = null, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool ignoreDownloadsPath = false)
         {
             if (!Directory.Exists(DownloadsPath))
                 Directory.CreateDirectory(DownloadsPath);
             string fileOutput = Path.Combine(DownloadsPath, output);
+            if (ignoreDownloadsPath)
+                fileOutput = output;
             bool fileExists = File.Exists(fileOutput);
             bool isHashSame = false;
             if (fileExists && !string.IsNullOrEmpty(knownFileHash))
@@ -72,9 +78,16 @@ namespace Hypernex.Tools
                     url = url,
                     done = b =>
                     {
-                        File.WriteAllBytes(fileOutput, b);
-                        Array.Clear(b, 0, b.Length);
-                        QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
+                        try
+                        {
+                            //File.WriteAllBytes(fileOutput, b);
+                            FileStream fs = new FileStream(fileOutput, FileMode.Create, FileAccess.ReadWrite,
+                                FileShare.ReadWrite | FileShare.Delete);
+                            fs.Write(new ReadOnlySpan<byte>(b));
+                            fs.Dispose();
+                            //Array.Clear(b, 0, b.Length);
+                            QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
+                        } catch(Exception e){Logger.CurrentLogger.Critical(e);}
                     },
                     progress = p =>
                     {
@@ -101,19 +114,34 @@ namespace Hypernex.Tools
             Logger.CurrentLogger.Debug("Beginning Download for " + downloadMeta.url);
             Thread t = new Thread(async () =>
             {
-                using WebClient wc = new WebClient();
-                if(downloadMeta.progress != null)
-                    wc.DownloadProgressChanged += (sender, args) =>
-                        QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
-                wc.DownloadDataCompleted += (sender, args) =>
+                try
                 {
-                    Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);
-                    if(!downloadMeta.skipCache)
-                        AttemptAddToCache(downloadMeta.url, args.Result);
-                    QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, args.Result);
-                    RunningThreads.Remove(downloadMeta);
-                };
-                await wc.DownloadDataTaskAsync(new Uri(downloadMeta.url));
+                    if(AssetBundleTools.Platform != BuildPlatform.Windows || forceHttpClient)
+                    {
+                        byte[] d = await httpClient.GetByteArrayAsync(new Uri(downloadMeta.url));
+                        Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);
+                        if (!downloadMeta.skipCache)
+                            AttemptAddToCache(downloadMeta.url, d);
+                        QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, d);
+                        RunningThreads.Remove(downloadMeta);
+                    }
+                    else
+                    {
+                        using WebClient wc = new WebClient();
+                        if (downloadMeta.progress != null)
+                            wc.DownloadProgressChanged += (sender, args) =>
+                                QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
+                        wc.DownloadDataCompleted += (sender, args) =>
+                        {
+                            Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);
+                            if (!downloadMeta.skipCache)
+                                AttemptAddToCache(downloadMeta.url, args.Result);
+                            QuickInvoke.InvokeActionOnMainThread(downloadMeta.done, args.Result);
+                            RunningThreads.Remove(downloadMeta);
+                        };
+                        await wc.DownloadDataTaskAsync(new Uri(downloadMeta.url));
+                    }
+                } catch(Exception e){Logger.CurrentLogger.Critical(e);}
             });
             RunningThreads.Add(downloadMeta, t);
             t.Start();

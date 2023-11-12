@@ -20,6 +20,16 @@ namespace Hypernex.Configuration
 
         [TomlProperty("SavedAccounts")]
         public List<ConfigUser> SavedAccounts { get; set; } = new();
+        
+        [TomlProperty("TrustedURLs")]
+        public List<string> TrustedURLs { get; set; } = new()
+        {
+            "https://discordapp.com",
+            "https://discord.com",
+            "https://cdn.discordapp.com",
+            "https://vrcdn.live",
+            "https://stream.vrcdn.live"
+        };
 
         public ConfigUser GetConfigUserFromUserId(string userid)
         {

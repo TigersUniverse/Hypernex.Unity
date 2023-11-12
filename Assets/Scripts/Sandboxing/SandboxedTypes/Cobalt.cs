@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using CobaltSharp;
+using Hypernex.Configuration;
 using Hypernex.Tools;
 using Nexbox;
 using UnityEngine;
@@ -44,9 +46,51 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                             options.Add(new CobaltOption(pickerItem.url, pickerItem.thumb ?? String.Empty));
                     }
 
-                    SandboxFuncTools.InvokeSandboxFunc(callback, new CobaltOptions(options));
+                    if(options.Count > 0)
+                        SandboxFuncTools.InvokeSandboxFunc(callback, new CobaltOptions(options));
+                    else
+                        TryDownloadFile(getMedia.url, callback);
                 }));
             }).Start();
+        }
+        
+        private static void TryDownloadFile(string url, SandboxFunc callback)
+        {
+            try
+            {
+                Uri u = new Uri(url);
+                UriBuilder b = new UriBuilder(u);
+                b.Query = "";
+                u = new Uri(b.ToString());
+                bool allowed = false;
+                foreach (string trustedUrl in ConfigManager.LoadedConfig.TrustedURLs)
+                {
+                    try
+                    {
+                        Uri trustedUri = new Uri(trustedUrl);
+                        if (trustedUri.Host.ToLower() == u.Host.ToLower())
+                            allowed = true;
+                    }
+                    catch(Exception){}
+                }
+                if (allowed)
+                {
+                    string name = u.Segments.Last().TrimEnd('/');
+                    string dir = Path.Combine(Application.streamingAssetsPath, "Cobalt");
+                    if (!Directory.Exists(dir))
+                        Directory.CreateDirectory(dir);
+                    string file = Path.Combine(dir, name);
+                    DownloadTools.DownloadFile(url, file, f =>
+                    {
+                        if(File.Exists(f))
+                            QuickInvoke.InvokeActionOnMainThread(new Action(() => SandboxFuncTools.InvokeSandboxFunc(callback, new CobaltOptions(new List<CobaltOption>
+                            {
+                                new CobaltOption(file, true)
+                            }))));
+                    }, ignoreDownloadsPath: true);
+                }
+            }
+            catch(Exception){}
         }
     }
 
@@ -54,6 +98,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     {
         private string url;
         private string thumbnail;
+        private bool isLocalFile;
 
         public CobaltOption() { throw new Exception("Cannot instantiate CobaltOption!"); }
 
@@ -61,6 +106,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             this.url = url;
             this.thumbnail = thumbnail;
+        }
+
+        internal CobaltOption(string u, bool b)
+        {
+            url = u;
+            isLocalFile = b;
         }
 
         private void ConvertToVP8(string file, Action onExit)
@@ -82,45 +133,59 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public void Download(SandboxFunc onDone)
         {
-            string pathToCobalt = Path.Combine(Application.streamingAssetsPath, "Cobalt");
-            if (!Directory.Exists(pathToCobalt))
-                Directory.CreateDirectory(pathToCobalt);
-            new Thread(() =>
+            if(!isLocalFile)
             {
-                GetStream getStream = new GetStream(url);
-                StreamResponse streamResponse = Cobalt.c.GetStream(getStream);
-                if (streamResponse.status != Status.Success)
+                string pathToCobalt = Path.Combine(Application.streamingAssetsPath, "Cobalt");
+                if (!Directory.Exists(pathToCobalt))
+                    Directory.CreateDirectory(pathToCobalt);
+                new Thread(() =>
                 {
-                    QuickInvoke.InvokeActionOnMainThread(new Action(() => SandboxFuncTools.InvokeSandboxFunc(onDone, null)));
-                    return;
-                }
-                string np = Path.Combine(pathToCobalt, streamResponse.FileName);
-                FileStream fs = new FileStream(np, FileMode.Create, FileAccess.Write,
-                    FileShare.ReadWrite | FileShare.Delete);
-                using MemoryStream ms = new MemoryStream();
-                streamResponse.Stream!.CopyTo(ms);
-                byte[] data = ms.ToArray();
-                fs.Write(data, 0, data.Length);
-                fs.Dispose();
-                streamResponse.Dispose();
-                CobaltDownload cobaltDownload = new CobaltDownload(np);
-                if (Application.platform is RuntimePlatform.LinuxEditor or RuntimePlatform.LinuxPlayer)
-                {
-                    try
+                    GetStream getStream = new GetStream(url);
+                    StreamResponse streamResponse = Cobalt.c.GetStream(getStream);
+                    if (streamResponse.status != Status.Success)
                     {
-                        ConvertToVP8(np,
-                            () => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                                SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload))));
+                        QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            SandboxFuncTools.InvokeSandboxFunc(onDone, null)));
+                        return;
                     }
-                    catch (Exception e)
+
+                    string np = Path.Combine(pathToCobalt, streamResponse.FileName);
+                    FileStream fs = new FileStream(np, FileMode.Create, FileAccess.Write,
+                        FileShare.ReadWrite | FileShare.Delete);
+                    using MemoryStream ms = new MemoryStream();
+                    streamResponse.Stream!.CopyTo(ms);
+                    byte[] data = ms.ToArray();
+                    fs.Write(data, 0, data.Length);
+                    fs.Dispose();
+                    streamResponse.Dispose();
+                    CobaltDownload cobaltDownload = new CobaltDownload(np);
+                    if (Application.platform is RuntimePlatform.LinuxEditor or RuntimePlatform.LinuxPlayer)
                     {
-                        Logger.CurrentLogger.Critical(e);
-                        QuickInvoke.InvokeActionOnMainThread(new Action(() => SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload)));
+                        try
+                        {
+                            ConvertToVP8(np,
+                                () => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                    SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload))));
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.CurrentLogger.Critical(e);
+                            QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                                SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload)));
+                        }
+
+                        return;
                     }
-                    return;
-                }
-                QuickInvoke.InvokeActionOnMainThread(new Action(() => SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload)));
-            }).Start();
+
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        SandboxFuncTools.InvokeSandboxFunc(onDone, cobaltDownload)));
+                }).Start();
+            }
+            else
+            {
+                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                    SandboxFuncTools.InvokeSandboxFunc(onDone, new CobaltDownload(url))));
+            }
         }
     }
 

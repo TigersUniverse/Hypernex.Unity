@@ -80,7 +80,7 @@ namespace Hypernex.UI.Templates
                         callback.Invoke(result.result.Meta);
                     }));
                 else
-                    QuickInvoke.InvokeActionOnMainThread(callback, null);
+                    Logger.CurrentLogger.Error("Failed to get WorldMeta for " + worldId);
             }, worldId);
         }
 

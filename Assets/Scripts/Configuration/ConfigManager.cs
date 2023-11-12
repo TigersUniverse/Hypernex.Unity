@@ -49,6 +49,7 @@ namespace Hypernex.Configuration
             else
             {
                 LoadedConfig = new Config();
+                OnConfigLoaded.Invoke(LoadedConfig);
                 SaveConfigToFile();
             }
         }

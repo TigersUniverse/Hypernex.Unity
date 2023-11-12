@@ -8,6 +8,9 @@ namespace Hypernex.Tools
         public static void InvokeActionOnMainThread(object action, params object[] args) => UnityMainThreadDispatcher
             .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
         
+        public static void InvokeActionOnMainThreadObject(object action, object[] args) => UnityMainThreadDispatcher
+            .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
+        
         public static void OverwriteListener(UnityEvent u, Action newAction)
         {
             u.RemoveAllListeners();

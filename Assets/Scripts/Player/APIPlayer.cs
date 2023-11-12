@@ -66,15 +66,15 @@ namespace Hypernex.Player
                                 });
                             }
                             else
-                                QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, null);
+                                QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{loginResult.result, null});
                         });
                     }
                     else
-                        QuickInvoke.InvokeActionOnMainThread(result, loginResult.result, null);
+                        QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{loginResult.result, null});
                 });
             }
             else
-                QuickInvoke.InvokeActionOnMainThread(result, null, null);
+                QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{null, null});
         }
 
         public static void Register(Action<bool, SignupResult> result)
@@ -91,11 +91,11 @@ namespace Hypernex.Player
                         QuickInvoke.InvokeActionOnMainThread(result, true, signupResult.result);
                     }
                     else
-                        QuickInvoke.InvokeActionOnMainThread(result, false, null);
+                        QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{false, null});
                 });
             }
             else
-                QuickInvoke.InvokeActionOnMainThread(result, false, null);
+                QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{false, null});
         }
 
         public static void RefreshUser()

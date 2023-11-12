@@ -106,6 +106,7 @@ public class Init : MonoBehaviour
         } catch(Exception e){Logger.CurrentLogger.Critical(e);}
 #endif
         string[] args = Environment.GetCommandLineArgs();
+        DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;

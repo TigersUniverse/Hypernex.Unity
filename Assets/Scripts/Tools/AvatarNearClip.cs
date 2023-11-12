@@ -15,6 +15,11 @@ namespace Hypernex.Tools
     [RequireComponent(typeof(SkinnedMeshRenderer))]
     public class AvatarNearClip : MonoBehaviour
     {
+        public static Action<ScriptableRenderContext, Camera> BeforeClip = (context, camera1) => { };
+        public static List<AvatarNearClip> Instances => new (instances);
+        
+        internal static List<AvatarNearClip> instances = new();
+
         private SkinnedMeshRenderer skinnedMeshRenderer;
         private SkinnedMeshRenderer skinnedMeshRendererShadowClone;
         private Transform[] originalBones;
@@ -191,6 +196,8 @@ namespace Hypernex.Tools
         {
             if (c == r)
             {
+                if(instances.ElementAt(0) == this)
+                    BeforeClip.Invoke(context, c);
                 // If the Camera in this context is our renderCamera, then show the excludedBones
                 if (isStraySMR)
                     skinnedMeshRenderer.enabled = false;
@@ -212,6 +219,17 @@ namespace Hypernex.Tools
             strayRenderers.ForEach(x => x.enabled = true);
         }
 
+        private void Update()
+        {
+            // Sanity check for events
+            for (int i = 0; i < Instances.Count; i++)
+            {
+                AvatarNearClip avatarNearClip = Instances[i];
+                if(avatarNearClip == null)
+                    instances.RemoveAt(i);
+            }
+        }
+
         // Run this on LateUpdate to make sure this is the last thing to happen
         private void LateUpdate()
         {
@@ -225,6 +243,8 @@ namespace Hypernex.Tools
                 skinnedMeshRendererShadowClone.SetBlendShapeWeight(i, skinnedMeshRenderer.GetBlendShapeWeight(i));
             }
         }
+
+        private void OnEnable() => instances.Add(this);
 
         private void OnDisable()
         {

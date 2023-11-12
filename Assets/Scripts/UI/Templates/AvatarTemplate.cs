@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Avatar = Hypernex.CCK.Unity.Avatar;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Templates
 {
@@ -51,7 +52,7 @@ namespace Hypernex.UI.Templates
                         callback.Invoke(result.result.Meta);
                     }));
                 else
-                    QuickInvoke.InvokeActionOnMainThread(callback, null);
+                    Logger.CurrentLogger.Error("Failed to get AvatarMeta for " + avatarId);
             }, avatarId);
         }
 

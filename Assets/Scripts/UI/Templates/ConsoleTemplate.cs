@@ -118,7 +118,7 @@ namespace Hypernex.UI.Templates
             switch (selected)
             {
                 case 0:
-                    NexboxScript script = new NexboxScript(nexboxLanguage, ScriptText.text);
+                    NexboxScript script = new NexboxScript(nexboxLanguage, ScriptText.text){Name = "console"};
                     GameInstance.FocusedInstance.sandboxes.Add(new Sandbox(script, GameInstance.FocusedInstance,
                         GameInstance.FocusedInstance.World.gameObject));
                     OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)

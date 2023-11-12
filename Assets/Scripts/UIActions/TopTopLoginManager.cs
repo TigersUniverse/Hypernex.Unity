@@ -34,12 +34,19 @@ namespace Hypernex.UIActions
             (Texture2D, (string, byte[])?) worldBanner, (Texture2D, (string, byte[])?) userIcon)
         {
             MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
+            {
+                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                {
+                    Header = "Joining Instance...",
+                    Description = "Joining " + worldMeta.Name + " invited by " + from.Username
+                });
                 SocketManager.JoinInstance(new SafeInstance
                 {
                     GameServerId = invite.toGameServerId,
                     InstanceId = invite.toInstanceId,
                     WorldId = invite.worldId
-                }), 5f)
+                });
+            }, 5f)
             {
                 LargeImage = worldBanner,
                 SmallImage = userIcon,
