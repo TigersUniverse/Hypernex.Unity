@@ -87,7 +87,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return audioSource.clip.length;
         }
 
-        private static IEnumerator WaitForAudio(string pathToFile, AudioSource audioSource, SandboxFunc onLoad)
+        private static IEnumerator WaitForAudio(string pathToFile, AudioSource audioSource, object onLoad)
         {
             using (UnityWebRequest r = UnityWebRequestMultimedia.GetAudioClip(pathToFile, AudioType.MPEG))
             {
@@ -95,12 +95,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 if (r.result == UnityWebRequest.Result.Success)
                 {
                     audioSource.clip = DownloadHandlerAudioClip.GetContent(r);
-                    SandboxFuncTools.InvokeSandboxFunc(onLoad);
+                    SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onLoad));
                 }
             }
         }
 
-        public static void LoadFromCobalt(Item item, CobaltDownload cobaltDownload, SandboxFunc onLoad)
+        public static void LoadFromCobalt(Item item, CobaltDownload cobaltDownload, object onLoad)
         {
             AudioSource audioSource = GetAudioSource(item);
             if(audioSource == null)

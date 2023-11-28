@@ -24,8 +24,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 ri.texture = (Texture) a;
         }
         
-        public static void RegisterButtonClick(Item item, SandboxFunc s)
+        public static void RegisterButtonClick(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             Button b = item.t.gameObject.GetComponent<Button>();
             if(b != null)
                 b.onClick.AddListener(() => SandboxFuncTools.InvokeSandboxFunc(s));
@@ -67,8 +68,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return false;
         }
         
-        public static void RegisterToggleValueChanged(Item item, SandboxFunc s)
+        public static void RegisterToggleValueChanged(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             Toggle t = item.t.gameObject.GetComponent<Toggle>();
             if (t != null)
                 t.onValueChanged.AddListener(_ => SandboxFuncTools.InvokeSandboxFunc(s, t.isOn));
@@ -96,8 +98,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return float.NaN;
         }
         
-        public static void RegisterSliderValueChanged(Item item, SandboxFunc s)
+        public static void RegisterSliderValueChanged(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             Slider slider = item.t.gameObject.GetComponent<Slider>();
             if (slider != null)
                 slider.onValueChanged.AddListener(_ => SandboxFuncTools.InvokeSandboxFunc(s, slider.value));
@@ -136,8 +139,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return float.NaN;
         }
 
-        public static void RegisterScrollbarValueChanged(Item item, SandboxFunc s)
+        public static void RegisterScrollbarValueChanged(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             Scrollbar scrollbar = item.t.gameObject.GetComponent<Scrollbar>();
             if (scrollbar != null)
                 scrollbar.onValueChanged.AddListener(_ => SandboxFuncTools.InvokeSandboxFunc(s, scrollbar.value));
@@ -180,8 +184,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return String.Empty;
         }
 
-        public static void RegisterInputFieldTextChanged(Item item, SandboxFunc s)
+        public static void RegisterInputFieldTextChanged(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             TMP_InputField tif = item.t.gameObject.GetComponent<TMP_InputField>();
             if (tif != null)
                 tif.onValueChanged.AddListener(_ => SandboxFuncTools.InvokeSandboxFunc(s, tif.text));
@@ -221,8 +226,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return -1;
         }
 
-        public static void RegisterDropdownValueChanged(Item item, SandboxFunc s)
+        public static void RegisterDropdownValueChanged(Item item, object o)
         {
+            SandboxFunc s = SandboxFuncTools.TryConvert(o);
             TMP_Dropdown tdd = item.t.gameObject.GetComponent<TMP_Dropdown>();
             if (tdd != null)
                 tdd.onValueChanged.AddListener(_ => SandboxFuncTools.InvokeSandboxFunc(s, tdd.value));

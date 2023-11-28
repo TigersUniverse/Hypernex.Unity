@@ -27,7 +27,7 @@ using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2023.11.1b";
+    public const string VERSION = "2023.11.2b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -45,6 +45,7 @@ public class Init : MonoBehaviour
     public CurrentAvatar ca;
     public Texture2D MouseTexture;
     public Texture2D CircleMouseTexture;
+    public CreateInstanceTemplate CreateInstanceTemplate;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
@@ -153,6 +154,7 @@ public class Init : MonoBehaviour
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         FaceTrackingManager.Init(targetStreamingPath)));
             }
+            WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
         };
         CurrentAvatar.Instance = ca;
         GetComponent<CoroutineRunner>()

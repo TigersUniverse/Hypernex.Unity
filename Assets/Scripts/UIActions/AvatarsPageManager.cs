@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.Player;
@@ -10,9 +11,6 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
-using UnityEngine.UI;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UIActions
 {
@@ -20,48 +18,27 @@ namespace Hypernex.UIActions
     {
         public LoginPageTopBarButton AvatarsPage;
         public AvatarTemplate AvatarTemplate;
+        public TMP_Dropdown PopularityTypeDropdown;
+        public DynamicScroll PopularAvatars;
         public DynamicScroll MyAvatars;
         public DynamicScroll FavoritedAvatars;
-        public DynamicScroll AvatarSearch;
-        public TMP_InputField SearchField;
-        public TMP_Dropdown SearchType;
-        public Button NextPage;
-        public Button PreviousPage;
-
-        private bool isSearching;
-        private int page;
         
-        public void Search(int p = 0)
-        {
-            if (isSearching)
-                return;
-            AvatarSearch.Clear();
-            page = p;
-            switch (SearchType.value)
-            {
-                case 0:
-                    APIPlayer.APIObject.SearchByName(OnSearchResult, HypernexSharp.API.APIMessages.SearchType.Avatar,
-                        SearchField.text, page: p);
-                    break;
-                case 1:
-                    APIPlayer.APIObject.SearchByName(OnSearchResult, HypernexSharp.API.APIMessages.SearchType.Avatar,
-                        SearchField.text, page: p);
-                    break;
-            }
-        }
+        private bool isGettingPopular;
 
         public void Refresh()
         {
+            if(!isGettingPopular)
+                RefreshPopularAvatars();
             MyAvatars.Clear();
             FavoritedAvatars.Clear();
-            foreach (string worldId in APIPlayer.APIUser.Avatars)
-                AvatarTemplate.GetAvatarMeta(worldId, meta =>
+            foreach (string avatarId in APIPlayer.APIUser.Avatars)
+                AvatarTemplate.GetAvatarMeta(avatarId, meta =>
                 {
                     if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
                         CreateAvatarCardTemplate(meta, APIPlayer.APIUser, MyAvatars);
                 });
-            foreach (string worldId in ConfigManager.SelectedConfigUser.SavedAvatars)
-                AvatarTemplate.GetAvatarMeta(worldId, meta =>
+            foreach (string avatarId in ConfigManager.SelectedConfigUser.SavedAvatars)
+                AvatarTemplate.GetAvatarMeta(avatarId, meta =>
                 {
                     if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
                         APIPlayer.APIObject.GetUser(
@@ -69,6 +46,67 @@ namespace Hypernex.UIActions
                                 CreateAvatarCardTemplate(meta, userResult.result.UserData, FavoritedAvatars)
                             )), meta.OwnerId, isUserId: true);
                 });
+        }
+        
+        public void RefreshPopularAvatars()
+        {
+            if(isGettingPopular)
+                return;
+            isGettingPopular = true;
+            PopularAvatars.Clear();
+            PopularityType popularityType = (PopularityType) PopularityTypeDropdown.value;
+            APIPlayer.APIObject.GetAvatarPopularity(OnPopularityResult, popularityType);
+        }
+
+        private void OnPopularityResult(CallbackResult<PopularityResult> popularityResult) =>
+            QuickInvoke.InvokeActionOnMainThread(new Action(
+                () =>
+                {
+                    if(!popularityResult.success)
+                    {
+                        isGettingPopular = false;
+                        return;
+                    }
+                    GetAvatarsInOrder(popularityResult.result.Popularity, new List<(AvatarMeta, User)>(), result =>
+                    {
+                        foreach ((AvatarMeta, User) tuple in result)
+                        {
+                            if (tuple.Item1 == null || tuple.Item2 == null) continue;
+                            CreateAvatarCardTemplate(tuple.Item1, tuple.Item2, PopularAvatars);
+                        }
+                    });
+                    isGettingPopular = false;
+                }));
+
+        private void GetAvatarsInOrder(Popularity[] popularities, List<(AvatarMeta, User)> current,
+            Action<List<(AvatarMeta, User)>> onDone)
+        {
+            if(popularities.Length == current.Count)
+                QuickInvoke.InvokeActionOnMainThread(onDone, current);
+            else
+            {
+                Popularity popularity = popularities[current.Count];
+                APIPlayer.APIObject.GetAvatarMeta(avatarResult =>
+                {
+                    if (!avatarResult.success)
+                    {
+                        current.Add((null, null));
+                        GetAvatarsInOrder(popularities, current, onDone);
+                        return;
+                    }
+                    APIPlayer.APIObject.GetUser(userResult =>
+                    {
+                        if (!userResult.success)
+                        {
+                            current.Add((null, null));
+                            GetAvatarsInOrder(popularities, current, onDone);
+                            return;
+                        }
+                        current.Add((avatarResult.result.Meta, userResult.result.UserData));
+                        GetAvatarsInOrder(popularities, current, onDone);
+                    }, avatarResult.result.Meta.OwnerId, isUserId: true);
+                }, popularity.Id);
+            }
         }
         
         private void CreateAvatarCardTemplate(AvatarMeta avatarMeta, User creator, DynamicScroll scroll)
@@ -84,47 +122,6 @@ namespace Hypernex.UIActions
             c.anchoredPosition = new Vector2(c.anchoredPosition.x, 0);
         }
 
-        private void CreateAvatarSearchTemplate(AvatarMeta avatarMeta)
-        {
-            if(avatarMeta == null)
-                return;
-            GameObject avatarSearch = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
-                .Find("AvatarSearchTemplate").gameObject;
-            GameObject newAvatarSearch = Instantiate(avatarSearch);
-            RectTransform c = newAvatarSearch.GetComponent<RectTransform>();
-            newAvatarSearch.GetComponent<AvatarSearchTemplate>().Render(AvatarTemplate, avatarMeta);
-            AvatarSearch.AddItem(c);
-        }
-
-        private void OnSearchResult(CallbackResult<SearchResult> result) => QuickInvoke.InvokeActionOnMainThread(
-            new Action(
-                () =>
-                {
-                    isSearching = false;
-                    if (!result.success) return;
-                    foreach (string avatarIds in result.result.Candidates)
-                        AvatarTemplate.GetAvatarMeta(avatarIds, meta =>
-                        {
-                            if (meta.Builds.Count(x => x.BuildPlatform == AssetBundleTools.Platform) > 0)
-                                CreateAvatarSearchTemplate(meta);
-                        });
-                }));
-
-        private void Start()
-        {
-            NextPage.onClick.AddListener(() =>
-            {
-                page++;
-                Search(page);
-            });
-            PreviousPage.onClick.AddListener(() =>
-            {
-                page--;
-                if (page < 0)
-                    page = 0;
-                Search(page);
-            });
-            Refresh();
-        }
+        private void Start() => Refresh();
     }
 }

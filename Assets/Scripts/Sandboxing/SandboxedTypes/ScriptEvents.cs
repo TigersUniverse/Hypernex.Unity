@@ -17,8 +17,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         internal Action<string> OnUserLeave = userid => { };
         internal Action<string, object[]> OnServerNetworkEvent = (eventName, eventArgs) => { };
 
-        public void Subscribe(ScriptEvent scriptEvent, SandboxFunc callback)
+        public void Subscribe(ScriptEvent scriptEvent, object s)
         {
+            SandboxFunc callback = SandboxFuncTools.TryConvert(s);
             switch (scriptEvent)
             {
                 case ScriptEvent.OnUserJoin:

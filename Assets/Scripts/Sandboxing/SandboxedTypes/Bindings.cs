@@ -34,35 +34,40 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public static float GetTrigger(string binding) => GetBinding(binding)?.Trigger ?? 0.00f;
         public static bool GetGrab(string binding) => GetBinding(binding)?.Grab ?? false;
 
-        public static void RegisterButtonClick(string binding, SandboxFunc f)
+        public static void RegisterButtonClick(string binding, object o)
         {
+            SandboxFunc f = SandboxFuncTools.TryConvert(o);
             IBinding b = GetBinding(binding);
             if (b != null)
                 b.ButtonClick += () => SandboxFuncTools.InvokeSandboxFunc(f, b.Button);
         }
-        public static void RegisterButton2Click(string binding, SandboxFunc f)
+        public static void RegisterButton2Click(string binding, object o)
         {
+            SandboxFunc f = SandboxFuncTools.TryConvert(o);
             IBinding b = GetBinding(binding);
             if (b != null)
                 b.Button2Click += () => SandboxFuncTools.InvokeSandboxFunc(f, b.Button2);
         }
-        public static void RegisterTriggerClick(string binding, SandboxFunc f)
+        public static void RegisterTriggerClick(string binding, object o)
         {
+            SandboxFunc f = SandboxFuncTools.TryConvert(o);
             IBinding b = GetBinding(binding);
             if (b != null)
                 b.TriggerClick += () => SandboxFuncTools.InvokeSandboxFunc(f, b.Trigger);
         }
 
-        public static void RegisterKeyboardClick(string keyCode, SandboxFunc f)
+        public static void RegisterKeyboardClick(string keyCode, object o)
         {
+            SandboxFunc f = SandboxFuncTools.TryConvert(o);
             IBinding b = GetBinding("Keyboard");
             if (b != null)
                 ((Keyboard) b).RegisterCustomKeyDownEvent((KeyCode) Enum.Parse(typeof(KeyCode), keyCode),
                     () => SandboxFuncTools.InvokeSandboxFunc(f));
         }
 
-        public static void RegisterMouseClick(int mouseId, SandboxFunc f)
+        public static void RegisterMouseClick(int mouseId, object o)
         {
+            SandboxFunc f = SandboxFuncTools.TryConvert(o);
             IBinding b = GetBinding("Mouse");
             if (b != null)
                 ((Mouse) b).RegisterCustomMouseButtonDownEvent(mouseId, () => SandboxFuncTools.InvokeSandboxFunc(f));

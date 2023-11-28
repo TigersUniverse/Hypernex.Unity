@@ -67,7 +67,6 @@ namespace Hypernex.UI.Templates
             if (CachedWorldMeta.Count(x => x.Id == worldId) > 0)
             {
                 WorldMeta worldMeta = CachedWorldMeta.First(x => x.Id == worldId);
-                Logger.CurrentLogger.Debug(worldMeta.Id);
                 callback.Invoke(worldMeta);
                 return;
             }
