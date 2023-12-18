@@ -81,7 +81,7 @@ namespace Hypernex.Tools
         {
             foreach (UniGif.GifTexture gifTexture in frames)
                 Destroy(gifTexture.m_texture2d);
-            frames.CLear();
+            frames.Clear();
         }
 #endif
 
