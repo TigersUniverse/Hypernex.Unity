@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Game;
 using Hypernex.UIActions;
@@ -17,31 +19,23 @@ namespace Hypernex.UI.Templates
         public TMP_Text AvatarNameLabel;
         public TMP_Text AvatarScaleLabel;
         public Slider AvatarScaleSlider;
-        public DynamicScroll Parameters;
+        public DynamicScroll ParameterButtons;
+        public List<ParameterTemplate> ParameterTemplates = new();
 
         public void Render(AvatarCreator avatarCreator)
         {
             CurrentAvatarPage.Show();
-            Parameters.Clear();
+            ParameterButtons.Clear();
             AvatarNameLabel.text = "Current Avatar: " + LocalPlayer.Instance.avatarMeta.Name;
             foreach (AnimatorPlayable animatorPlayable in avatarCreator.AnimatorPlayables)
             {
                 foreach (AnimatorControllerParameter animatorControllerParameter in animatorPlayable
                              .AnimatorControllerParameters)
                 {
-                    if(avatarCreator.Avatar.ShowAllParameters || avatarCreator.Avatar.VisibleParameters.Contains(animatorControllerParameter.name))
-                        switch (animatorControllerParameter.type)
-                        {
-                            case AnimatorControllerParameterType.Bool:
-                                CreateBoolParameterBox(animatorPlayable, animatorControllerParameter.name);
-                                break;
-                            case AnimatorControllerParameterType.Int:
-                                CreateIntParameterBox(animatorPlayable, animatorControllerParameter.name);
-                                break;
-                            case AnimatorControllerParameterType.Float:
-                                CreateFloatParameterBox(animatorPlayable, animatorControllerParameter.name);
-                                break;
-                        }
+                    if (avatarCreator.Avatar.ShowAllParameters ||
+                        avatarCreator.Avatar.VisibleParameters.Contains(animatorControllerParameter.name))
+                        CreateParameterButton(animatorPlayable, animatorControllerParameter.name,
+                            animatorControllerParameter.type);
                 }
             }
         }
@@ -78,35 +72,24 @@ namespace Hypernex.UI.Templates
             LocalPlayer.Instance.transform.position = new Vector3(lp.x, v >= DashboardManager.OpenedScale.y ? scaleUp : scaleDown, lp.z);
             LocalPlayer.Instance.Dashboard.PositionDashboard(LocalPlayer.Instance);
         }
-        
-        private void CreateIntParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
+
+        private void CreateParameterButton(AnimatorPlayable animatorPlayable, string parameterName,
+            AnimatorControllerParameterType t)
         {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
-                .Find("IntParameter").gameObject;
-            GameObject newInstanceCard = Instantiate(instanceCard);
-            RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<ParameterTemplate>().Render(animatorPlayable, parameterName);
-            Parameters.AddItem(c);
-        }
-        
-        private void CreateFloatParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
-        {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
-                .Find("FloatParameter").gameObject;
-            GameObject newInstanceCard = Instantiate(instanceCard);
-            RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<ParameterTemplate>().Render(animatorPlayable, parameterName);
-            Parameters.AddItem(c);
-        }
-        
-        private void CreateBoolParameterBox(AnimatorPlayable animatorPlayable, string parameterName)
-        {
-            GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
-                .Find("BoolParameter").gameObject;
-            GameObject newInstanceCard = Instantiate(instanceCard);
-            RectTransform c = newInstanceCard.GetComponent<RectTransform>();
-            newInstanceCard.GetComponent<ParameterTemplate>().Render(animatorPlayable, parameterName);
-            Parameters.AddItem(c);
+            GameObject parameterButton = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
+                .Find("ParameterSelect").gameObject;
+            GameObject newParameterButton = Instantiate(parameterButton);
+            Button b = newParameterButton.GetComponent<Button>();
+            b.onClick.AddListener(() =>
+            {
+                ParameterTemplates.ForEach(x => x.gameObject.SetActive(false));
+                ParameterTemplate pt = ParameterTemplates.First(x => x.ParameterType == t);
+                pt.Render(animatorPlayable, parameterName);
+                pt.gameObject.SetActive(true);
+            });
+            newParameterButton.transform.GetChild(0).GetComponent<TMP_Text>().text = parameterName;
+            RectTransform c = newParameterButton.GetComponent<RectTransform>();
+            ParameterButtons.AddItem(c);
         }
 
         private void Update()

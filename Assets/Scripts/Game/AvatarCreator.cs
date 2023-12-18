@@ -201,6 +201,11 @@ namespace Hypernex.Game
                 magicaCloth.enabled = false;
             }
 #endif
+            foreach (AkBoneDynamics.AkBoneDynamics akBoneDynamics in Avatar.transform
+                         .GetComponentsInChildren<AkBoneDynamics.AkBoneDynamics>())
+            {
+                akBoneDynamics.enabled = false;
+            }
             SetupLipSyncNetPlayer();
             InitMaterialDescriptors(a.transform);
             SetLayer(10);

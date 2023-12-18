@@ -76,6 +76,13 @@ namespace Hypernex.Tools
                 rawImage.texture = frames[currentFrame].m_texture2d;
             }
         }
+        
+        private void OnDisable()
+        {
+            foreach (UniGif.GifTexture gifTexture in frames)
+                Destroy(gifTexture.m_texture2d);
+            frames.CLear();
+        }
 #endif
 
 #if mg
@@ -117,6 +124,13 @@ namespace Hypernex.Tools
                 time = 0.0f;
                 rawImage.texture = frames[currentFrame];
             }
+        }
+
+        private void OnDestroy()
+        {
+            foreach (Texture2D frame in frames)
+                Destroy(frame);
+            frames.Clear();
         }
 #endif
       
