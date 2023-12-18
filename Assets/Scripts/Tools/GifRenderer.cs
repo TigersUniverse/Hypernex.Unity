@@ -77,7 +77,7 @@ namespace Hypernex.Tools
             }
         }
         
-        private void OnDisable()
+        private void OnDestroy()
         {
             foreach (UniGif.GifTexture gifTexture in frames)
                 Destroy(gifTexture.m_texture2d);
