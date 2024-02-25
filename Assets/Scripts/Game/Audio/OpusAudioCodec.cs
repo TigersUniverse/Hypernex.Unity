@@ -1,45 +1,81 @@
-﻿using Concentus.Enums;
-using Concentus.Structs;
+﻿using System;
+using System.Collections.Generic;
 using Hypernex.Networking.Messages;
 using Hypernex.Tools;
 using UnityEngine;
+using UnityOpus;
 
 namespace Hypernex.Game.Audio
 {
     public class OpusAudioCodec : IAudioCodec
     {
-        public string Name => "Opus";
+        public const float FrameSize = 20f;
+        public const float MaxFrameSize = 120f;
 
-        private static OpusEncoder encoder;
+        public string Name => "OpusNative";
+
+        private static Encoder encoder;
 
         internal static void MicrophoneOff() => encoder = null;
-        
-        public PlayerVoice Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
+
+        private Queue<float> queue = new Queue<float>();
+
+        public PlayerVoice[] Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
         {
-            encoder ??= new(Mic.Frequency, clip.channels, OpusApplication.OPUS_APPLICATION_AUDIO);
-            encoder.Bitrate = 12000;
-            byte[] outputBuffer = new byte[1275];
-            int packetSize = encoder.Encode(pcm, 0, Mic.FRAME_SIZE, outputBuffer, 0, outputBuffer.Length);
-            return new PlayerVoice
+            if (encoder == null)
             {
-                Auth = joinAuth,
-                Bitrate = encoder.Bitrate,
-                Channels = encoder.channels,
-                EncodeLength = packetSize,
-                Bytes = outputBuffer,
-                Encoder = Name,
-                SampleRate = Mic.Frequency
-            };
+                encoder = new((SamplingFrequency)clip.frequency, (NumChannels)clip.channels, OpusApplication.VoIP);
+                encoder.Bitrate = 61440;
+                encoder.Complexity = 10;
+                encoder.Signal = OpusSignal.Auto;
+            }
+
+            for (int i = 0; i < pcm.Length; i++)
+            {
+                queue.Enqueue(pcm[i]);
+            }
+
+            List<PlayerVoice> voicePackets = new List<PlayerVoice>();
+            int frameLength = Mathf.RoundToInt(FrameSize / 1000f * clip.frequency * clip.channels);
+            while (queue.Count >= frameLength)
+            {
+                float[] dataPcm = new float[frameLength];
+                for (int i = 0; i < dataPcm.Length; i++)
+                {
+                    dataPcm[i] = queue.Dequeue();
+                }
+                byte[] outputEncodeBuffer = new byte[4000];
+                int packetSize = encoder.Encode(dataPcm, outputEncodeBuffer);
+                byte[] buf = new byte[packetSize];
+                Array.Copy(outputEncodeBuffer, buf, buf.Length);
+                PlayerVoice voice = new PlayerVoice
+                {
+                    Auth = joinAuth,
+                    Bitrate = encoder.Bitrate,
+                    Channels = clip.channels,
+                    EncodeLength = frameLength,
+                    Bytes = buf,
+                    Encoder = Name,
+                    SampleRate = clip.frequency
+                };
+                voicePackets.Add(voice);
+            }
+            return voicePackets.ToArray();
         }
 
         public void Decode(PlayerVoice playerVoice, AudioSource audioSource)
         {
-            OpusDecoder decoder = new OpusDecoder(playerVoice.SampleRate, playerVoice.Channels);
+            using Decoder decoder = new((SamplingFrequency)playerVoice.SampleRate, (NumChannels)playerVoice.Channels);
             byte[] compressedPacket = playerVoice.Bytes;
-            int frameSize = OpusPacketInfo.GetNumSamples(decoder, compressedPacket, 0, compressedPacket.Length);
-            float[] outputBuffer = new float[frameSize];
-            decoder.Decode(compressedPacket, 0, compressedPacket.Length, outputBuffer, 0, frameSize);
-            AudioSourceDriver.Set(audioSource, outputBuffer, playerVoice.Channels, playerVoice.SampleRate);
+            int frameSize = playerVoice.EncodeLength;
+            int frameLength = Mathf.RoundToInt(MaxFrameSize / 1000f * playerVoice.SampleRate);
+            float[] outputBuffer = new float[frameLength];
+            int length = decoder.Decode(compressedPacket, compressedPacket.Length, outputBuffer);
+            float[] pcmBuffer = new float[length];
+            // Debug.Assert(length == frameSize);
+            Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);
+
+            AudioSourceDriver.AddQueue(audioSource, pcmBuffer, playerVoice.Channels, playerVoice.SampleRate);
         }
     }
 }

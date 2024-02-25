@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using Hypernex.Tools;
 using UnityEngine;
 
 namespace Hypernex.Game.Audio
@@ -16,6 +18,7 @@ namespace Hypernex.Game.Audio
             audioCodecs.Clear();
             audioCodecs.Add(new RawAudioCodec());
             audioCodecs.Add(new OpusAudioCodec());
+            audioCodecs.Add(new ConcentusAudioCodec());
         }
 
         public static IAudioCodec GetAudioCodecByName(string name)
@@ -27,15 +30,45 @@ namespace Hypernex.Game.Audio
             }
             return null;
         }
-        
+
         public static void Set(AudioSource audioSource, float[] pcm, int channels, int frequency)
         {
-            audioSource.clip = AudioClip.Create("", pcm.Length, channels, frequency, false);
+            audioSource.clip = AudioClip.Create("", pcm.Length / channels, channels, frequency, false);
             audioSource.clip.SetData(pcm, 0);
             /*if(!audioSource.loop)
                 audioSource.loop = true;*/
             if(!audioSource.isPlaying)
                 audioSource.Play();
+        }
+
+        public static void AddQueue(AudioSource audioSource, float[] pcm, int channels, int frequency)
+        {
+            var buffer = audioSource.GetComponent<BufferAudioSource>();
+            if (buffer == null)
+                buffer = audioSource.gameObject.AddComponent<BufferAudioSource>();
+            buffer.AddQueue(pcm, channels, frequency);
+        }
+
+        public static void InsertQueue(AudioSource audioSource, float[] pcm, int channels, int frequency, int index)
+        {
+            var buffer = audioSource.GetComponent<BufferAudioSource>();
+            if (buffer == null)
+                buffer = audioSource.gameObject.AddComponent<BufferAudioSource>();
+            buffer.InsertQueue(pcm, channels, frequency, index);
+        }
+
+        public static void AddQueueLater(AudioSource audioSource, float[] pcm, int channels, int frequency, float delay)
+        {
+            CoroutineRunner.Instance.Run(AddQueueLaterInternal(audioSource, pcm, channels, frequency, delay));
+        }
+
+        private static IEnumerator AddQueueLaterInternal(AudioSource audioSource, float[] pcm, int channels, int frequency, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            var buffer = audioSource.GetComponent<BufferAudioSource>();
+            if (buffer == null)
+                buffer = audioSource.gameObject.AddComponent<BufferAudioSource>();
+            buffer.AddQueue(pcm, channels, frequency);
         }
     }
 }

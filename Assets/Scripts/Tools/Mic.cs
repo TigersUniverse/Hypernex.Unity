@@ -13,22 +13,20 @@ namespace Hypernex.Tools
     {
         public static Mic Instance;
 
-        public const int FRAME_SIZE = 2880;
-        
         public List<string> Devices => new(devices);
         private List<string> devices = new();
-        
+
         public static string SelectedDevice { get; private set; }
         public static bool IsRecording { get; private set; }
         public static AudioClip Clip { get; private set; }
         public static Action<float[], AudioClip> OnClipReady { get; set; } = (data, clip) => { };
         public static int Frequency { get; private set; }
         public static int NumChannels => Clip.channels;
+        public static int FrameSizeMs { get; set; } = 40;
+        public static int SampleBufferSize => Mathf.RoundToInt(FrameSizeMs / 1000f * Frequency * NumChannels);
 
-        private int captureLength;
         private int lastPosition;
-        private Coroutine c;
-        
+
         public void SetDevice(string device)
         {
             if (Devices.Contains(device) && !IsRecording)
@@ -40,46 +38,36 @@ namespace Hypernex.Tools
             if (IsRecording || string.IsNullOrEmpty(SelectedDevice))
                 return;
             IsRecording = true;
+            int minFrequency;
             int maxFrequency;
-            Microphone.GetDeviceCaps(SelectedDevice, out _, out maxFrequency);
-            Frequency = maxFrequency;
-            Clip = Microphone.Start(SelectedDevice, true, 1, Frequency);
-            //c = StartCoroutine(ClipListener());
-        }
-
-        private IEnumerator ClipListener()
-        {
-            while (IsRecording)
-            {
-                /*int position = Microphone.GetPosition(SelectedDevice);
-                if (position < lastPosition)
-                    lastPosition = 0;
-                if (position - lastPosition >= captureLength)
-                {
-                    float[] data = new float[FRAME_SIZE];
-                    Clip.GetData(data, lastPosition);
-                    OnClipReady.Invoke(data, Clip);
-                    lastPosition = position;
-                }
-                else
-                    yield return null;*/
-                yield return null;
-            }
+            Microphone.GetDeviceCaps(SelectedDevice, out minFrequency, out maxFrequency);
+            // UnityEngine.Debug.Log($"Min {minFrequency} Max {maxFrequency}");
+            Frequency = Mathf.Clamp(48000, minFrequency, maxFrequency);
+            Frequency = 48000;
+            // Frequency = 24000;
+            Clip = Microphone.Start(SelectedDevice, true, 10, Frequency);
         }
 
         private void Update()
         {
-            // TODO: Fix lag sound
+            if (!IsRecording)
+                return;
             int position = Microphone.GetPosition(SelectedDevice);
-            if (position < 0) return;
-            if (position < lastPosition)
-                lastPosition = 0;
-            if (position - lastPosition >= FRAME_SIZE)
+            if (position < 0)
+                return;
+            int offset = SampleBufferSize;
+            if (position >= offset)
             {
-                float[] data = new float[FRAME_SIZE];
-                Clip.GetData(data, lastPosition);
-                OnClipReady.Invoke(data, Clip);
-                lastPosition = position;
+                int targetPos = (position - offset) / SampleBufferSize * SampleBufferSize;
+                int lastTargetPos = (lastPosition - offset) / SampleBufferSize * SampleBufferSize;
+                if (targetPos != lastTargetPos)
+                {
+                    float[] data = new float[SampleBufferSize];
+                    Clip.GetData(data, targetPos);
+                    // UnityEngine.Debug.Log($"len {data.Length} pos {targetPos}");
+                    OnClipReady.Invoke(data, Clip);
+                    lastPosition = position;
+                }
             }
         }
 
@@ -89,10 +77,11 @@ namespace Hypernex.Tools
                 return;
             Microphone.End(SelectedDevice);
             IsRecording = false;
-            //StopCoroutine(c);
+            OnClipReady.Invoke(Array.Empty<float>(), Clip);
             OpusAudioCodec.MicrophoneOff();
+            ConcentusAudioCodec.MicrophoneOff();
         }
-        
+
         private void Start()
         {
             if (Instance != null)
@@ -105,7 +94,7 @@ namespace Hypernex.Tools
             if(devices.Count > 0)
                 SelectedDevice = devices[0];
         }
-        
+
         private void OnDestroy()
         {
             if(IsRecording)

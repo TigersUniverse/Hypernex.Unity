@@ -588,12 +588,15 @@ namespace Hypernex.Game
                             ConfigManager.SelectedConfigUser.AudioCompression.ToString());
                     if (audioCodec == null)
                         audioCodec = AudioSourceDriver.AudioCodecs[0];
-                    PlayerVoice playerVoice = audioCodec.Encode(samples, clip, new JoinAuth
+                    PlayerVoice[] playerVoices = audioCodec.Encode(samples, clip, new JoinAuth
                     {
                         UserId = APIPlayer.APIUser.Id,
                         TempToken = GameInstance.FocusedInstance.userIdToken
                     });
-                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+                    foreach (var playerVoice in playerVoices)
+                    {
+                        GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+                    }
                 }
                 avatar?.ApplyAudioClipToLipSync(samples);
             };
