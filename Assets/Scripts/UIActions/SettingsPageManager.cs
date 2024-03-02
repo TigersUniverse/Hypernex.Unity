@@ -57,6 +57,7 @@ namespace Hypernex.UIActions
         public void OnGeneralSettings()
         {
             // AudioDevices
+            Mic.Instance.RefreshDevices();
             AudioDeviceSelection.ClearOptions();
             List<TMP_Dropdown.OptionData> optionDatas = new();
             int selected = -1;

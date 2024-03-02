@@ -82,6 +82,8 @@ namespace Hypernex.Tools
             ConcentusAudioCodec.MicrophoneOff();
         }
 
+        public void RefreshDevices() => devices = Microphone.devices.ToList();
+
         private void Start()
         {
             if (Instance != null)
@@ -90,7 +92,7 @@ namespace Hypernex.Tools
                 Destroy(this);
             }
             Instance = this;
-            devices = Microphone.devices.ToList();
+            RefreshDevices();
             if(devices.Count > 0)
                 SelectedDevice = devices[0];
         }
