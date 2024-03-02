@@ -16,23 +16,26 @@ namespace Hypernex.ExtendedTracking
         {
             private string p;
 
-            public FTLogger(string c) => p = $"[FT][{p}] ";
+            public FTLogger(string c) => p = $"[FT][{c}] ";
             
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 switch (logLevel)
                 {
+                    case LogLevel.Information:
+                        Logger.CurrentLogger.Log(p + state);
+                        break;
                     case LogLevel.Warning:
-                        Logger.CurrentLogger.Warn(state.ToString());
+                        Logger.CurrentLogger.Warn(p + state);
                         break;
                     case LogLevel.Error:
-                        Logger.CurrentLogger.Error(state.ToString());
+                        Logger.CurrentLogger.Error(p + state);
                         break;
                     case LogLevel.Critical:
-                        Logger.CurrentLogger.Critical(exception);
+                        Logger.CurrentLogger.Critical(new Exception(p, exception));
                         break;
                     default:
-                        Logger.CurrentLogger.Debug(state.ToString());
+                        Logger.CurrentLogger.Debug(p + state);
                         break;
                 }
             }

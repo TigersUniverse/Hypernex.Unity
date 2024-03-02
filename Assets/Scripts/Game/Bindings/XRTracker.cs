@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Hypernex.Game.Avatar;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -13,7 +14,6 @@ namespace Hypernex.Game.Bindings
         public static bool CanFBT => Trackers.Count(x => x.IsTracked && x.TrackerRole != XRTrackerRole.Camera) == 3;
 
         public XRTrackerRole TrackerRole;
-        
         public bool IsTracked { get; private set; }
         public Vector3 Position { get; private set; }
         public Quaternion Rotation { get; private set; }
@@ -34,7 +34,12 @@ namespace Hypernex.Game.Bindings
             }
         }
 
-        public void OnIsTracked(InputAction.CallbackContext context) => IsTracked = context.ReadValueAsButton();
+        public void OnIsTracked(InputAction.CallbackContext context)
+        {
+            bool value = context.ReadValueAsButton();
+            // TODO: Not sure why randomly IsTracked will be false. Once true, stay true. Restart if it's a problem
+            if (value) IsTracked = true;
+        }
         public void OnPosition(InputAction.CallbackContext context) => Position = context.ReadValue<Vector3>();
         public void OnRotation(InputAction.CallbackContext context) => Rotation = context.ReadValue<Quaternion>();
 
@@ -82,7 +87,7 @@ namespace Hypernex.Game.Bindings
                 Show();
                 return;
             }
-            if (!avatarCreator.calibrated)
+            if (!avatarCreator.Calibrated)
             {
                 Show();
                 return;

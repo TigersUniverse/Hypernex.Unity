@@ -1008,7 +1008,7 @@
                 {
                     "name": "",
                     "id": "e4467c2e-6df0-47cf-8075-d8f7680f2c59",
-                    "path": "<XRViveTracker>{Left Foot}/isTracked",
+                    "path": "<XRViveTracker>{Left Foot}/devicePose/isTracked",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1019,7 +1019,7 @@
                 {
                     "name": "",
                     "id": "1d938ab0-43ff-47cb-ba2d-50b8c52657cf",
-                    "path": "<XRViveTracker>{Right Foot}/isTracked",
+                    "path": "<XRViveTracker>{Right Foot}/devicePose/isTracked",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1030,7 +1030,7 @@
                 {
                     "name": "",
                     "id": "e0ca60e3-0b98-4ad6-936a-2b3b73ecbdfe",
-                    "path": "<XRViveTracker>{Waist}/isTracked",
+                    "path": "<XRViveTracker>{Waist}/devicePose/isTracked",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1041,7 +1041,7 @@
                 {
                     "name": "",
                     "id": "e73aa0dd-da55-4e5d-8eb6-e3bf13c6f88b",
-                    "path": "<XRViveTracker>{Camera}/isTracked",
+                    "path": "<XRViveTracker>{Camera}/devicePose/isTracked",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

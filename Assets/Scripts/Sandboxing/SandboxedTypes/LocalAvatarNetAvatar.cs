@@ -130,7 +130,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public static string[] GetSelfAssignedTags(string userid)
         {
             if (userid == APIPlayer.APIUser.Id)
-                return LocalPlayer.Instance == null ? null : LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
+                return LocalPlayer.Instance == null ? null : LocalPlayer.Instance.LocalPlayerSyncController.LastPlayerAssignedTags.ToArray();
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)
                 return null;
@@ -141,9 +141,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             if (userid == APIPlayer.APIUser.Id)
             {
-                if (LocalPlayer.Instance == null || !LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key))
+                if (LocalPlayer.Instance == null || !LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects.ContainsKey(key))
                     return null;
-                return LocalPlayer.Instance.LastExtraneousObjects[key];
+                return LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects[key];
             }
             NetPlayer netPlayer = GetNetPlayer(userid);
             if (netPlayer == null)

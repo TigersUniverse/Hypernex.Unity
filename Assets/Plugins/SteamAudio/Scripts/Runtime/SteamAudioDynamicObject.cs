@@ -14,6 +14,7 @@ namespace SteamAudio
         [Header("Export Settings")]
         public SerializedData asset = null;
 
+#if STEAMAUDIO_ENABLED
         InstancedMesh mInstancedMesh = null;
 
         private void OnDestroy()
@@ -31,6 +32,7 @@ namespace SteamAudio
             if (mInstancedMesh != null)
             {
                 mInstancedMesh.AddToScene(SteamAudioManager.CurrentScene);
+                SteamAudioManager.ScheduleCommitScene();
             }
         }
 
@@ -39,6 +41,7 @@ namespace SteamAudio
             if (mInstancedMesh != null && SteamAudioManager.CurrentScene != null)
             {
                 mInstancedMesh.RemoveFromScene(SteamAudioManager.CurrentScene);
+                SteamAudioManager.ScheduleCommitScene();
             }
         }
 
@@ -51,10 +54,18 @@ namespace SteamAudio
                 if (enabled)
                 {
                     mInstancedMesh.AddToScene(SteamAudioManager.CurrentScene);
+                    SteamAudioManager.ScheduleCommitScene();
                 }
             }
 
-            mInstancedMesh.UpdateTransform(SteamAudioManager.CurrentScene, transform);
+            // Only update the dynamic object if it has actually move this frame
+            if (transform.hasChanged)
+            {
+                mInstancedMesh.UpdateTransform(SteamAudioManager.CurrentScene, transform);
+                SteamAudioManager.ScheduleCommitScene();
+                transform.hasChanged = false;
+            }
         }
+#endif
     }
 }

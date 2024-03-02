@@ -2,7 +2,10 @@
 // Copyright 2017 Valve Corporation. All rights reserved. Subject to the following license:
 // https://valvesoftware.github.io/steam-audio/license.html
 //
+#if STEAMAUDIO_ENABLED
 
+using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace SteamAudio
@@ -28,10 +31,18 @@ namespace SteamAudio
             case AudioEngineType.Unity:
                 return new UnityAudioEngineSource();
             case AudioEngineType.FMODStudio:
-                return new FMODStudioAudioEngineSource();
+                return CreateFMODStudioAudioEngineSource();
             default:
                 return null;
             }
         }
+
+        private static AudioEngineSource CreateFMODStudioAudioEngineSource()
+        {
+            var type = Type.GetType("SteamAudio.FMODStudioAudioEngineSource,SteamAudioUnity");
+            return (type != null) ? (AudioEngineSource) Activator.CreateInstance(type) : null;
+        }
     }
 }
+
+#endif

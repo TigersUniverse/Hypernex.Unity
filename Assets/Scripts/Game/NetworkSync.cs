@@ -22,11 +22,13 @@ namespace Hypernex.Game
         public Action OnSteal = () => { };
 
         public string NetworkOwner { get; private set; }
+        public SmoothTransform SmoothTransform => smoothTransform ??= new SmoothTransform(transform, false);
         private Coroutine lastCoroutine;
         private Queue<WorldObjectUpdate> msgs = new();
         private CancellationTokenSource cts;
         private Mutex mutex = new();
         private bool isAlwaysStealing;
+        private SmoothTransform smoothTransform;
 
         public bool IsOwned() => !(string.IsNullOrEmpty(NetworkOwner) || NetworkOwner == String.Empty || NetworkOwner == "");
         public bool IsOwnedByLocalPlayer() => NetworkOwner == APIPlayer.APIUser.Id;
@@ -52,7 +54,7 @@ namespace Hypernex.Game
                                 {
                                     WorldObjectUpdate p = msgs.Dequeue();
                                     byte[] msg = Msg.Serialize(p);
-                                    GameInstance.FocusedInstance.SendMessage(msg,
+                                    GameInstance.FocusedInstance.SendMessage(typeof(WorldObjectUpdate).FullName, msg,
                                         p.Action is WorldObjectAction.Claim or WorldObjectAction.Unclaim
                                             ? MessageChannel.Reliable
                                             : MessageChannel.Unreliable);
@@ -88,7 +90,7 @@ namespace Hypernex.Game
                         worldObjectUpdate.Velocity =
                             NetworkConversionTools.Vector3Tofloat3(direction.Value * (VelocityAmount * 250f));
                     byte[] msg = Msg.Serialize(worldObjectUpdate);
-                    GameInstance.FocusedInstance.SendMessage(msg);
+                    GameInstance.FocusedInstance.SendMessage(typeof(WorldObjectUpdate).FullName, msg);
                 }
             }
         }
@@ -130,17 +132,16 @@ namespace Hypernex.Game
             NetworkSteal = worldObjectUpdate.CanBeStolen;
             if (transform.parent == null)
             {
-                transform.position = NetworkConversionTools.float3ToVector3(worldObjectUpdate.Object.Position);
-                transform.rotation = Quaternion.Euler(new Vector3(worldObjectUpdate.Object.Rotation.x,
-                    worldObjectUpdate.Object.Rotation.y, worldObjectUpdate.Object.Rotation.z));
+                SmoothTransform.SetLocalSpace(false);
             }
             else
             {
-                transform.localPosition = NetworkConversionTools.float3ToVector3(worldObjectUpdate.Object.Position);
-                transform.localRotation = Quaternion.Euler(new Vector3(worldObjectUpdate.Object.Rotation.x,
-                    worldObjectUpdate.Object.Rotation.y, worldObjectUpdate.Object.Rotation.z));
+                SmoothTransform.SetLocalSpace(true);
             }
-            transform.localScale = NetworkConversionTools.float3ToVector3(worldObjectUpdate.Object.Size);
+            SmoothTransform.Position = NetworkConversionTools.float3ToVector3(worldObjectUpdate.Object.Position);
+            SmoothTransform.Rotation = Quaternion.Euler(new Vector3(worldObjectUpdate.Object.Rotation.x,
+                worldObjectUpdate.Object.Rotation.y, worldObjectUpdate.Object.Rotation.z));
+            SmoothTransform.Scale = NetworkConversionTools.float3ToVector3(worldObjectUpdate.Object.Size);
             OnForce.Invoke(NetworkConversionTools.float3ToVector3(worldObjectUpdate.Velocity));
         }
         
@@ -227,12 +228,11 @@ namespace Hypernex.Game
             }
         }
 
-        /*private void Update()
+        private void Update()
         {
-            bool oblp = IsOwnedByLocalPlayer();
-            if(cts != null && !cts.IsCancellationRequested && !oblp && !isAlwaysStealing)
-                Dispose();
-        }*/
+            SmoothTransform.PullFromTransform = IsOwnedByLocalPlayer();
+            SmoothTransform.Update();
+        }
 
         public void Dispose()
         {

@@ -6,7 +6,11 @@ using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.Game.Audio;
+using Hypernex.Game.Avatar;
+using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
+using Hypernex.Networking.Messages.Bulk;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
@@ -15,9 +19,10 @@ using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
+using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = System.Object;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
@@ -27,8 +32,12 @@ namespace Hypernex.Game
         private GameInstance instance;
         private Scene scene;
         public User User;
-        public AvatarCreator Avatar;
+        public NetAvatarCreator Avatar;
 
+        private PlayerUpdate lastPlayerUpdate;
+        private bool lastVR;
+        private string lastVRIKjson;
+        private string CalibratedAvatarId;
         private string AvatarId;
         private SharedAvatarToken avatarFileToken;
         private AvatarMeta avatarMeta;
@@ -37,7 +46,8 @@ namespace Hypernex.Game
 
         public float interpolationFramesCount = 0.1f;
         private int elapsedFrames;
-        private bool firstJoin = true;
+
+        internal Dictionary<CoreBone, SmoothTransform> smoothTransforms = new();
 
         public float volume
         {
@@ -55,12 +65,34 @@ namespace Hypernex.Game
         [HideInInspector] public List<string> LastPlayerTags = new();
         public Dictionary<string, object> LastExtraneousObjects = new();
 
+        internal Transform GetReferenceFromCoreBone(CoreBone coreBone)
+        {
+            if (coreBone == CoreBone.Root) return transform;
+            Transform t = null;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                Transform child = transform.GetChild(i);
+                if (child.name == coreBone.ToString())
+                {
+                    t = child;
+                    break;
+                }
+            }
+            if (t == null)
+            {
+                GameObject newReference = new GameObject(coreBone.ToString());
+                t = newReference.transform;
+                t.SetParent(transform);
+                t.SetPositionAndRotation(Vector3.zero, new Quaternion(0,0,0, 0));
+            }
+            return t;
+        }
+
         private void CreateNameplate()
         {
             GameObject np = Instantiate(DontDestroyMe.GetNotDestroyedObject("UXTemplates").transform.Find("Nameplate")
                 .gameObject);
             SceneManager.MoveGameObjectToScene(np, instance.loadedScene);
-            // ReSharper disable once Unity.InstantiateWithoutParent
             np.transform.SetParent(transform);
             np.gameObject.SetActive(true);
             nameplateTemplate = np.GetComponent<NameplateTemplate>();
@@ -112,10 +144,7 @@ namespace Hypernex.Game
                         if (a == null)
                             return;
                         Avatar?.Dispose();
-                        if(!firstJoin)
-                            avatarUpdates.Clear();
-                        firstJoin = false;
-                        Avatar = new AvatarCreator(this, a);
+                        Avatar = new NetAvatarCreator(this, a, lastPlayerUpdate.IsPlayerVR);
                         foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
                             Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
                         foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
@@ -139,10 +168,7 @@ namespace Hypernex.Game
                     if (a == null)
                         return;
                     Avatar?.Dispose();
-                    if(!firstJoin)
-                        avatarUpdates.Clear();
-                    firstJoin = false;
-                    Avatar = new AvatarCreator(this, a);
+                    Avatar = new NetAvatarCreator(this, a, lastPlayerUpdate.IsPlayerVR);
                     foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
                         Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
                     foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
@@ -264,121 +290,74 @@ namespace Hypernex.Game
                         User = instanceConnectedUser;
                 }
             }
-            foreach (string key in new List<string>(avatarUpdates.Keys))
-                UpdatePlayerObjectUpdate(key);
+            /*foreach (string key in new List<string>(avatarUpdates.Keys))
+                UpdatePlayerObjectUpdate(key);*/
             foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
                          weightedObjectUpdates))
                 weightedObjectContainer.Update(interpolationFramesCount);
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
-            Avatar?.Update();
-        }
-
-        private Dictionary<string, PlayerObjectUpdateHolder> avatarUpdates = new();
-
-        private void UpdatePlayerObjectUpdate(string key)
-        {
-            Vector3 position = NetworkConversionTools.float3ToVector3(avatarUpdates[key].Object.Object.Position);
-            Quaternion rotation = Quaternion.Euler(new Vector3(avatarUpdates[key].Object.Object.Rotation.x,
-                avatarUpdates[key].Object.Object.Rotation.y, avatarUpdates[key].Object.Object.Rotation.z));
-            if (string.IsNullOrEmpty(avatarUpdates[key].Object.Object.ObjectLocation))
-            {
-                avatarUpdates[key].ExpectedPosition =
-                    Vector3.Slerp(avatarUpdates[key].t.position, position, interpolationFramesCount);
-                avatarUpdates[key].ExpectedRotation =
-                    Quaternion.Slerp(avatarUpdates[key].t.rotation, rotation, interpolationFramesCount);
-            }
+            foreach (SmoothTransform smoothTransform in smoothTransforms.Values)
+                smoothTransform.Update();
+            foreach (NetHandleCameraLife netHandleCameraLife in handleCameras.Values)
+                netHandleCameraLife.SmoothTransform.Update();
+            if(lastPlayerUpdate == null)
+                Avatar?.Update();
             else
             {
-                avatarUpdates[key].ExpectedPosition =
-                    Vector3.Slerp(avatarUpdates[key].t.localPosition, position, interpolationFramesCount);
-                avatarUpdates[key].ExpectedRotation =
-                    Quaternion.Slerp(avatarUpdates[key].t.localRotation, rotation, interpolationFramesCount);
+                if (!string.IsNullOrEmpty(lastPlayerUpdate.AvatarId) && (string.IsNullOrEmpty(AvatarId) ||
+                                                                         lastPlayerUpdate.AvatarId != AvatarId))
+                {
+                    AvatarId = lastPlayerUpdate.AvatarId;
+                    APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
+                    Avatar?.Dispose();
+                    Avatar = null;
+                }
+                if (Avatar != null && Avatar.Avatar.transform.parent == transform)
+                {
+                    /*foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
+                        Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);*/
+                    Avatar.audioSource.volume = lastPlayerUpdate.IsSpeaking ? volume : 0f;
+                    if(Avatar != null && Avatar.lipSyncContext != null)
+                        Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
+                }
+                if (Avatar != null)
+                {
+                    if(lastPlayerUpdate.IsPlayerVR != lastVR || (lastVRIKjson != lastPlayerUpdate.VRIKJson && CalibratedAvatarId == AvatarId))
+                        Avatar.DestroyIK(lastPlayerUpdate.IsPlayerVR);
+                    if (!Avatar.Calibrated && !string.IsNullOrEmpty(lastPlayerUpdate.VRIKJson))
+                        Avatar.CalibrateVRIK(lastPlayerUpdate.IsFBT,
+                            JsonUtility.FromJson<VRIKCalibrator.CalibrationData>(lastPlayerUpdate.VRIKJson));
+                    Avatar.Update();
+                    Avatar.Update(lastPlayerUpdate.IsFBT);
+                    if (Avatar.Calibrated)
+                        CalibratedAvatarId = AvatarId;
+                }
+                lastVR = lastPlayerUpdate.IsPlayerVR;
+                lastVRIKjson = lastPlayerUpdate.VRIKJson;
             }
-            avatarUpdates[key].ExpectedSize =
-                Vector3.Slerp(avatarUpdates[key].t.localScale,
-                    NetworkConversionTools.float3ToVector3(avatarUpdates[key].Object.Object.Size), interpolationFramesCount);
         }
 
-        private void UpdatePlayerUpdate(string path, PlayerObjectUpdate playerObjectUpdate, Transform p = null)
+        private void UpdatePlayerUpdate(CoreBone coreBone, NetworkedObject networkedObject)
         {
-            if (!avatarUpdates.ContainsKey(path))
+            if (!smoothTransforms.TryGetValue(coreBone, out SmoothTransform smoothTransform))
             {
-                if (p == null)
-                    return;
-                avatarUpdates.Add(path, new PlayerObjectUpdateHolder
-                {
-                    t = p,
-                    Object = playerObjectUpdate
-                });
+                smoothTransform = new SmoothTransform(GetReferenceFromCoreBone(coreBone), false);
+                if (smoothTransforms.ContainsKey(coreBone)) smoothTransforms.Remove(coreBone);
+                smoothTransforms.Add(coreBone, smoothTransform);
             }
-            avatarUpdates[path].Object = playerObjectUpdate;
+            networkedObject.Apply(smoothTransform);
         }
 
         private void LateUpdate()
         {
-            /*float interpolationRatio = Time.frameCount / Time.time;
-            interpolationRatio *= interpolationAmount;
-            foreach (KeyValuePair<string,PlayerObjectUpdate> playerObjectUpdate in avatarUpdates)
-            {
-                Transform target = transform.Find(playerObjectUpdate.Key);
-                NetworkedObject networkedObject = playerObjectUpdate.Value.Object;
-                if (target != null)
-                {
-                    Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
-                    //Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
-                    //Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
-                    if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
-                    {
-                        /*target.position = position;
-                        target.rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));#1#
-                        target.position = Vector3.Lerp(target.position, position, interpolationRatio);
-                        target.rotation = Quaternion.Lerp(target.rotation, Quaternion.Euler(new Vector3(
-                            networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z)), interpolationRatio);
-                    }
-                    else
-                    {
-                        /*target.localPosition = position;
-                        target.localRotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));#1#
-                        target.localPosition = Vector3.Lerp(target.localPosition, position, interpolationRatio);
-                        target.localRotation = Quaternion.Lerp(target.localRotation, Quaternion.Euler(new Vector3(
-                            networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z)), interpolationRatio);
-
-                    }
-                    target.localScale = Vector3.Lerp(target.localScale,
-                        NetworkConversionTools.float3ToVector3(networkedObject.Size), interpolationRatio);
-                }
-            }*/
-            //float interpolationRatio = (float)elapsedFrames / interpolationFramesCount;
-            foreach (string key in new List<string>(avatarUpdates.Keys))
-            {
-                PlayerObjectUpdateHolder playerObjectUpdateHolder = avatarUpdates[key];
-                //UpdatePlayerObjectUpdate(key, interpolationRatio);
-                if (string.IsNullOrEmpty(playerObjectUpdateHolder.Object.Object.ObjectLocation))
-                {
-                    playerObjectUpdateHolder.t.position = playerObjectUpdateHolder.ExpectedPosition;
-                    playerObjectUpdateHolder.t.rotation = playerObjectUpdateHolder.ExpectedRotation;
-                }
-                else
-                {
-                    playerObjectUpdateHolder.t.localPosition = playerObjectUpdateHolder.ExpectedPosition;
-                    playerObjectUpdateHolder.t.localRotation = playerObjectUpdateHolder.ExpectedRotation;
-                }
-                playerObjectUpdateHolder.t.localScale = playerObjectUpdateHolder.ExpectedSize;
-            }
             if (weightedObjectUpdates.Count > 0)
             {
-                /*foreach (WeightedObjectUpdate w in new List<WeightedObjectUpdate>(weightedObjectUpdates))
-                    Avatar?.HandleNetParameter(w);*/
                 foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
                              weightedObjectUpdates))
                     Avatar?.HandleNetParameter(weightedObjectContainer.Weight);
             }
             Avatar?.LateUpdate();
-            //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
+            Avatar?.LateUpdate(GetReferenceFromCoreBone(CoreBone.Head));
         }
 
         public void Init(string userid, GameInstance gameInstance)
@@ -420,24 +399,12 @@ namespace Hypernex.Game
             return n;
         }
 
-        public void NetworkUpdate(PlayerUpdate playerUpdate)
+        public void NetworkUpdate(PlayerUpdate playerUpdate) => lastPlayerUpdate = playerUpdate;
+
+        public void NetworkDataUpdate(PlayerDataUpdate playerDataUpdate)
         {
-            if (!string.IsNullOrEmpty(playerUpdate.AvatarId) && (string.IsNullOrEmpty(AvatarId) ||
-                playerUpdate.AvatarId != AvatarId))
-            {
-                AvatarId = playerUpdate.AvatarId;
-                APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
-            }
-            if (Avatar != null && Avatar.Avatar.transform.parent == transform)
-            {
-                /*foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
-                    Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);*/
-                LastPlayerTags = new List<string>(playerUpdate.PlayerAssignedTags);
-                LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
-                Avatar.audioSource.volume = playerUpdate.IsSpeaking ? volume : 0f;
-                if(Avatar != null && Avatar.lipSyncContext != null)
-                    Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
-            }
+            LastPlayerTags = new List<string>(playerDataUpdate.PlayerAssignedTags);
+            LastExtraneousObjects = new Dictionary<string, object>(playerDataUpdate.ExtraneousData);
         }
 
         private List<WeightedObjectContainer> weightedObjectUpdates = new();
@@ -454,79 +421,39 @@ namespace Hypernex.Game
             }
             weightedObjectUpdates.Add(new WeightedObjectContainer(weightedObjectUpdate));
         }
-        
-        public void ResetWeightedObjects() => weightedObjectUpdates.Clear();
 
-        /*public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
+        public void ResetWeightedObjects(BulkWeightedObjectUpdate bulkWeightedObjectUpdate)
         {
-            float interpolationRatio = interpolationFramesCount * Time.deltaTime;
-            if (Avatar != null && Avatar.Avatar.transform.parent == transform)
-            {
-                NetworkedObject networkedObject = playerObjectUpdate.Object;
-                Transform target;
-                if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
-                    target = transform;
-                else
-                    target = transform.Find(networkedObject.ObjectLocation);
-                if (target != null)
-                {
-                    Vector3 position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
-                    Quaternion rotation = NetworkConversionTools.float4ToQuaternion(networkedObject.Rotation);
-                    Vector3 localSize = NetworkConversionTools.float3ToVector3(networkedObject.Size);
-                    if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
-                    {
-                        /*target.position = position;
-                        target.rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));#1#
-                        target.position = Vector3.Lerp(target.position, position, interpolationRatio);
-                        target.rotation = Quaternion.Lerp(target.rotation, Quaternion.Euler(new Vector3(
-                            networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z)), interpolationRatio);
-                    }
-                    else
-                    {
-                        /*target.localPosition = position;
-                        target.localRotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z));#1#
-                        target.localPosition = Vector3.Lerp(target.localPosition, position, interpolationRatio);
-                        target.localRotation = Quaternion.Lerp(target.localRotation, Quaternion.Euler(new Vector3(
-                            networkedObject.Rotation.x, networkedObject.Rotation.y,
-                            networkedObject.Rotation.z)), interpolationRatio);
-
-                    }
-                    //target.localScale = localSize;
-                }
-            }
-        }*/
+            weightedObjectUpdates.Clear();
+            foreach (WeightedObjectUpdate weightedObjectUpdate in bulkWeightedObjectUpdate.WeightedObjectUpdates)
+                WeightedObject(weightedObjectUpdate);
+        }
 
         public void NetworkObjectUpdate(PlayerObjectUpdate playerObjectUpdate)
         {
-            try
+            foreach (KeyValuePair<int, NetworkedObject> keyValuePair in playerObjectUpdate.Objects)
             {
-                if (playerObjectUpdate.Object.ObjectLocation.Length > 0 && playerObjectUpdate.Object.ObjectLocation[0] == '*' &&
-                    playerObjectUpdate.Object.ObjectLocation.Contains("*camera_"))
+                CoreBone coreBone = (CoreBone) keyValuePair.Key;
+                NetworkedObject networkedObject = keyValuePair.Value;
+                try
                 {
-                    NetHandleCameraLife n = GetHandleCamera(playerObjectUpdate.Object.ObjectLocation);
-                    n.Ping();
-                    Transform c = n.transform;
-                    c.position = NetworkConversionTools.float3ToVector3(playerObjectUpdate.Object.Position);
-                    c.rotation = Quaternion.Euler(new Vector3(playerObjectUpdate.Object.Rotation.x,
-                        playerObjectUpdate.Object.Rotation.y, playerObjectUpdate.Object.Rotation.z));
-                    c.localScale = new Vector3(0.01f, 0.01f, 0.01f);
-                    return;
+                    if (coreBone == CoreBone.Camera)
+                    {
+                        NetHandleCameraLife n = GetHandleCamera(networkedObject.ObjectLocation);
+                        n.Ping();
+                        SmoothTransform c = n.SmoothTransform;
+                        c.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
+                        c.Rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x,
+                            networkedObject.Rotation.y, networkedObject.Rotation.z));
+                        c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
+                        return;
+                    }
                 }
-            }catch(Exception){}
-            if (string.IsNullOrEmpty(playerObjectUpdate.Object.ObjectLocation))
-                playerObjectUpdate.Object.ObjectLocation = "";
-            if (!avatarUpdates.ContainsKey(playerObjectUpdate.Object.ObjectLocation))
-            {
-                Transform p = transform.Find(playerObjectUpdate.Object.ObjectLocation);
-                if (p == null)
-                    return;
-                UpdatePlayerUpdate(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate, p);
+                catch (Exception) {}
+                if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
+                    networkedObject.ObjectLocation = "";
+                UpdatePlayerUpdate(coreBone, networkedObject);
             }
-            else
-                UpdatePlayerUpdate(playerObjectUpdate.Object.ObjectLocation, playerObjectUpdate);
         }
 
         private void OnDestroy()
@@ -534,20 +461,14 @@ namespace Hypernex.Game
             foreach (NetHandleCameraLife netHandleCameraLife in HandleCameras.Values)
                 netHandleCameraLife.Dispose();
             Avatar?.Dispose();
-        }
-
-        private class PlayerObjectUpdateHolder
-        {
-            public Transform t;
-            public PlayerObjectUpdate Object;
-            public Vector3 ExpectedPosition;
-            public Quaternion ExpectedRotation;
-            public Vector3 ExpectedSize;
+            foreach (SmoothTransform smoothTransform in smoothTransforms.Values)
+                smoothTransform.Dispose();
+            smoothTransforms.Clear();
         }
 
         public class WeightedObjectContainer
         {
-            public WeightedObjectUpdate Weight => new WeightedObjectUpdate
+            public WeightedObjectUpdate Weight => new()
             {
                 Auth = new JoinAuth(),
                 PathToWeightContainer = WeightedObjectUpdate.PathToWeightContainer,

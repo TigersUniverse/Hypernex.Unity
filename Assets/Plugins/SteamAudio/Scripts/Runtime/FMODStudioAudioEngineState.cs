@@ -2,6 +2,7 @@
 // Copyright 2017 Valve Corporation. All rights reserved. Subject to the following license:
 // https://valvesoftware.github.io/steam-audio/license.html
 //
+#if STEAMAUDIO_ENABLED
 
 using System;
 using System.Reflection;
@@ -13,24 +14,24 @@ namespace SteamAudio
     {
         public override void Initialize(IntPtr context, IntPtr defaultHRTF, SimulationSettings simulationSettings, PerspectiveCorrection correction)
         {
-            API.iplFMODInitialize(context);
-            API.iplFMODSetHRTF(defaultHRTF);
-            API.iplFMODSetSimulationSettings(simulationSettings);
+            FMODStudioAPI.iplFMODInitialize(context);
+            FMODStudioAPI.iplFMODSetHRTF(defaultHRTF);
+            FMODStudioAPI.iplFMODSetSimulationSettings(simulationSettings);
         }
 
         public override void Destroy()
         {
-            API.iplFMODTerminate();
+            FMODStudioAPI.iplFMODTerminate();
         }
 
         public override void SetHRTF(IntPtr hrtf)
         {
-            API.iplFMODSetHRTF(hrtf);
+            FMODStudioAPI.iplFMODSetHRTF(hrtf);
         }
 
         public override void SetReverbSource(Source reverbSource)
         {
-            API.iplFMODSetReverbSource(reverbSource.Get());
+            FMODStudioAPI.iplFMODSetReverbSource(reverbSource.Get());
         }
     }
 
@@ -93,3 +94,5 @@ namespace SteamAudio
         }
     }
 }
+
+#endif

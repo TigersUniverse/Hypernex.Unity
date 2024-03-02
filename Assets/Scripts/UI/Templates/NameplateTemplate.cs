@@ -1,5 +1,6 @@
 ﻿using System;
 using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
@@ -106,7 +107,7 @@ namespace Hypernex.UI.Templates
                 return;
             }
             FollowTransform.transform.parent = head;
-            FollowTransform.transform.localPosition = new Vector3(0, head.localPosition.y + 1f, 0);
+            FollowTransform.transform.localPosition = avatarCreator.headRef * head.up;
             FollowTransform.transform.SetParent(avatarCreator.Avatar.transform, true);
         }
         

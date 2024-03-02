@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Logger = Hypernex.CCK.Logger;

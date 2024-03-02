@@ -8,6 +8,7 @@
 struct Attributes {
     float4 positionOS       : POSITION; // Position in object space
     float3 normalOS         : NORMAL; // Normal vector in object space
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 #ifdef USE_PRECALCULATED_OUTLINE_NORMALS
     float3 smoothNormalOS   : TEXCOORD1; // Calculated "smooth" normals to extrude along in object space
 #endif
@@ -16,6 +17,7 @@ struct Attributes {
 // Output from the vertex function and input to the fragment function
 struct VertexOutput {
     float4 positionCS   : SV_POSITION; // Position in clip space
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 // Properties
@@ -24,7 +26,9 @@ float4 _Color;
 float _DepthOffset;
 
 VertexOutput Vertex(Attributes input) {
+    UNITY_SETUP_INSTANCE_ID(input); //Insert
     VertexOutput output = (VertexOutput)0;
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output); //Insert 
 
     float3 normalOS = input.normalOS;
 #ifdef USE_PRECALCULATED_OUTLINE_NORMALS

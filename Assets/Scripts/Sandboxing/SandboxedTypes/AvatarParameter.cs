@@ -1,6 +1,7 @@
 ﻿using System;
 using Hypernex.CCK.Unity;
 using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing.SandboxedTypes

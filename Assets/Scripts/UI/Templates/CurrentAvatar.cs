@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using Hypernex.UIActions;
 using TMPro;
 using UnityEngine;
@@ -95,7 +96,7 @@ namespace Hypernex.UI.Templates
         private void Update()
         {
             if (LocalPlayer.Instance == null || LocalPlayer.Instance.avatar == null ||
-                !LocalPlayer.Instance.avatar.calibrated || (GameInstance.FocusedInstance != null &&
+                !LocalPlayer.Instance.avatar.Calibrated || (GameInstance.FocusedInstance != null &&
                                                             GameInstance.FocusedInstance.World != null &&
                                                             !GameInstance.FocusedInstance.World.AllowScaling))
             {

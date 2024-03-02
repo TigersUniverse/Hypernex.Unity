@@ -71,7 +71,6 @@ namespace Hypernex.UI.Templates
 
         private void Start()
         {
-            // TODO: Register Buttons
             Backspace?.onClick.AddListener(() =>
             {
                 if (Input.text.Length > 0)

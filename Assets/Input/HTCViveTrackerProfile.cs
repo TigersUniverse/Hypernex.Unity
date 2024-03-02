@@ -145,7 +145,7 @@ namespace UnityEngine.XR.OpenXR.Features.Interactions
             /// A <see cref="PoseControl"/> that represents information from the <see cref="HTCViveTrackerProfile.grip"/> OpenXR binding.
             /// </summary>
             [Preserve, InputControl(offset = 0, aliases = new[] { "device", "gripPose" }, usage = "Device", noisy = true)]
-            public UnityEngine.InputSystem.XR.PoseControl devicePose { get; private set; }
+            public PoseControl devicePose { get; private set; }
  
             /// <summary>
             /// A [Vector3Control](xref:UnityEngine.InputSystem.Controls.Vector3Control) required for back compatibility with the XRSDK layouts. This is the device position. For the Oculus Touch device, this is both the grip and the pointer position. This value is equivalent to mapping devicePose/position.
@@ -169,7 +169,7 @@ namespace UnityEngine.XR.OpenXR.Features.Interactions
             protected override void FinishSetup()
             {
                 base.FinishSetup();
-                devicePose = GetChildControl<UnityEngine.InputSystem.XR.PoseControl>("devicePose");
+                devicePose = GetChildControl<PoseControl>("devicePose");
                 devicePosition = GetChildControl<Vector3Control>("devicePosition");
                 deviceRotation = GetChildControl<QuaternionControl>("deviceRotation");
                 isTracked = GetChildControl<ButtonControl>("isTracked");

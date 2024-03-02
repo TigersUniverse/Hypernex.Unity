@@ -3,15 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Audio;
+using Hypernex.Game.Avatar;
 using Hypernex.Game.Bindings;
+using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
-using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
@@ -27,13 +27,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
-#if MAGICACLOTH
-using MagicaCloth2;
-#endif
-using Keyboard = Hypernex.Game.Bindings.Keyboard;
 using Logger = Hypernex.CCK.Logger;
 using Mic = Hypernex.Tools.Mic;
-using Mouse = Hypernex.Game.Bindings.Mouse;
 using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
 
 namespace Hypernex.Game
@@ -139,23 +134,20 @@ namespace Hypernex.Game
         public PlayerInput vrPlayerInput;
         public HandGetter LeftHandGetter;
         public HandGetter RightHandGetter;
-        public List<string> LastPlayerAssignedTags = new();
         public List<XRInteractorLineVisual> XRRays = new ();
-        public Dictionary<string, object> LastExtraneousObjects = new();
         public VRInputListener VRInputListener;
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
         public CurrentAvatar CurrentAvatarDisplay;
-        
-        private const float MESSAGE_UPDATE_TIME = 0.05f;
+        public LocalPlayerSyncController LocalPlayerSyncController;
 
         private Denoiser denoiser;
         private float verticalVelocity;
         private float groundedTimer;
         internal AvatarMeta avatarMeta;
-        public AvatarCreator avatar;
+        public LocalAvatarCreator avatar;
         private string avatarFile;
-        internal List<LocalPlayerSyncObject> SavedTransforms = new();
+        internal List<PathDescriptor> SavedTransforms = new();
         internal Dictionary<string, string> OwnedAvatarIdTokens = new();
         private bool didSnapTurn;
         private Scene? scene;
@@ -247,76 +239,6 @@ namespace Hypernex.Game
             Mic.Instance.SetDevice(device);
         }
 
-        private void AddSystemTags(ref List<string> tags)
-        {
-            if (!tags.Contains("*eyetracking") && FaceTrackingManager.EyeTracking)
-                tags.Add("*eyetracking");
-            if (!tags.Contains("*liptracking") && FaceTrackingManager.LipTracking)
-                tags.Add("*liptracking");
-        }
-
-        private void TagsCheck(ref List<string> tags)
-        {
-            if (tags.Contains("*eyetracking") && !FaceTrackingManager.EyeTracking)
-                tags.Remove("*eyetracking");
-            if (tags.Contains("*liptracking") && !FaceTrackingManager.LipTracking)
-                tags.Remove("*liptracking");
-        }
-
-        private PlayerUpdate GetPlayerUpdate(GameInstance gameInstance)
-        {
-            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen)
-                return null;
-            PlayerUpdate playerUpdate = new PlayerUpdate
-            {
-                Auth = new JoinAuth
-                {
-                    UserId = APIPlayer.APIUser.Id,
-                    TempToken = gameInstance.userIdToken
-                },
-                IsPlayerVR = IsVR,
-                IsSpeaking = MicrophoneEnabled,
-                PlayerAssignedTags = new List<string>(),
-                ExtraneousData = new Dictionary<string, object>(),
-                WeightedObjects = new Dictionary<string, float>()
-            };
-            AddSystemTags(ref playerUpdate.PlayerAssignedTags);
-            if (avatarMeta != null)
-                playerUpdate.AvatarId = avatarMeta.Id;
-            if (playerUpdate.IsPlayerVR)
-            {
-                XRBinding left = null;
-                XRBinding right = null;
-                foreach (IBinding binding in Bindings)
-                    switch (binding.Id)
-                    {
-                        case "Left VRController":
-                            left = (XRBinding) binding;
-                            break;
-                        case "Right VRController":
-                            right = (XRBinding) binding;
-                            break;
-                    }
-
-                if (left != null && right != null)
-                {
-                    List<(string, float)> fingerTrackingWeights = XRBinding.GetFingerTrackingWeights(left, right);
-                    foreach ((string, float) fingerTrackingWeight in fingerTrackingWeights)
-                        playerUpdate.WeightedObjects.Add(fingerTrackingWeight.Item1, fingerTrackingWeight.Item2);
-                }
-            }
-            foreach (string s in new List<string>(MorePlayerAssignedTags))
-                if(!playerUpdate.PlayerAssignedTags.Contains(s))
-                    playerUpdate.PlayerAssignedTags.Add(s);
-            foreach (KeyValuePair<string,object> extraneousObject in new Dictionary<string, object>(MoreExtraneousObjects))
-                if(!playerUpdate.ExtraneousData.ContainsKey(extraneousObject.Key))
-                    playerUpdate.ExtraneousData.Add(extraneousObject.Key, extraneousObject.Value);
-            TagsCheck(ref playerUpdate.PlayerAssignedTags);
-            LastPlayerAssignedTags = new List<string>(playerUpdate.PlayerAssignedTags);
-            LastExtraneousObjects = new Dictionary<string, object>(playerUpdate.ExtraneousData);
-            return playerUpdate;
-        }
-
         private void ShareAvatarTokenToConnectedUsersInInstance(AvatarMeta am)
         {
             // Share AvatarToken with unblocked users
@@ -364,7 +286,7 @@ namespace Hypernex.Game
                 avatarMeta = am;
                 avatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
-                avatar = new AvatarCreator(this, a, IsVR);
+                avatar = new LocalAvatarCreator(this, a, IsVR);
                 foreach (NexboxScript localAvatarScript in avatar.Avatar.LocalAvatarScripts)
                     avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
                         avatar.Avatar.gameObject));
@@ -379,49 +301,8 @@ namespace Hypernex.Game
                     if (pathDescriptor == null)
                         pathDescriptor = child.gameObject.AddComponent<PathDescriptor>();
                     pathDescriptor.root = transform;
-                    LocalPlayerSyncObject localPlayerSyncObject =
-                        child.gameObject.GetComponent<LocalPlayerSyncObject>();
-                    if (localPlayerSyncObject == null)
-                        localPlayerSyncObject = child.gameObject.AddComponent<LocalPlayerSyncObject>();
-                    SavedTransforms.Add(localPlayerSyncObject);
+                    SavedTransforms.Add(pathDescriptor);
                 }
-#if DYNAMIC_BONE
-                foreach (DynamicBone dynamicBone in avatar.Avatar.transform.GetComponentsInChildren<DynamicBone>())
-                {
-                    dynamicBone.m_UpdateMode = DynamicBone.UpdateMode.AnimatePhysics;
-                    dynamicBone.m_Roots.ForEach(x =>
-                    {
-                        if (x == null) return;
-                        LocalPlayerSyncObject lp = x.GetComponent<LocalPlayerSyncObject>();
-                        if(lp != null)
-                            lp.MakeSpecial(dynamicBone);
-                    });
-                    if(dynamicBone.m_Root == null) continue;
-                    LocalPlayerSyncObject localPlayerSyncObject =
-                        dynamicBone.m_Root.GetComponent<LocalPlayerSyncObject>();
-                    if(localPlayerSyncObject != null)
-                        localPlayerSyncObject.MakeSpecial(dynamicBone);
-                }
-#endif
-#if MAGICACLOTH
-                foreach (MagicaCloth magicaCloth in avatar.Avatar.transform.GetComponentsInChildren<MagicaCloth>())
-                {
-                    // i don't *think* this could be null, but I'm not sure
-                    if(magicaCloth.SerializeData != null)
-                    {
-                        magicaCloth.SerializeData.updateMode = ClothUpdateMode.Normal;
-                        foreach (Transform rootBone in magicaCloth.SerializeData.rootBones)
-                        {
-                            if(rootBone == null) continue;
-                            LocalPlayerSyncObject localPlayerSyncObject =
-                                rootBone.GetComponent<LocalPlayerSyncObject>();
-                            if (localPlayerSyncObject != null)
-                                localPlayerSyncObject.MakeSpecial();
-                        }
-                    }
-                }
-#endif
-                avatar.Avatar.gameObject.GetComponent<LocalPlayerSyncObject>().AlwaysSync = true;
                 if (am.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(am);
                 Dashboard.PositionDashboard(this);
@@ -490,63 +371,7 @@ namespace Hypernex.Game
             APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
         }
 
-        private Coroutine lastCoroutine;
-        private List<WeightedObjectUpdate> weightedObjectUpdates = new();
-        private Queue<PlayerObjectUpdate> poumsgs = new();
-        private Queue<WeightedObjectUpdate> woumsgs = new();
-        private CancellationTokenSource cts;
-        private Mutex mutex = new();
-
-        public void UpdateObject(NetworkedObject networkedObject)
-        {
-            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen) return;
-            if(mutex.WaitOne(1))
-            {
-                PlayerObjectUpdate playerObjectUpdate = new PlayerObjectUpdate
-                {
-                    Auth = new JoinAuth
-                    {
-                        UserId = APIPlayer.APIUser.Id,
-                        TempToken = GameInstance.FocusedInstance.userIdToken
-                    },
-                    Object = networkedObject
-                };
-                poumsgs.Enqueue(playerObjectUpdate);
-                mutex.ReleaseMutex();
-            }
-        }
-
-        public void UpdateWeight(WeightedObjectUpdate weightedObjectUpdate)
-        {
-            if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen) return;
-            if (mutex.WaitOne(1))
-            {
-                woumsgs.Enqueue(weightedObjectUpdate);
-                mutex.ReleaseMutex();
-            }
-        }
-
-        public void ForceResync()
-        {
-            foreach (LocalPlayerSyncObject localPlayerSyncObject in SavedTransforms)
-            {
-                if(localPlayerSyncObject == null) continue;
-                localPlayerSyncObject.Check(true);
-            }
-        }
-
-        private IEnumerator UpdatePlayer(GameInstance gameInstance)
-        {
-            while (true)
-            {
-                if (gameInstance.IsOpen)
-                {
-                    PlayerUpdate playerUpdate = GetPlayerUpdate(gameInstance);
-                    gameInstance.SendMessage(Msg.Serialize(playerUpdate), MessageChannel.Unreliable);
-                }
-                yield return new WaitForSeconds(MESSAGE_UPDATE_TIME);
-            }
-        }
+        private List<Coroutine> lastCoroutine = new();
 
         private void Start()
         {
@@ -557,6 +382,7 @@ namespace Hypernex.Game
                 return;
             }
             Instance = this;
+            LocalPlayerSyncController = new LocalPlayerSyncController(this, i => lastCoroutine.Add(StartCoroutine(i)));
             DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
@@ -593,13 +419,12 @@ namespace Hypernex.Game
                         UserId = APIPlayer.APIUser.Id,
                         TempToken = GameInstance.FocusedInstance.userIdToken
                     });
-                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(playerVoice));
+                    GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice));
                 }
                 avatar?.ApplyAudioClipToLipSync(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
             {
-                lastCoroutine = StartCoroutine(UpdatePlayer(instance));
                 instance.OnUserLoaded += user =>
                 {
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
@@ -607,68 +432,16 @@ namespace Hypernex.Game
                 };
                 instance.OnClientConnect += user =>
                 {
-                    ForceResync();
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                         ShareAvatarTokenToUserId(user, avatarMeta);
                 };
                 instance.OnDisconnect += () =>
                 {
-                    if (lastCoroutine != null)
-                    {
-                        StopCoroutine(lastCoroutine);
-                        lastCoroutine = null;
-                    }
+                    lastCoroutine.ForEach(StopCoroutine);
                 };
                 if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(avatarMeta);
             };
-            cts = new();
-            new Thread(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen)
-                    {
-                        if (mutex.WaitOne())
-                        {
-                            if (poumsgs.Count > 0)
-                            {
-                                for (int i = 0; i < poumsgs.Count; i++)
-                                {
-                                    PlayerObjectUpdate p = poumsgs.Dequeue();
-                                    byte[] msg = Msg.Serialize(p);
-                                    GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
-                                }
-                            }
-                            mutex.ReleaseMutex();
-                        }
-                    }
-                    Thread.Sleep(10);
-                }
-            }).Start();
-            new Thread(() =>
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.IsOpen)
-                    {
-                        if (mutex.WaitOne())
-                        {
-                            if (woumsgs.Count > 0)
-                            {
-                                for (int i = 0; i < woumsgs.Count; i++)
-                                {
-                                    WeightedObjectUpdate w = woumsgs.Dequeue();
-                                    byte[] msg = Msg.Serialize(w);
-                                    GameInstance.FocusedInstance.SendMessage(msg, MessageChannel.Unreliable);
-                                }
-                            }
-                            mutex.ReleaseMutex();
-                        }
-                    }
-                    Thread.Sleep(10);
-                }
-            }).Start();
         }
 
         public void SwitchVR()
@@ -689,9 +462,9 @@ namespace Hypernex.Game
 
         private void CreateDesktopBindings()
         {
-            Bindings.Add(new Keyboard()
+            Bindings.Add(new Bindings.Keyboard()
                 .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
-            Bindings.Add(new Mouse());
+            Bindings.Add(new Bindings.Mouse());
             Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
         }
 
@@ -700,10 +473,10 @@ namespace Hypernex.Game
             AlignVR(true, true);
             Bindings.ForEach(x =>
             {
-                if(x.GetType() == typeof(Keyboard))
-                    ((Keyboard) x).Dispose();
-                else if(x.GetType() == typeof(Mouse))
-                    ((Mouse) x).Dispose();
+                if(x.GetType() == typeof(Bindings.Keyboard))
+                    ((Bindings.Keyboard) x).Dispose();
+                else if(x.GetType() == typeof(Bindings.Mouse))
+                    ((Bindings.Mouse) x).Dispose();
             });
             Bindings.Clear();
             // Create Bindings
@@ -792,8 +565,8 @@ namespace Hypernex.Game
         {
             if (!LockCamera && binding.Id == "Mouse" && !IsVR)
             {
-                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Mouse)binding).Sensitivity, 0);
-                rotx += -(binding.Up + binding.Down * -1) * ((Mouse) binding).Sensitivity;
+                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Bindings.Mouse)binding).Sensitivity, 0);
+                rotx += -(binding.Up + binding.Down * -1) * ((Bindings.Mouse) binding).Sensitivity;
                 rotx = Mathf.Clamp(rotx, -90f, 90f);
                 Camera.transform.localEulerAngles = new Vector3(rotx, 0, 0);
                 return (Vector3.zero, binding.Button, false);
@@ -936,8 +709,6 @@ namespace Hypernex.Game
                 SwitchVR();
         }
 
-        public void ResetWeights() => weightedObjectUpdates.Clear();
-
         private void LateUpdate()
         {
             avatar?.LateUpdate(IsVR, Camera.transform, LockCamera);
@@ -950,54 +721,7 @@ namespace Hypernex.Game
                 foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
                     avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
             }
-            if(APIPlayer.APIUser != null && GameInstance.FocusedInstance != null)
-            {
-                List<WeightedObjectUpdate> w = avatar?.GetAnimatorWeights(new JoinAuth
-                {
-                    UserId = APIPlayer.APIUser.Id,
-                    TempToken = GameInstance.FocusedInstance.userIdToken
-                });
-                if(w != null)
-                    if (w.Count != weightedObjectUpdates.Count)
-                    {
-                        ResetWeightedObjects resetWeightedObjects = new ResetWeightedObjects
-                        {
-                            Auth = new JoinAuth
-                            {
-                                UserId = APIPlayer.APIUser.Id,
-                                TempToken = GameInstance.FocusedInstance.userIdToken
-                            }
-                        };
-                        GameInstance.FocusedInstance.SendMessage(Msg.Serialize(resetWeightedObjects));
-                        weightedObjectUpdates.Clear();
-                        w.ForEach(x =>
-                        {
-                            weightedObjectUpdates.Add(x);
-                            UpdateWeight(x);
-                        });
-                    }
-                    else
-                    {
-                        for (int x = 0; x < w.Count; x++)
-                        {
-                            WeightedObjectUpdate recent = w.ElementAt(x);
-                            try
-                            {
-                                WeightedObjectUpdate cached = weightedObjectUpdates.First(b =>
-                                    b.TypeOfWeight == recent.TypeOfWeight &&
-                                    b.PathToWeightContainer == recent.PathToWeightContainer &&
-                                    b.WeightIndex == recent.WeightIndex);
-                                if (recent.Weight != cached.Weight)
-                                {
-                                    int y = weightedObjectUpdates.IndexOf(cached);
-                                    weightedObjectUpdates[y] = recent;
-                                    UpdateWeight(recent);
-                                }
-                            }
-                            catch(Exception){}
-                        }
-                    }
-            }
+            //LocalPlayerSyncController?.LateUpdate();
         }
 
         private void OnDestroy() => Dispose();
@@ -1011,20 +735,14 @@ namespace Hypernex.Game
             StopCoroutine(lastCoroutine);*/
             foreach (IBinding binding in Bindings)
             {
-                if(binding.GetType() == typeof(Keyboard))
-                    ((Keyboard)binding).Dispose();
-                if(binding.GetType() == typeof(Mouse))
-                    ((Mouse)binding).Dispose();
+                if(binding.GetType() == typeof(Bindings.Keyboard))
+                    ((Bindings.Keyboard)binding).Dispose();
+                if(binding.GetType() == typeof(Bindings.Mouse))
+                    ((Bindings.Mouse)binding).Dispose();
             }
-            if (lastCoroutine != null)
-            {
-                StopCoroutine(lastCoroutine);
-                lastCoroutine = null;
-            }
+            lastCoroutine.ForEach(StopCoroutine);
             denoiser?.Dispose();
-            if(cts != null && !cts.IsCancellationRequested)
-                cts.Cancel();
-            mutex?.Dispose();
+            LocalPlayerSyncController?.Dispose();
         }
     }
 }
