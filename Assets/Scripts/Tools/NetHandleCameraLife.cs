@@ -12,6 +12,10 @@ namespace Hypernex.Tools
     public class NetHandleCameraLife : IDisposable
     {
         public Transform transform { get; private set; }
+
+        public SmoothTransform SmoothTransform => smoothTransform ??= new SmoothTransform(transform, false);
+
+        private SmoothTransform smoothTransform;
         private readonly CancellationTokenSource cts = new();
         private bool hasPinged;
         private readonly Action onDispose;
@@ -60,7 +64,7 @@ namespace Hypernex.Tools
             cts.Cancel();
             CoroutineRunner.Instance.StopCoroutine(c1);
             CoroutineRunner.Instance.StopCoroutine(c2);
-            Object.Destroy(transform.gameObject);
+            smoothTransform?.Dispose();
         }
     }
 }

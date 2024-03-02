@@ -121,13 +121,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             if (LocalPlayer.Instance == null)
                 return false;
-            return LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key);
+            return LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects.ContainsKey(key);
         }
 
         public static string[] GetExtraneousObjectKeys()
         {
             List<string> keys = new();
-            foreach (string key in LocalPlayer.Instance.LastExtraneousObjects.Keys)
+            foreach (string key in LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects.Keys)
                 keys.Add(key);
             return keys.ToArray();
         }
@@ -136,16 +136,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             if (LocalPlayer.Instance == null)
                 return null;
-            if (!LocalPlayer.Instance.LastExtraneousObjects.ContainsKey(key))
+            if (!LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects.ContainsKey(key))
                 return null;
-            return LocalPlayer.Instance.LastExtraneousObjects[key];
+            return LocalPlayer.Instance.LocalPlayerSyncController.LastExtraneousObjects[key];
         }
 
         public static string[] GetPlayerAssignedTags()
         {
             if (LocalPlayer.Instance == null)
                 return null;
-            return LocalPlayer.Instance.LastPlayerAssignedTags.ToArray();
+            return LocalPlayer.Instance.LocalPlayerSyncController.LastPlayerAssignedTags.ToArray();
         }
 
         public static void Respawn()

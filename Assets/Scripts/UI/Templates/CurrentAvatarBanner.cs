@@ -1,4 +1,5 @@
 ﻿using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using Hypernex.Tools;
 using TMPro;
 using UnityEngine;

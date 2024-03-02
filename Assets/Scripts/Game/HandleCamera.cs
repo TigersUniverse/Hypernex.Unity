@@ -16,13 +16,11 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
     [RequireComponent(typeof(Grabbable))]
     [RequireComponent(typeof(DontDestroyMe))]
-    [RequireComponent(typeof(LocalPlayerSyncObject))]
     public class HandleCamera : MonoBehaviour, IDisposable
     {
         private const string TEMPLATE_CAMERA_NAME = "HandleCamera";
@@ -35,6 +33,8 @@ namespace Hypernex.Game
 
         public static HandleCamera Create()
         {
+            // TODO: More than one camera breaks. Might have to do with handleCameras list
+            if (handleCameras.Count > 0) return null;
             GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find(TEMPLATE_CAMERA_NAME)).gameObject;
             string n = "camera_" + Guid.NewGuid();
@@ -363,11 +363,6 @@ namespace Hypernex.Game
             transform.rotation = Quaternion.LookRotation((transform.position - reference.position).normalized);
             OriginalPosition = LinkedCamera.transform.localPosition;
             OriginalRotation = LinkedCamera.transform.localRotation;
-            LocalPlayerSyncObject localPlayerSyncObject = GetComponent<LocalPlayerSyncObject>();
-            localPlayerSyncObject.IgnoreObjectLocation = true;
-            localPlayerSyncObject.FallbackPath = "*" + gameObject.name;
-            localPlayerSyncObject.CheckLocal = false;
-            localPlayerSyncObject.AlwaysSync = true;
             handleCameras.Add(this);
         }
 

@@ -19,6 +19,8 @@ namespace Hypernex.UI.Templates
             gameObject.SetActive(false);
         }
 
+        public void OnCloseButtonClick() => gameObject.SetActive(false);
+
         public void Render(string action, string receiver, Action<string> callback)
         {
             Action.text = action;

@@ -32,7 +32,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 EventName = eventName,
                 Data = new List<object> {data?.ToArray() ?? Array.Empty<object>()}
             };
-            gameInstance.SendMessage(Msg.Serialize(networkedEvent), messageChannel);
+            gameInstance.SendMessage(typeof(NetworkedEvent).FullName, Msg.Serialize(networkedEvent), messageChannel);
         }
     }
 }

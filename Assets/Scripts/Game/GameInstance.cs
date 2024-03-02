@@ -10,6 +10,7 @@ using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.Tools.Debug;
 using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
@@ -223,10 +224,12 @@ namespace Hypernex.Game
         /// </summary>
         /// <param name="message">message to send</param>
         /// <param name="messageChannel">channel to send message over</param>
-        public void SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
+        public void SendMessage(string name, byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
         {
-            if(authed && IsOpen)
-                client.SendMessage(message, messageChannel);
+            if (!authed || !IsOpen) return;
+            client.SendMessage(message, messageChannel);
+            if(MessagePackListener.Instance == null) return;
+            MessagePackListener.Instance.AddMessage(name, message.Length);
         }
 
         public void InviteUser(User user)
@@ -250,7 +253,7 @@ namespace Hypernex.Game
                 targetUserId = user.Id,
                 message = message
             };
-            SendMessage(Msg.Serialize(warnPlayer));
+            SendMessage(typeof(WarnPlayer).FullName, Msg.Serialize(warnPlayer));
         }
 
         public void KickUser(User user, string message)
@@ -267,7 +270,7 @@ namespace Hypernex.Game
                 targetUserId = user.Id,
                 message = message
             };
-            SendMessage(Msg.Serialize(kickPlayer));
+            SendMessage(typeof(KickPlayer).FullName, Msg.Serialize(kickPlayer));
         }
 
         public void BanUser(User user, string message)
@@ -284,7 +287,7 @@ namespace Hypernex.Game
                 targetUserId = user.Id,
                 message = message
             };
-            SendMessage(Msg.Serialize(banPlayer));
+            SendMessage(typeof(BanPlayer).FullName, Msg.Serialize(banPlayer));
         }
 
         public void UnbanUser(User user)
@@ -300,7 +303,7 @@ namespace Hypernex.Game
                 },
                 targetUserId = user.Id
             };
-            SendMessage(Msg.Serialize(unbanPlayer));
+            SendMessage(typeof(UnbanPlayer).FullName, Msg.Serialize(unbanPlayer));
         }
 
         public void AddModerator(User user)
@@ -316,7 +319,7 @@ namespace Hypernex.Game
                 },
                 targetUserId = user.Id
             };
-            SendMessage(Msg.Serialize(addModerator));
+            SendMessage(typeof(AddModerator).FullName, Msg.Serialize(addModerator));
         }
         
         public void RemoveModerator(User user)
@@ -332,13 +335,17 @@ namespace Hypernex.Game
                 },
                 targetUserId = user.Id
             };
-            SendMessage(Msg.Serialize(removeModerator));
+            SendMessage(typeof(RemovedModerator).FullName, Msg.Serialize(removeModerator));
         }
 
         internal void __SendMessage(byte[] message, MessageChannel messageChannel = MessageChannel.Reliable)
         {
             if(IsOpen)
+            {
                 client.SendMessage(message, messageChannel);
+                if(MessagePackListener.Instance == null) return;
+                MessagePackListener.Instance.AddMessage(typeof(JoinAuth).FullName, message.Length);
+            }
         }
 
         internal void UpdateInstanceMeta(UpdatedInstance updatedInstance)
@@ -557,7 +564,10 @@ namespace Hypernex.Game
             Physics.gravity = new Vector3(0, LocalPlayer.Instance.Gravity, 0);
             sandboxes.ForEach(x => x.Dispose());
             sandboxes.Clear();
+            foreach (HandleCamera handleCamera in HandleCamera.allCameras)
+                Object.Destroy(handleCamera.gameObject);
             Close();
+            DynamicGI.UpdateEnvironment();
         }
     }
 }

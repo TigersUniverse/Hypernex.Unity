@@ -9,6 +9,7 @@ using Hypernex.UIActions.Data;
 using Nexport;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using Logger = Hypernex.CCK.Logger;
 
@@ -32,6 +33,7 @@ namespace Hypernex.UI.Templates
         }
 
         public DynamicScroll Scroll;
+        public GameObject ExecuteButton;
         public GameObject ServerButton;
         public Sprite Warning;
         public Sprite Error;
@@ -138,7 +140,8 @@ namespace Hypernex.UI.Templates
                         Language = nexboxLanguage,
                         ScriptText = ScriptText.text
                     };
-                    GameInstance.FocusedInstance.SendMessage(Msg.Serialize(serverConsoleExecute));
+                    GameInstance.FocusedInstance.SendMessage(typeof(ServerConsoleExecute).FullName,
+                        Msg.Serialize(serverConsoleExecute));
                     OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Executed Script!",
@@ -172,6 +175,22 @@ namespace Hypernex.UI.Templates
             ResetMessages();
         }
 
-        private void Update() => ServerButton.SetActive(ExtendedPermissions);
+        private void Update()
+        {
+            if (GameInstance.FocusedInstance == null)
+            {
+                ExecuteButton.SetActive(false);
+                ServerButton.SetActive(false);
+                return;
+            }
+            if (GameInstance.FocusedInstance.worldMeta.OwnerId != APIPlayer.APIUser.Id)
+            {
+                ExecuteButton.SetActive(false);
+                ServerButton.SetActive(false);
+                return;
+            }
+            ExecuteButton.SetActive(ExtendedPermissions);
+            ServerButton.SetActive(ExtendedPermissions);
+        }
     }
 }

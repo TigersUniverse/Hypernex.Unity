@@ -27,7 +27,7 @@ using Material = UnityEngine.Material;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2023.12.1b";
+    public const string VERSION = "2024.03.1b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -46,6 +46,7 @@ public class Init : MonoBehaviour
     public Texture2D MouseTexture;
     public Texture2D CircleMouseTexture;
     public CreateInstanceTemplate CreateInstanceTemplate;
+    public float SmoothingFrames = 0.1f;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 

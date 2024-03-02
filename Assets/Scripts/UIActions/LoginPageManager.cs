@@ -65,7 +65,6 @@ namespace Hypernex.UIActions
             APIPlayer.OnUser += OnLogin;
             APIPlayer.OnUserRefresh += user =>
             {
-                OnLogout();
                 OnLogin(user);
             };
             APIPlayer.OnSocketConnect += OnSocket;

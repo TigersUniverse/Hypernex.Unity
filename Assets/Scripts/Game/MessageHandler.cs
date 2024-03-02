@@ -1,5 +1,6 @@
 ﻿using System;
 using Hypernex.Networking.Messages;
+using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using Nexport;
@@ -29,6 +30,13 @@ namespace Hypernex.Game
                     } catch(Exception){}
                     break;
                 }
+                case "Hypernex.Networking.Messages.PlayerDataUpdate":
+                {
+                    PlayerDataUpdate playerDataUpdate =
+                        (PlayerDataUpdate) Convert.ChangeType(msgMeta.Data, typeof(PlayerDataUpdate));
+                    PlayerManagement.HandlePlayerDataUpdate(gameInstance, playerDataUpdate);
+                    break;
+                }
                 case "Hypernex.Networking.Messages.PlayerObjectUpdate":
                 {
                     PlayerObjectUpdate playerObjectUpdate = (PlayerObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(PlayerObjectUpdate));
@@ -42,11 +50,11 @@ namespace Hypernex.Game
                     PlayerManagement.HandleWeightedObjectUpdate(gameInstance, weightedObjectUpdate);
                     break;
                 }
-                case "Hypernex.Networking.Messages.ResetWeightedObjects":
+                case "Hypernex.Networking.Messages.Bulk.BulkWeightedObjectUpdate":
                 {
-                    ResetWeightedObjects resetWeightedObjects =
-                        (ResetWeightedObjects) Convert.ChangeType(msgMeta.Data, typeof(ResetWeightedObjects));
-                    PlayerManagement.HandleResetWeightedObject(gameInstance, resetWeightedObjects);
+                    BulkWeightedObjectUpdate weightedObjectUpdates =
+                        (BulkWeightedObjectUpdate) Convert.ChangeType(msgMeta.Data, typeof(BulkWeightedObjectUpdate));
+                    PlayerManagement.HandleWeightedObjectUpdate(gameInstance, weightedObjectUpdates);
                     break;
                 }
                 case "Hypernex.Networking.Messages.WorldObjectUpdate":
@@ -81,7 +89,7 @@ namespace Hypernex.Game
                         instance.authed = true;
                         // Resync weights in server
                         if(LocalPlayer.Instance != null)
-                            LocalPlayer.Instance.ResetWeights();
+                            LocalPlayer.Instance.LocalPlayerSyncController.ResetWeights();
                     }
                     break;
                 }

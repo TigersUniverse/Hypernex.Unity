@@ -13,6 +13,7 @@ namespace SteamAudio
         public SerializedData asset = null;
         public string sceneNameWhenExported = "";
 
+#if STEAMAUDIO_ENABLED
         StaticMesh mStaticMesh = null;
 
         void Start()
@@ -37,6 +38,7 @@ namespace SteamAudio
             if (mStaticMesh != null)
             {
                 mStaticMesh.AddToScene(SteamAudioManager.CurrentScene);
+                SteamAudioManager.ScheduleCommitScene();
             }
         }
 
@@ -45,6 +47,7 @@ namespace SteamAudio
             if (mStaticMesh != null && SteamAudioManager.CurrentScene != null)
             {
                 mStaticMesh.RemoveFromScene(SteamAudioManager.CurrentScene);
+                SteamAudioManager.ScheduleCommitScene();
             }
         }
 
@@ -57,8 +60,10 @@ namespace SteamAudio
                 if (enabled)
                 {
                     mStaticMesh.AddToScene(SteamAudioManager.CurrentScene);
+                    SteamAudioManager.ScheduleCommitScene();
                 }
             }
         }
+#endif
     }
 }

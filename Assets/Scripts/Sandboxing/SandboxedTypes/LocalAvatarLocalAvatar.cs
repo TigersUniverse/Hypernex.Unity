@@ -4,6 +4,7 @@ using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.Game;
+using Hypernex.Game.Avatar;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -120,7 +121,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             {
                 if (localPlayer == null)
                     return false;
-                return localPlayer.LastExtraneousObjects.ContainsKey(key);
+                return localPlayer.LocalPlayerSyncController.LastExtraneousObjects.ContainsKey(key);
             }
             if (netPlayer == null)
                 return false;
@@ -134,7 +135,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             {
                 if (localPlayer == null)
                     return Array.Empty<string>();
-                foreach (string key in localPlayer.LastExtraneousObjects.Keys)
+                foreach (string key in localPlayer.LocalPlayerSyncController.LastExtraneousObjects.Keys)
                     keys.Add(key);
                 return keys.ToArray();
             }
@@ -154,9 +155,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                     if (LocalPlayer.MoreExtraneousObjects.ContainsKey(key))
                         return LocalPlayer.MoreExtraneousObjects[key];
                 }
-                if (localPlayer == null || !localPlayer.LastExtraneousObjects.ContainsKey(key))
+                if (localPlayer == null || !localPlayer.LocalPlayerSyncController.LastExtraneousObjects.ContainsKey(key))
                     return null;
-                return localPlayer.LastExtraneousObjects[key];
+                return localPlayer.LocalPlayerSyncController.LastExtraneousObjects[key];
             }
             if (netPlayer == null || !netPlayer.LastExtraneousObjects.ContainsKey(key))
                 return null;
@@ -197,7 +198,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             {
                 if (localPlayer == null)
                     return null;
-                return localPlayer.LastPlayerAssignedTags.ToArray();
+                return localPlayer.LocalPlayerSyncController.LastPlayerAssignedTags.ToArray();
             }
             if (netPlayer == null)
                 return null;

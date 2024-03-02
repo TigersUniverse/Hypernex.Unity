@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Hypernex.Networking.Messages;
+using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Player;
 using HypernexSharp.APIObjects;
 using UnityEngine;
@@ -52,6 +53,19 @@ namespace Hypernex.Game
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerUpdate.Auth.UserId}");
         }
 
+        public static void HandlePlayerDataUpdate(GameInstance gameInstance, PlayerDataUpdate playerDataUpdate)
+        {
+            if (playerDataUpdate.Auth.UserId == APIPlayer.APIUser?.Id ||
+                string.IsNullOrEmpty(playerDataUpdate.Auth.UserId))
+                return;
+            NetPlayer netPlayer = GetOrCreateNetPlayer(gameInstance, playerDataUpdate.Auth.UserId);
+            if (netPlayer != null)
+                netPlayer.NetworkDataUpdate(playerDataUpdate);
+            else
+                Logger.CurrentLogger.Debug(
+                    $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{playerDataUpdate.Auth.UserId}");
+        }
+
         public static void HandleWeightedObjectUpdate(GameInstance gameInstance, WeightedObjectUpdate weightedObjectUpdate)
         {
             if (weightedObjectUpdate.Auth.UserId == APIPlayer.APIUser?.Id ||
@@ -64,19 +78,24 @@ namespace Hypernex.Game
                 Logger.CurrentLogger.Debug(
                     $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{weightedObjectUpdate.Auth.UserId}");
         }
-
-        public static void HandleResetWeightedObject(GameInstance gameInstance,
-            ResetWeightedObjects resetWeightedObjects)
+        
+        public static void HandleWeightedObjectUpdate(GameInstance gameInstance, BulkWeightedObjectUpdate weightedObjectUpdates)
         {
-            if (resetWeightedObjects.Auth.UserId == APIPlayer.APIUser?.Id ||
-                string.IsNullOrEmpty(resetWeightedObjects.Auth.UserId))
+            if (weightedObjectUpdates.Reset)
+            {
+                NetPlayer netPlayer = GetOrCreateNetPlayer(gameInstance, weightedObjectUpdates.Auth.UserId);
+                if (netPlayer != null)
+                    netPlayer.ResetWeightedObjects(weightedObjectUpdates);
+                else
+                    Logger.CurrentLogger.Debug(
+                        $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{weightedObjectUpdates.Auth.UserId}");
                 return;
-            NetPlayer netPlayer = GetOrCreateNetPlayer(gameInstance, resetWeightedObjects.Auth.UserId);
-            if (netPlayer != null)
-                netPlayer.ResetWeightedObjects();
-            else
-                Logger.CurrentLogger.Debug(
-                    $"NetPlayer not found for {gameInstance.gameServerId}/{gameInstance.instanceId}/{resetWeightedObjects.Auth.UserId}");
+            }
+            foreach (WeightedObjectUpdate weightedObjectUpdate in weightedObjectUpdates.WeightedObjectUpdates)
+            {
+                weightedObjectUpdate.Auth = weightedObjectUpdates.Auth;
+                HandleWeightedObjectUpdate(gameInstance, weightedObjectUpdate);
+            }
         }
 
         public static void HandlePlayerObjectUpdate(GameInstance gameInstance, PlayerObjectUpdate playerObjectUpdate)
@@ -121,7 +140,7 @@ namespace Hypernex.Game
                 Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>(true);
                 foreach (Transform transform in ts)
                 {
-                    NetworkSync networkSync = transform.gameObject.AddComponent<NetworkSync>();
+                    NetworkSync networkSync = transform.gameObject.GetComponent<NetworkSync>();
                     if (networkSync == null) continue;
                     if(networkSync.InstanceHostOnly)
                         networkSync.Claim();
