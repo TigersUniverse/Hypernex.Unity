@@ -7,27 +7,27 @@ namespace Hypernex.Game.Audio
     public class RawAudioCodec : IAudioCodec
     {
         public string Name => "raw";
-        
-        public PlayerVoice Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
+
+        public PlayerVoice[] Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
         {
             byte[] data = DataConversion.ConvertFloatToByte(pcm);
             PlayerVoice playerVoice = new PlayerVoice
             {
                 Auth = joinAuth,
                 Bitrate = 0,
-                SampleRate = (int) Mic.Frequency,
-                Channels = (int) Mic.NumChannels,
+                SampleRate = clip.frequency,
+                Channels = clip.channels,
                 Encoder = Name,
                 Bytes = data,
                 EncodeLength = data.Length
             };
-            return playerVoice;
+            return new[] { playerVoice };
         }
 
         public void Decode(PlayerVoice playerVoice, AudioSource audioSource)
         {
             float[] d = DataConversion.ConvertByteToFloat(playerVoice.Bytes);
-            AudioSourceDriver.Set(audioSource, d, playerVoice.Channels, playerVoice.SampleRate);
+            AudioSourceDriver.AddQueue(audioSource, d, playerVoice.Channels, playerVoice.SampleRate);
         }
     }
 }
