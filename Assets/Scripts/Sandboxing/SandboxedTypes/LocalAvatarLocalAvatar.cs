@@ -41,8 +41,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return localPlayer.avatar;
             return netPlayer.Avatar;
         }
-        
-        public bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
+
+        public bool IsLocalClient() => isLocalAvatar;
+        public bool IsLocalPlayerId(string userid) => APIPlayer.APIUser.Id == userid;
 
         public bool IsHost()
         {

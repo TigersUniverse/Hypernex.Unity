@@ -37,6 +37,12 @@ namespace kTools.Mirrors.Editor
 
             public static readonly GUIContent MSAA = new GUIContent("MSAA",
                 "Should reflections be resolved with MSAA.");
+
+            public static readonly GUIContent MinRenderDistance =
+                new GUIContent("MinRenderDistance", "The minimum render distance for the camera.");
+
+            public static readonly GUIContent MaxRenderDistance =
+                new GUIContent("MaxRenderDistance", "The maximum render distance for the camera.");
         }
 
         struct PropertyNames
@@ -48,6 +54,8 @@ namespace kTools.Mirrors.Editor
             public static readonly string TextureScale = "m_TextureScale";
             public static readonly string AllowHDR = "m_AllowHDR";
             public static readonly string AllowMSAA = "m_AllowMSAA";
+            public static readonly string MinRenderDistance = "MinRenderDistance";
+            public static readonly string MaxRenderDistance = "MaxRenderDistance";
         }
 #endregion
 
@@ -67,6 +75,8 @@ namespace kTools.Mirrors.Editor
         SerializedProperty m_TextureScaleProp;
         SerializedProperty m_AllowHDR;
         SerializedProperty m_AllowMSAA;
+        SerializedProperty MinRenderDistance;
+        SerializedProperty MaxRenderDistance;
 #endregion
 
 #region State
@@ -83,6 +93,8 @@ namespace kTools.Mirrors.Editor
             m_TextureScaleProp = serializedObject.FindProperty(PropertyNames.TextureScale);
             m_AllowHDR = serializedObject.FindProperty(PropertyNames.AllowHDR);
             m_AllowMSAA = serializedObject.FindProperty(PropertyNames.AllowMSAA);
+            MinRenderDistance = serializedObject.FindProperty(PropertyNames.MinRenderDistance);
+            MaxRenderDistance = serializedObject.FindProperty(PropertyNames.MaxRenderDistance);
         }
 #endregion
 
@@ -147,6 +159,10 @@ namespace kTools.Mirrors.Editor
 
         void DrawOutputOptions()
         {
+            // Render Properties
+            EditorGUILayout.PropertyField(MinRenderDistance, Styles.MinRenderDistance);
+            EditorGUILayout.PropertyField(MaxRenderDistance, Styles.MaxRenderDistance);
+            
             // Scope
             EditorGUILayout.PropertyField(m_ScopeProp, Styles.Scope);
 

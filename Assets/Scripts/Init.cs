@@ -21,6 +21,7 @@ using Unity.XR.Oculus;
 using UnityEngine.Android;
 #endif
 using UnityEngine.Audio;
+using UnityEngine.Rendering;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
 using Material = UnityEngine.Material;
@@ -123,6 +124,8 @@ public class Init : MonoBehaviour
                 targetStreamingPath = Application.streamingAssetsPath;
                 break;
         }
+        kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
+        RenderPipelineManager.beginCameraRendering += BeginRender;
         DefaultTheme.ApplyThemeToUI();
         VersionLabels.ForEach(x => x.text = VERSION);
         DiscordTools.StartDiscord();
@@ -168,6 +171,9 @@ public class Init : MonoBehaviour
                 }));
     }
 
+    private void BeginRender(ScriptableRenderContext context, Camera c) =>
+        kTools.Mirrors.Mirror.Mirrors.ForEach(x => x.OnCameraRender.Invoke(context, c));
+
     private void FixedUpdate() => GameInstance.FocusedInstance?.FixedUpdate();
 
     private void Update()
@@ -185,6 +191,7 @@ public class Init : MonoBehaviour
 
     private void OnApplicationQuit()
     {
+        RenderPipelineManager.beginCameraRendering -= BeginRender;
         foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.OwnedAvatarIdTokens)
             APIPlayer.APIObject.RemoveAssetToken(_ => { }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarIdToken.Key,
                 avatarIdToken.Value);

@@ -16,7 +16,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     // I know this class name sounds stupid, but it is the LocalAvatar for Local scripts
     public static class LocalLocalAvatar
     {
-        public static bool IsLocalPLayerId(string userid) => APIPlayer.APIUser.Id == userid;
+        public static bool IsLocalClient() => false;
+        public static bool IsLocalPlayerId(string userid) => APIPlayer.APIUser.Id == userid;
         public static bool IsHost() => GameInstance.FocusedInstance?.isHost ?? false;
         
         public static ReadonlyItem GetAvatarObject(HumanBodyBones humanBodyBones)

@@ -119,20 +119,5 @@ namespace Hypernex.Tools
             }
             return false;
         }
-
-#if DYNAMIC_BONE
-        public static bool IsChildOfExclusion(List<Transform> exclusions, Transform bone)
-        {
-            foreach (Transform exclusion in exclusions)
-            {
-                foreach (Transform transform in exclusion.GetComponentsInChildren<Transform>(true))
-                {
-                    if (transform == bone)
-                        return true;
-                }
-            }
-            return false;
-        }
-#endif
     }
 }
