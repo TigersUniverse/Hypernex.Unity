@@ -421,7 +421,7 @@ namespace Hypernex.Game
                     });
                     foreach (var playerVoice in playerVoices)
                     {
-                        GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice));
+                        GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice), MessageChannel.UnreliableSequenced);
                     }
                 }
                 avatar?.ApplyAudioClipToLipSync(samples);

@@ -16,9 +16,9 @@ namespace Hypernex.Game.Audio
         internal static void Refresh()
         {
             audioCodecs.Clear();
+            audioCodecs.Add(new ConcentusAudioCodec());
             audioCodecs.Add(new RawAudioCodec());
             audioCodecs.Add(new OpusAudioCodec());
-            audioCodecs.Add(new ConcentusAudioCodec());
         }
 
         public static IAudioCodec GetAudioCodecByName(string name)
