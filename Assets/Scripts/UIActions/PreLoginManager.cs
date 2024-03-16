@@ -68,6 +68,7 @@ namespace Hypernex.UIActions
 
         private string currentURL;
         private bool saveLogin;
+        private List<int> userIndices = new List<int>();
 
         public void Start()
         {
@@ -101,14 +102,13 @@ namespace Hypernex.UIActions
             UserContinueButton.onClick.AddListener(() =>
             {
                 if (UserDropdown.options.Count > 0)
-                    SetUser(ConfigManager.LoadedConfig.SavedAccounts[UserDropdown.value]);
+                    SetUser(ConfigManager.LoadedConfig.SavedAccounts[userIndices[UserDropdown.value]]);
             });
             RemoveSelectedUserButton.onClick.AddListener(() =>
             {
                 if (UserDropdown.options.Count > 0)
                 {
-                    ConfigManager.LoadedConfig.SavedAccounts.Remove(
-                        ConfigManager.LoadedConfig.SavedAccounts[UserDropdown.value]);
+                    ConfigManager.LoadedConfig.SavedAccounts.RemoveAt(userIndices[UserDropdown.value]);
                     ConfigManager.SaveConfigToFile();
                     RefreshUsers(ConfigManager.LoadedConfig);
                 }
@@ -163,11 +163,17 @@ namespace Hypernex.UIActions
 
         private void RefreshUsers(Config config)
         {
+            userIndices.Clear();
             UserDropdown.ClearOptions();
+            int i = 0;
             foreach (ConfigUser configUser in config.SavedAccounts)
             {
                 if (configUser.Server.Equals(currentURL))
+                {
+                    userIndices.Add(i);
                     UserDropdown.options.Add(new TMP_Dropdown.OptionData(configUser.Username));
+                }
+                i++;
             }
             UserDropdown.RefreshShownValue();
         }
