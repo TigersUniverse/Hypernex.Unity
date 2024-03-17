@@ -125,7 +125,8 @@ public class Init : MonoBehaviour
                 break;
         }
         kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
-        RenderPipelineManager.beginCameraRendering += BeginRender;
+        RenderPipelineManager.beginCameraRendering += BeginRender_NoAvatar;
+        AvatarNearClip.BeforeClip += BeginRender_Avatar;
         DefaultTheme.ApplyThemeToUI();
         VersionLabels.ForEach(x => x.text = VERSION);
         DiscordTools.StartDiscord();
@@ -171,8 +172,14 @@ public class Init : MonoBehaviour
                 }));
     }
 
-    private void BeginRender(ScriptableRenderContext context, Camera c) =>
+    private void BeginRender_Avatar(ScriptableRenderContext context, Camera c) =>
         kTools.Mirrors.Mirror.Mirrors.ForEach(x => x.OnCameraRender.Invoke(context, c));
+
+    private void BeginRender_NoAvatar(ScriptableRenderContext context, Camera c)
+    {
+        if(AvatarNearClip.Instances.Count > 0) return;
+        kTools.Mirrors.Mirror.Mirrors.ForEach(x => x.OnCameraRender.Invoke(context, c));
+    }
 
     private void FixedUpdate() => GameInstance.FocusedInstance?.FixedUpdate();
 
@@ -191,7 +198,8 @@ public class Init : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        RenderPipelineManager.beginCameraRendering -= BeginRender;
+        RenderPipelineManager.beginCameraRendering -= BeginRender_NoAvatar;
+        AvatarNearClip.BeforeClip -= BeginRender_Avatar;
         foreach (KeyValuePair<string, string> avatarIdToken in LocalPlayer.OwnedAvatarIdTokens)
             APIPlayer.APIObject.RemoveAssetToken(_ => { }, APIPlayer.APIUser, APIPlayer.CurrentToken, avatarIdToken.Key,
                 avatarIdToken.Value);

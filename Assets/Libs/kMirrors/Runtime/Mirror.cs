@@ -90,7 +90,6 @@ namespace kTools.Mirrors
             m_TextureScale = 1.0f;
             m_AllowHDR = MirrorCameraOverride.UseSourceCameraSettings;
             m_AllowMSAA = MirrorCameraOverride.UseSourceCameraSettings;
-            OnMirrorCreation.Invoke(this);
         }
 #endregion
 
@@ -178,6 +177,7 @@ namespace kTools.Mirrors
 
         void OnEnable()
         {
+            OnMirrorCreation.Invoke(this);
             // Callbacks
             if(!CustomCameraControl)
                 RenderPipelineManager.beginCameraRendering += BeginCameraRendering;
