@@ -177,7 +177,7 @@ public class Init : MonoBehaviour
 
     private void BeginRender_NoAvatar(ScriptableRenderContext context, Camera c)
     {
-        if(AvatarNearClip.Instances.Count > 0) return;
+        if(AvatarNearClip.Instances.Count > 0 && !AvatarNearClip.UseFallback()) return;
         kTools.Mirrors.Mirror.Mirrors.ForEach(x => x.OnCameraRender.Invoke(context, c));
     }
 

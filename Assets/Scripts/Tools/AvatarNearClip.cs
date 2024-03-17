@@ -32,6 +32,9 @@ namespace Hypernex.Tools
         private Dictionary<Renderer, (Renderer, ShadowCastingMode)> strayRenderersShadows = new();
         private bool isStraySMR;
 
+        public static bool UseFallback() =>
+            !Instances.Any(x => x.skinnedMeshRenderer.enabled && x.gameObject.activeInHierarchy);
+
         /// <summary>
         /// Prepares the AvatarClip for use
         /// </summary>
@@ -196,7 +199,7 @@ namespace Hypernex.Tools
         {
             if (c == r)
             {
-                if(instances.ElementAt(0) == this)
+                if(instances.FirstOrDefault(x => x.skinnedMeshRenderer.enabled && x.gameObject.activeInHierarchy) == this)
                     BeforeClip.Invoke(context, c);
                 // If the Camera in this context is our renderCamera, then show the excludedBones
                 if (isStraySMR)
@@ -244,10 +247,18 @@ namespace Hypernex.Tools
             }
         }
 
-        private void OnEnable() => instances.Add(this);
-
-        private void OnDisable()
+        private void OnEnable()
         {
+            if(Instances.Contains(this)) return;
+            instances.Add(this);
+        }
+
+        private void OnDestroy()
+        {
+            try
+            {
+                instances.Remove(this);
+            } catch(Exception){}
             if (gameObject.name.Contains("shadowclone_"))
                 return;
             // Revert all RenderPipeline Events

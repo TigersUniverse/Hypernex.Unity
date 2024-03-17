@@ -808,7 +808,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: STEAMAUDIO_ENABLED
+    Android: STEAMAUDIO_ENABLED;MAGICACLOTH2
     Standalone: STEAMAUDIO_ENABLED;MAGICACLOTH2
     Windows Store Apps: USE_INPUT_SYSTEM_POSE_CONTROL
     iPhone: STEAMAUDIO_ENABLED

@@ -286,6 +286,7 @@ MonoBehaviour:
   - {fileID: -2381662415778565500}
   - {fileID: -2909345612091275091}
   - {fileID: -327800753894012252}
+  - {fileID: 8850522641351791371}
   - {fileID: -2305726410776208538}
   - {fileID: -3311335836742788555}
   - {fileID: -6623616368993060432}
@@ -508,7 +509,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57f38318ae252ab4394c743fdbdaf505, type: 3}
   m_Name: HandTrackingFeature Standalone
   m_EditorClassIdentifier: 
-  m_enabled: 0
+  m_enabled: 1
   nameUi: Hand tracking Extension
   version: 0.0.1
   featureIdInternal: com.joemarshall.handtracking
@@ -940,10 +941,10 @@ MonoBehaviour:
   m_Name: HandTrackingFeature Android
   m_EditorClassIdentifier: 
   m_enabled: 0
-  nameUi: 
-  version: 
-  featureIdInternal: 
-  openxrExtensionStrings: 
-  company: 
+  nameUi: Hand tracking Extension
+  version: 0.0.1
+  featureIdInternal: com.joemarshall.handtracking
+  openxrExtensionStrings: XR_EXT_hand_tracking
+  company: Joe M
   priority: 0
   required: 0
