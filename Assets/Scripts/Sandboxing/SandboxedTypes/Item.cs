@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
@@ -106,6 +107,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 c.enabled = value;
             }
         }
+
+        public Collider Collider => new Collider(t.GetComponent<UnityEngine.Collider>());
+        public Collider[] Colliders => t.GetComponents<UnityEngine.Collider>().Select(x => new Collider(x)).ToArray();
 
         public Item GetChildByIndex(int i)
         {
