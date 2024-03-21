@@ -55,6 +55,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             }
         }
 
+        public Collider Collider => item.Collider;
+        public Collider[] Colliders => item.Colliders;
+
         public ReadonlyItem GetChildByIndex(int i) => Children[i];
 
         public ReadonlyItem GetChildByName(string name) => Children.First(x => x.Name == name);
