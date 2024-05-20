@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -28,6 +29,27 @@ namespace Hypernex.UIActions
         {
             MessagesPage.Show(this);
             HideNotification();
+        }
+        
+        private void PushInviteRequest(User from, (Texture2D, (string, byte[])?) userIcon, string assetToken = "")
+        {
+            MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
+            {
+                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                {
+                    Header = "Sent Invite!",
+                    Description = "Sent Invite to " + from.Username
+                });
+                SocketManager.InviteUser(GameInstance.FocusedInstance, from);
+            }, 5f)
+            {
+                LargeImage = userIcon,
+                Header = "Invite request from " + from.Username,
+                OKText = "Send Invite"
+            };
+            UnreadMessages.Enqueue(messageMeta);
+            ShowNotification();
+            OverlayManager.AddMessageToQueue(messageMeta);
         }
 
         private void PushInvite(GotInvite invite, WorldMeta worldMeta, User from,
@@ -86,7 +108,6 @@ namespace Hypernex.UIActions
             APIPlayer.OnLogout += () => MailIcon.SetActive(false);
             SocketManager.OnInvite += invite =>
             {
-                Logger.CurrentLogger.Debug("Got Invite from " + invite.fromUserId);
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
                     WorldTemplate.GetWorldMeta(invite.worldId, meta =>
@@ -98,6 +119,25 @@ namespace Hypernex.UIActions
                                 bytes => GetUserIcon(invite, meta, (null, (meta.ThumbnailURL, bytes))));
                     });
                 }));
+            };
+            SocketManager.OnInviteRequest += inviteRequest =>
+            {
+                // Don't handle if we aren't in an instance, or no Player is present (which shouldn't be possible)
+                if(GameInstance.FocusedInstance == null || APIPlayer.APIUser == null) return;
+                // We can't send an invite if the world is Owner only and we're not the owner
+                if (GameInstance.FocusedInstance.worldMeta.Publicity == WorldPublicity.OwnerOnly &&
+                    GameInstance.FocusedInstance.worldMeta.OwnerId != APIPlayer.APIUser.Id) return;
+                APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                {
+                    if (!result.success)
+                        return;
+                    if (string.IsNullOrEmpty(result.result.UserData.Bio.PfpURL))
+                        PushInviteRequest(result.result.UserData, (DefaultUserIcon, null));
+                    else
+                        DownloadTools.DownloadBytes(result.result.UserData.Bio.PfpURL,
+                            bytes => PushInviteRequest(result.result.UserData,
+                                (null, (result.result.UserData.Bio.PfpURL, bytes))));
+                })), inviteRequest.fromUserId, isUserId: true);
             };
         }
     }

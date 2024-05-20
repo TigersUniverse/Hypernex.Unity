@@ -39,7 +39,7 @@ namespace Hypernex.Game.Avatar
         internal AudioSource audioSource;
         internal List<Sandbox> localAvatarSandboxes = new();
         protected VRIK vrik;
-        internal Quaternion headRef;
+        internal RotationOffsetDriver headRotator;
 
         protected void OnCreate(CCK.Unity.Avatar a, int layer)
         {
@@ -59,15 +59,17 @@ namespace Hypernex.Game.Avatar
             if(an != null)
                 an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if(MainAnimator == null || MainAnimator.avatar == null) return;
+            MainAnimator.runtimeAnimatorController = null;
+            MainAnimator.applyRootMotion = false;
             Transform head = MainAnimator.GetBoneTransform(HumanBodyBones.Head);
             if(head == null) return;
-            headRef = Quaternion.Inverse(a.transform.rotation) * head.rotation;
+            headRotator = new RotationOffsetDriver(head, a.transform);
         }
 
-        protected void DriveCamera(Transform head, Transform cam)
+        protected void DriveCamera(Transform cam)
         {
-            if(vrik != null) return;
-            head.rotation = cam.rotation * headRef;
+            if(vrik != null || headRotator == null) return;
+            headRotator.Rotate(cam.rotation);
         }
         
         protected void SetupAnimators()
@@ -226,9 +228,38 @@ namespace Hypernex.Game.Avatar
             return default;
         }
 
+        /// <summary>
+        /// Sets the value of a Parameter
+        /// </summary>
+        /// <param name="parameterName">The name of the Parameter</param>
+        /// <param name="value">The value to set the parameter to</param>
+        /// <param name="target">The target Playable, null for all</param>
+        /// <param name="force">Forces the value to be casted to all types</param>
+        /// <param name="mainAnimator">Drive the parameter for the MainAnimator</param>
+        /// <typeparam name="T">A valid parameter type (float, int, or bool)</typeparam>
         public void SetParameter<T>(string parameterName, T value, CustomPlayableAnimator target = null, 
-            bool force = false)
+            bool force = false, bool mainAnimator = false)
         {
+            if (mainAnimator)
+            {
+                try
+                {
+                    AnimatorControllerParameter animatorControllerParameter =
+                        MainAnimator.parameters.First(x => x.name == parameterName);
+                    switch (animatorControllerParameter.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                            MainAnimator.SetBool(parameterName, (bool) Convert.ChangeType(value, typeof(bool)));
+                            break;
+                        case AnimatorControllerParameterType.Int:
+                            MainAnimator.SetInteger(parameterName, (int) Convert.ChangeType(value, typeof(int)));
+                            break;
+                        case AnimatorControllerParameterType.Float:
+                            MainAnimator.SetFloat(parameterName, (float) Convert.ChangeType(value, typeof(float)));
+                            break;
+                    }
+                }catch(Exception){}
+            }
             if (target != null)
             {
                 AnimatorPlayable? animatorPlayable = GetPlayable(target);
@@ -439,6 +470,58 @@ namespace Hypernex.Game.Avatar
             return m;
         }
 
+        /// <summary>
+        /// Gets the current Index for the current Viseme using the Oculus Viseme Index
+        /// </summary>
+        /// <returns></returns>
+        public int GetVisemeIndex()
+        {
+            try
+            {
+                // This uses the Oculus Viseme Index
+                float[] visemes = lipSyncContext.GetCurrentPhonemeFrame()?.Visemes ?? Array.Empty<float>();
+                (int, float)? biggest = null;
+                for (int i = 0; i < visemes.Length; i++)
+                {
+                    float visemeWeight = visemes[i];
+                    if (biggest == null || visemeWeight > biggest.Value.Item2)
+                        biggest = (i, visemeWeight);
+                }
+
+                if (biggest == null) return -1;
+                if (biggest.Value.Item2 <= 0f) return -1;
+                return biggest.Value.Item1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets all Visemes and their values
+        /// </summary>
+        /// <returns>Key: Name of Viseme, Value: Weight of Viseme</returns>
+        public Dictionary<string, float> GetVisemes()
+        {
+            try
+            {
+                Dictionary<string, float> allVisemes = new();
+                float[] visemes = lipSyncContext.GetCurrentPhonemeFrame()?.Visemes ?? Array.Empty<float>();
+                for (int i = 0; i < visemes.Length; i++)
+                {
+                    string name = Enum.GetNames(typeof(OVRLipSync.Viseme))[i];
+                    allVisemes.Add(name, visemes[i]);
+                }
+
+                return allVisemes;
+            }
+            catch (Exception)
+            {
+                return new Dictionary<string, float>();
+            }
+        }
+
         protected void SetVisemeAsBlendshape(ref OVRLipSyncContextMorphTarget morphTarget, Viseme viseme,
             BlendshapeDescriptor blendshapeDescriptor)
         {
@@ -462,7 +545,15 @@ namespace Hypernex.Game.Avatar
         }
         
         internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.FixedUpdate());
-        internal void Update() => localAvatarSandboxes.ForEach(x => x.Runtime.Update());
+
+        internal void Update()
+        {
+            SetParameter("Viseme", GetVisemeIndex(), null, true);
+            foreach (KeyValuePair<string, float> viseme in GetVisemes())
+                SetParameter(viseme.Key, viseme.Value, null, true);
+            localAvatarSandboxes.ForEach(x => x.Runtime.Update());
+        }
+        
         internal void LateUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.LateUpdate());
 
         public virtual void Dispose()

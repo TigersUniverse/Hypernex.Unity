@@ -1,8 +1,9 @@
-using Hypernex.Game;
+using System;
+using Hypernex.Game.Avatar.FingerInterfacing;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 
-public class HandGetter : MonoBehaviour
+public class HandGetter : MonoBehaviour, IFingerCurler
 {
     public bool EnableDebug;
     public Material mat;
@@ -12,6 +13,26 @@ public class HandGetter : MonoBehaviour
     public float[] radius;
 
     public HandTrackingFeature.Hand_Index HandIndex;
+
+    public Hand Hand
+    {
+        get
+        {
+            switch (HandIndex)
+            {
+                case HandTrackingFeature.Hand_Index.L:
+                    return Hand.Left;
+                case HandTrackingFeature.Hand_Index.R:
+                    return Hand.Right;
+            }
+            throw new Exception("Unknown HandIndex");
+        }
+    }
+    public float ThumbCurl => Curls[0];
+    public float IndexCurl => Curls[1];
+    public float MiddleCurl => Curls[2];
+    public float RingCurl => Curls[3];
+    public float PinkyCurl => Curls[4];
 
 #if DEBUG
     public GameObject DebugJointMesh;
@@ -95,7 +116,7 @@ public class HandGetter : MonoBehaviour
         {
             hf.GetHandJoints(HandIndex, out positions, out orientations, out radius);
             if (positions.Length == 0) return;
-            if (!initializedOrientations)
+            /*if (!initializedOrientations)
             {
                 if (HandIndex == HandTrackingFeature.Hand_Index.L)
                 {
@@ -132,7 +153,7 @@ public class HandGetter : MonoBehaviour
                     FingerCalibration.InitialXRLittle[5] = orientations[24];
                 }
                 initializedOrientations = true;
-            }
+            }*/
             if(joints == null || joints.Length == 0)
             {
                 joints = new Transform[positions.Length];
@@ -150,11 +171,11 @@ public class HandGetter : MonoBehaviour
                     #if DEBUG
                         if(DebugJointMeshes != null && DebugJointMeshes.Length > i)
                         {
-                            GameObject obj = Instantiate(DebugJointMesh);
-                            obj.transform.parent = joints[i];
-                            obj.transform.localPosition = Vector3.zero;
-                            obj.transform.localRotation = Quaternion.identity;
-                            DebugJointMeshes[i] = obj;
+                            Transform obj = Instantiate(DebugJointMesh).transform;
+                            obj.parent = joints[i];
+                            obj.localPosition = Vector3.zero;
+                            obj.localRotation = Quaternion.identity;
+                            DebugJointMeshes[i] = obj.gameObject;
                         }
                     #endif
                 }

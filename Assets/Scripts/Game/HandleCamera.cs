@@ -33,8 +33,6 @@ namespace Hypernex.Game
 
         public static HandleCamera Create()
         {
-            // TODO: More than one camera breaks. Might have to do with handleCameras list
-            if (handleCameras.Count > 0) return null;
             GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find(TEMPLATE_CAMERA_NAME)).gameObject;
             string n = "camera_" + Guid.NewGuid();
@@ -43,6 +41,12 @@ namespace Hypernex.Game
             newCamera.name = n;
             newCamera.transform.parent = null;
             return newCamera.AddComponent<HandleCamera>();
+        }
+
+        public static void DisposeAll()
+        {
+            foreach (HandleCamera handleCamera in allCameras)
+                handleCamera.Dispose();
         }
 
         public bool IsGrabbable => grabbable.enabled;

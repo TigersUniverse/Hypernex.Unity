@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using CobaltSharp;
 using Hypernex.Tools;
 using Nexbox;
 using UnityEngine;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
@@ -84,7 +82,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 }
 
                 string np = Path.Combine(pathToCobalt, streamResponse.FileName);
-                Logger.CurrentLogger.Debug(streamResponse.FileName);
                 FileStream fs = new FileStream(np, FileMode.Create, FileAccess.ReadWrite,
                     FileShare.ReadWrite | FileShare.Delete);
                 using MemoryStream ms = new MemoryStream();

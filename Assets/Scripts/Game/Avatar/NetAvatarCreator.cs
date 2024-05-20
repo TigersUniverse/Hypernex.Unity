@@ -9,7 +9,6 @@ using Hypernex.Tools;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Logger = Hypernex.CCK.Logger;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Game.Avatar
@@ -218,8 +217,6 @@ namespace Hypernex.Game.Avatar
                 Calibrated = true;
                 return;
             }
-            SmoothTransform hipSmoothTransform;
-            if(!netPlayer.smoothTransforms.TryGetValue(CoreBone.Hip, out hipSmoothTransform)) return;
             Transform body = netPlayer.GetReferenceFromCoreBone(CoreBone.Hip);
             Transform leftFoot = netPlayer.GetReferenceFromCoreBone(CoreBone.LeftFoot);
             Transform rightFoot = netPlayer.GetReferenceFromCoreBone(CoreBone.RightFoot);
@@ -227,8 +224,6 @@ namespace Hypernex.Game.Avatar
             {
                 VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference,
                     rightHandReference, leftFoot, rightFoot);
-                // TODO: might be risky, fix properly later
-                vrik.solver.spine.pelvisTarget.position = hipSmoothTransform.Position;
                 SetupAnimators();
                 Calibrated = true;
             }
@@ -237,11 +232,13 @@ namespace Hypernex.Game.Avatar
         internal void Update(bool fbt)
         {
             // TODO: This shouldn't be the solution. If an Animator isn't available, this just won't work.
-            bool isMoving = MainAnimator.GetFloat("Speed") > 0.00f;
+            bool isMoving = MainAnimator.GetFloat("MoveX") != 0 || MainAnimator.GetFloat("MoveY") != 0;
             if(MainAnimator != null && MainAnimator.isInitialized)
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (vrik != null && Calibrated)
             {
+                vrik.solver.spine.pelvisPositionWeight = 1f;
+                vrik.solver.spine.pelvisRotationWeight = 1f;
                 vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
                 if (!fbt)
                 {
@@ -261,8 +258,8 @@ namespace Hypernex.Game.Avatar
 
         internal void LateUpdate(Transform referenceHead)
         {
-            Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
-            DriveCamera(headBone, referenceHead);
+            if(MainAnimator.GetBool("Crawling")) return;
+            DriveCamera(referenceHead);
         }
 
         public override void Dispose()

@@ -18,7 +18,6 @@ namespace Hypernex.Tools
         private Transform transform;
         private bool localSpace;
         
-        private int elapsedFrames = 0;
         private Vector3 lastPosition;
         private Quaternion lastRotation;
         private Vector3 lastScale;

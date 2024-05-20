@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hypernex.CCK.Unity;
+using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
 using UnityEngine;
 
@@ -47,6 +49,45 @@ namespace Hypernex.Tools
             }
             found = default;
             return false;
+        }
+
+        internal static RotationOffsetDriver GetOffsetRotator(this Transform t, Transform root) => new (t, root);
+
+        internal static RotationOffsetDriver GetRotatorFromAvatarBone(this AvatarCreator avatarCreator,
+            HumanBodyBones humanBodyBones)
+        {
+            Transform bone = avatarCreator.GetBoneFromHumanoid(humanBodyBones);
+            if (bone == null) return null;
+            return new RotationOffsetDriver(bone, avatarCreator.Avatar.transform);
+        }
+        
+        internal static bool IsDifferentByRange(this Vector3 current, Vector3 last, float value)
+        {
+            if (last == current)
+                return false;
+            float v = Vector3.Distance(last, current);
+            return v > value;
+        }
+
+        internal static bool IsDifferentByRange(this Quaternion current, Quaternion last, float value)
+        {
+            if (last == current)
+                return false;
+            float angle = Quaternion.Angle(current, last);
+            return angle > value;
+        }
+
+        /// <summary>
+        /// Overrides a current VideoPlayer with the described type.
+        /// </summary>
+        /// <param name="descriptor">The descriptor</param>
+        /// <param name="videoPlayerType">The type of IVideoPlayer. Requires a one-parameter constructor (input VideoPlayerDescriptor)</param>
+        public static void Replace(this VideoPlayerDescriptor descriptor, Type videoPlayerType)
+        {
+            if (descriptor.CurrentVideoPlayer != null)
+                descriptor.CurrentVideoPlayer.Dispose();
+            IVideoPlayer videoPlayer = (IVideoPlayer) Activator.CreateInstance(videoPlayerType, new object[1]{descriptor});
+            descriptor.CurrentVideoPlayer = videoPlayer;
         }
     }
 }

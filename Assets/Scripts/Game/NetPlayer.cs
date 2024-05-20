@@ -294,7 +294,7 @@ namespace Hypernex.Game
                 UpdatePlayerObjectUpdate(key);*/
             foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
                          weightedObjectUpdates))
-                weightedObjectContainer.Update(interpolationFramesCount);
+                weightedObjectContainer.Update();
             //elapsedFrames = (elapsedFrames + 1) % (interpolationFramesCount + 1);
             foreach (SmoothTransform smoothTransform in smoothTransforms.Values)
                 smoothTransform.Update();
@@ -378,24 +378,24 @@ namespace Hypernex.Game
             }
         }
 
-        private Dictionary<string, NetHandleCameraLife> HandleCameras => new(handleCameras);
-        private Dictionary<string, NetHandleCameraLife> handleCameras = new();
+        private Dictionary<int, NetHandleCameraLife> HandleCameras => new(handleCameras);
+        private Dictionary<int, NetHandleCameraLife> handleCameras = new();
 
-        private NetHandleCameraLife GetHandleCamera(string cname)
+        private NetHandleCameraLife GetHandleCamera(int index)
         {
-            if (HandleCameras.ContainsKey(cname))
-                return HandleCameras[cname];
+            if (HandleCameras.ContainsKey(index))
+                return HandleCameras[index];
             GameObject c = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find("NetHandleCamera").gameObject);
             SceneManager.MoveGameObjectToScene(c, SceneManager.GetActiveScene());
-            c.name = cname;
+            c.name = "netcamera" + index;
             for (int i = 0; i < c.transform.childCount; i++)
             {
                 Transform child = c.transform.GetChild(i);
                 child.gameObject.SetActive(true);
             }
-            NetHandleCameraLife n = new NetHandleCameraLife(User, c.transform, () => handleCameras.Remove(cname));
-            handleCameras.Add(cname, n);
+            NetHandleCameraLife n = new NetHandleCameraLife(User, c.transform, () => handleCameras.Remove(index));
+            handleCameras.Add(index, n);
             return n;
         }
 
@@ -433,23 +433,19 @@ namespace Hypernex.Game
         {
             foreach (KeyValuePair<int, NetworkedObject> keyValuePair in playerObjectUpdate.Objects)
             {
-                CoreBone coreBone = (CoreBone) keyValuePair.Key;
                 NetworkedObject networkedObject = keyValuePair.Value;
-                try
+                if (keyValuePair.Key > 6 && User != null)
                 {
-                    if (coreBone == CoreBone.Camera)
-                    {
-                        NetHandleCameraLife n = GetHandleCamera(networkedObject.ObjectLocation);
-                        n.Ping();
-                        SmoothTransform c = n.SmoothTransform;
-                        c.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
-                        c.Rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x,
-                            networkedObject.Rotation.y, networkedObject.Rotation.z));
-                        c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
-                        return;
-                    }
+                    NetHandleCameraLife n = GetHandleCamera(keyValuePair.Key);
+                    n.Ping();
+                    SmoothTransform c = n.SmoothTransform;
+                    c.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
+                    c.Rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x,
+                        networkedObject.Rotation.y, networkedObject.Rotation.z));
+                    c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
                 }
-                catch (Exception) {}
+                if (keyValuePair.Key > 6) continue;
+                CoreBone coreBone = (CoreBone) keyValuePair.Key;
                 if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
                     networkedObject.ObjectLocation = "";
                 UpdatePlayerUpdate(coreBone, networkedObject);
@@ -466,34 +462,33 @@ namespace Hypernex.Game
             smoothTransforms.Clear();
         }
 
-        public class WeightedObjectContainer
+        private class WeightedObjectContainer
         {
             public WeightedObjectUpdate Weight => new()
             {
                 Auth = new JoinAuth(),
                 PathToWeightContainer = WeightedObjectUpdate.PathToWeightContainer,
                 TypeOfWeight = WeightedObjectUpdate.TypeOfWeight,
-                Weight = WeightedObjectUpdate.Weight,
+                Weight = smoothFloat?.Value ?? WeightedObjectUpdate.Weight,
                 WeightIndex = WeightedObjectUpdate.WeightIndex
             };
-            
+
+            private SmoothFloat smoothFloat;
             private WeightedObjectUpdate WeightedObjectUpdate;
-            private float last;
 
             public WeightedObjectContainer(WeightedObjectUpdate w)
             {
-                WeightedObjectUpdate = w;
-                last = w.Weight;
+                smoothFloat = new SmoothFloat(w.Weight, 0.5f);
+                Update(w);
             }
 
             public void Update(WeightedObjectUpdate w)
             {
-                last = WeightedObjectUpdate.Weight;
                 WeightedObjectUpdate = w;
+                smoothFloat.Value = w.Weight;
             }
 
-            public void Update(float interpolationFramesCount) =>
-                last = Mathf.Lerp(last, WeightedObjectUpdate.Weight, interpolationFramesCount);
+            public void Update() => smoothFloat.Update();
 
             public override bool Equals(object obj)
             {

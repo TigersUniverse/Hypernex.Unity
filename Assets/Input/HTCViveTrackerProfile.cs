@@ -5,14 +5,13 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.XR;
 using UnityEngine.InputSystem;
-using System.Runtime.InteropServices;
 using System;
  
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
  
-using PoseControl = UnityEngine.XR.OpenXR.Input.PoseControl;
+using PoseControl = UnityEngine.InputSystem.XR.PoseControl;
  
 namespace UnityEngine.XR.OpenXR.Features.Interactions
 {
@@ -26,7 +25,7 @@ namespace UnityEngine.XR.OpenXR.Features.Interactions
         Company = "MASSIVE",
         Desc = "Allows for mapping input to the HTC Vive Tracker interaction profile.",
         DocumentationLink = Constants.k_DocumentationManualURL,
-        OpenxrExtensionStrings = HTCViveTrackerProfile.extensionName,
+        OpenxrExtensionStrings = extensionName,
         Version = "0.0.1",
         Category = UnityEditor.XR.OpenXR.Features.FeatureCategory.Interaction,
         FeatureId = featureId)]

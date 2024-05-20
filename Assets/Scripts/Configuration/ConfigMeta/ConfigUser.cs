@@ -22,6 +22,7 @@ namespace Hypernex.Configuration.ConfigMeta
         public string Theme;
         public int EmojiType;
         public AudioCompression AudioCompression = AudioCompression.Opus;
+        public string GestureType = "hypernex";
 
         public float VoicesBoost = 0f;
         public float WorldAudioVolume = 1f;

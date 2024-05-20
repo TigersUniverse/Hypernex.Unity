@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Game.Avatar;
 using UnityEngine;
@@ -8,6 +9,8 @@ namespace Hypernex.Game.Bindings
 {
     public class XRTracker : MonoBehaviour
     {
+        private const int MAX_STEPS = 1000;
+        
         public static List<XRTracker> Trackers => new(_trackers);
         private static readonly List<XRTracker> _trackers = new();
 
@@ -37,11 +40,20 @@ namespace Hypernex.Game.Bindings
         public void OnIsTracked(InputAction.CallbackContext context)
         {
             bool value = context.ReadValueAsButton();
-            // TODO: Not sure why randomly IsTracked will be false. Once true, stay true. Restart if it's a problem
             if (value) IsTracked = true;
         }
-        public void OnPosition(InputAction.CallbackContext context) => Position = context.ReadValue<Vector3>();
-        public void OnRotation(InputAction.CallbackContext context) => Rotation = context.ReadValue<Quaternion>();
+
+        public void OnPosition(InputAction.CallbackContext context)
+        {
+            Position = context.ReadValue<Vector3>();
+            Step();
+        }
+
+        public void OnRotation(InputAction.CallbackContext context)
+        {
+            Rotation = context.ReadValue<Quaternion>();
+            Step();
+        }
 
         private void Show()
         {
@@ -56,7 +68,22 @@ namespace Hypernex.Game.Bindings
             renderer.enabled = false;
         }
 
+        private int stepsWithoutTracking;
+
+        private void Step()
+        {
+            stepsWithoutTracking = 0;
+            IsTracked = true;
+        }
+
         private void Start() => _trackers.Add(this);
+
+        private void FixedUpdate()
+        {
+            if (stepsWithoutTracking > MAX_STEPS) IsTracked = false;
+            if(stepsWithoutTracking == Int32.MaxValue) return;
+            stepsWithoutTracking++;
+        }
 
         private void Update()
         {

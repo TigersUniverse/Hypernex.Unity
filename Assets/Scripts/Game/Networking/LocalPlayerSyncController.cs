@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Hypernex.ExtendedTracking;
-using Hypernex.Game.Avatar;
 using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Bulk;
@@ -13,7 +12,6 @@ using Hypernex.Player;
 using Hypernex.Tools;
 using Nexport;
 using UnityEngine;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game.Networking
 {
@@ -133,7 +131,7 @@ namespace Hypernex.Game.Networking
             }
         }
 
-        private CoreBone TrackerRoleToCoreBone(XRTrackerRole xrTrackerRole)
+        private CoreBone? TrackerRoleToCoreBone(XRTrackerRole xrTrackerRole)
         {
             switch (xrTrackerRole)
             {
@@ -144,7 +142,7 @@ namespace Hypernex.Game.Networking
                 case XRTrackerRole.RightFoot:
                     return CoreBone.RightFoot;
             }
-            return CoreBone.Camera;
+            return null;
         }
 
         private Dictionary<int, NetworkedObject> GetCoreTransforms()
@@ -166,17 +164,21 @@ namespace Hypernex.Game.Networking
                         XRTrackerRole xrTrackerRole = tracker.TrackerRole;
                         if(xrTrackerRole == XRTrackerRole.Camera) continue;
                         Transform vriktarget = tracker.transform.GetChild(0);
-                        coreTransforms.Add((int) TrackerRoleToCoreBone(xrTrackerRole),
-                            vriktarget.GetNetworkTransform(localPlayer.transform));
+                        CoreBone? coreBone = TrackerRoleToCoreBone(xrTrackerRole);
+                        if (coreBone == null) continue;
+                        coreTransforms.Add((int) coreBone.Value, vriktarget.GetNetworkTransform(localPlayer.transform));
                     }
                 }
             }
-            foreach (HandleCamera handleCamera in HandleCamera.allCameras)
+            HandleCamera[] handleCameras = HandleCamera.allCameras;
+            for(int i = 0; i < handleCameras.Length; i++)
             {
+                HandleCamera handleCamera = handleCameras[i];
                 NetworkedObject networkedObject = handleCamera.transform.GetNetworkTransform();
                 networkedObject.IgnoreObjectLocation = true;
                 networkedObject.ObjectLocation = "*" + handleCamera.gameObject.name;
-                coreTransforms.Add((int) CoreBone.Camera, networkedObject);
+                int id = i + 7;
+                coreTransforms.Add(id, networkedObject);
             }
             return coreTransforms;
         }
@@ -271,38 +273,6 @@ namespace Hypernex.Game.Networking
             // These are going into a Bulk, so we shouldn't include any token
             List<WeightedObjectUpdate> w = localPlayer.avatar?.GetAnimatorWeights();
             if(w == null) return;
-            if (LocalPlayer.IsVR)
-            {
-                XRBinding left = null;
-                XRBinding right = null;
-                foreach (IBinding binding in localPlayer.Bindings)
-                    switch (binding.Id)
-                    {
-                        case "Left VRController":
-                            left = (XRBinding) binding;
-                            break;
-                        case "Right VRController":
-                            right = (XRBinding) binding;
-                            break;
-                    }
-
-                if (left != null && right != null)
-                {
-                    List<(string, float)> fingerTrackingWeights = XRBinding.GetFingerTrackingWeights(left, right);
-                    foreach ((string, float) fingerTrackingWeight in fingerTrackingWeights)
-                    {
-                        WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
-                        {
-                            TypeOfWeight = AvatarCreator.PARAMETER_ID,
-                            PathToWeightContainer = AvatarCreator.ALL_ANIMATOR_LAYERS,
-                            WeightIndex = fingerTrackingWeight.Item1,
-                            Weight = fingerTrackingWeight.Item2
-                        };
-                        w.RemoveAll(x => x.WeightIndex == fingerTrackingWeight.Item1);
-                        w.Add(weightedObjectUpdate);
-                    }
-                }
-            }
             if (w.Count != weightedObjectUpdates.Count || lastAvatarId != localPlayer.avatarMeta?.Id)
             {
                 weightedObjectUpdates.Clear();
@@ -321,7 +291,7 @@ namespace Hypernex.Game.Networking
                             b.TypeOfWeight == recent.TypeOfWeight &&
                             b.PathToWeightContainer == recent.PathToWeightContainer &&
                             b.WeightIndex == recent.WeightIndex);
-                        if (recent.Weight != cached.Weight || forceUpdate)
+                        if (Math.Abs(recent.Weight - cached.Weight) > 0.01f || forceUpdate)
                         {
                             int y = weightedObjectUpdates.IndexOf(cached);
                             weightedObjectUpdates[y] = recent;

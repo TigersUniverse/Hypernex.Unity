@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Networking;
@@ -163,6 +164,7 @@ namespace Hypernex.Game
 
         private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
         {
+            HandleCamera.DisposeAll();
             ScriptEvents = new ScriptEvents(this);
             ClientSettings clientSettings = new ClientSettings(ip, port, instanceProtocol == InstanceProtocol.UDP, 1);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
@@ -361,6 +363,8 @@ namespace Hypernex.Game
             {
                 foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
                 {
+                    if (rootGameObject.GetComponent<LocalPlayer>() != null ||
+                        rootGameObject.GetComponent<NetPlayer>() != null) continue;
                     Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>(true);
                     foreach (Transform transform in ts)
                     {
@@ -374,7 +378,13 @@ namespace Hypernex.Game
                             c1.gameObject.tag = "Untagged";
                             c1.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
                         }
-
+                        Mirror mirror = transform.gameObject.GetComponent<Mirror>();
+                        if (mirror != null)
+                        {
+                            LayerMask mask = LayerMask.GetMask("Default", "Water", "AvatarClip", "ExtraCamera",
+                                "LocalPlayer", "MainCamera", "NetAvatar", "UI", "TransparentFX", "Ignore Raycast");
+                            mirror.layerMask = mask;
+                        }
                         AudioListener a1 = transform.gameObject.GetComponent<AudioListener>();
                         if (a1 != null)
                             Object.Destroy(a1);
@@ -565,8 +575,7 @@ namespace Hypernex.Game
             Physics.gravity = new Vector3(0, LocalPlayer.Instance.Gravity, 0);
             sandboxes.ForEach(x => x.Dispose());
             sandboxes.Clear();
-            foreach (HandleCamera handleCamera in HandleCamera.allCameras)
-                Object.Destroy(handleCamera.gameObject);
+            HandleCamera.DisposeAll();
             Close();
             DynamicGI.UpdateEnvironment();
         }

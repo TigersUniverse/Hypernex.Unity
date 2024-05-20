@@ -1,6 +1,8 @@
 ﻿using System.IO;
+using Hypernex.CCK.Unity;
+using Hypernex.Game.Video;
+using Hypernex.Tools;
 using UnityEngine;
-using UnityEngine.Video;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
@@ -14,32 +16,23 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             return a;
         }
         
-        private static VideoPlayer GetVideoPlayer(Item item)
+        private static IVideoPlayer GetVideoPlayer(Item item)
         {
-            VideoPlayer v = item.t.GetComponent<VideoPlayer>();
-            if (v == null)
-                return null;
-            return v;
+            VideoPlayerDescriptor v = item.t.GetComponent<VideoPlayerDescriptor>();
+            if (v == null) return null;
+            // TODO: There's only one supported video player
+            if(v.CurrentVideoPlayer == null) v.Replace(typeof(UnityVideoPlayer));
+            return v.CurrentVideoPlayer;
         }
 
         public static bool IsValid(Item item) => GetVideoPlayer(item) != null;
         
-        public static bool IsPlaying(Item item) => GetVideoPlayer(item)?.isPlaying ?? false;
+        public static bool IsPlaying(Item item) => GetVideoPlayer(item)?.IsPlaying ?? false;
         public static bool IsMuted(Item item) => GetAudioSource(item)?.mute ?? false;
-        public static bool IsLooping(Item item) => GetVideoPlayer(item)?.isLooping ?? false;
+        public static bool IsLooping(Item item) => GetVideoPlayer(item)?.Looping ?? false;
         public static void Play(Item item) => GetVideoPlayer(item)?.Play();
         public static void Pause(Item item) => GetVideoPlayer(item)?.Pause();
         public static void Stop(Item item) => GetVideoPlayer(item)?.Stop();
-        
-        public static void SetVideoClip(Item item, string asset)
-        {
-            VideoPlayer videoPlayer = GetVideoPlayer(item);
-            VideoClip videoClip = (VideoClip) SandboxTools.GetObjectFromWorldResource(asset);
-            if(videoPlayer == null || videoClip == null)
-                return;
-            videoPlayer.source = VideoSource.VideoClip;
-            videoPlayer.clip = videoClip;
-        }
         
         public static void SetMute(Item item, bool value)
         {
@@ -51,10 +44,10 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         
         public static void SetLoop(Item item, bool value)
         {
-            VideoPlayer videoPlayer = GetVideoPlayer(item);
+            IVideoPlayer videoPlayer = GetVideoPlayer(item);
             if(videoPlayer == null)
                 return;
-            videoPlayer.isLooping = value;
+            videoPlayer.Looping = value;
         }
         
         public static float GetPitch(Item item) => GetAudioSource(item)?.pitch ?? 0.0f;
@@ -75,32 +68,32 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             audioSource.volume = value;
         }
         
-        public static double GetPosition(Item item) => GetVideoPlayer(item)?.time ?? 0.0;
+        public static double GetPosition(Item item) => GetVideoPlayer(item)?.Position ?? 0.0;
         public static void SetPosition(Item item, float value)
         {
-            VideoPlayer videoPlayer = GetVideoPlayer(item);
+            IVideoPlayer videoPlayer = GetVideoPlayer(item);
             if(videoPlayer == null)
                 return;
-            videoPlayer.time = value;
+            videoPlayer.Position = value;
         }
 
         public static double GetLength(Item item)
         {
-            VideoPlayer videoPlayer = GetVideoPlayer(item);
+            IVideoPlayer videoPlayer = GetVideoPlayer(item);
             if(videoPlayer == null)
                 return 0.0;
-            return videoPlayer.length;
+            return videoPlayer.Length;
         }
 
         public static void LoadFromCobalt(Item item, CobaltDownload cobaltDownload)
         {
-            VideoPlayer videoPlayer = GetVideoPlayer(item);
+            // TODO: Switch Video Player type if needed (when they're implemented)
+            IVideoPlayer videoPlayer = GetVideoPlayer(item);
             if(videoPlayer == null)
                 return;
             if (!File.Exists(cobaltDownload.PathToFile))
                 return;
-            videoPlayer.source = VideoSource.Url;
-            videoPlayer.url = "file://" + cobaltDownload.PathToFile;
+            videoPlayer.Source = "file://" + cobaltDownload.PathToFile;
         }
     }
 }

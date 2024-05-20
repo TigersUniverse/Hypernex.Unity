@@ -10,7 +10,7 @@ namespace Hypernex.Tools.Debug
         private AudioSource AudioSource;
         public string driverName = "";
 
-        private void OnClip(float[] pcm, AudioClip clip)
+        private void OnClip(float[] pcm, AudioClip clip, bool isEmpty)
         {
             if (string.IsNullOrEmpty(driverName))
                 AudioSourceDriver.Set(AudioSource, pcm, clip.channels, clip.frequency);

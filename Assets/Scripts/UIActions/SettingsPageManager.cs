@@ -5,6 +5,8 @@ using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
+using Hypernex.Game.Avatar;
+using Hypernex.Game.Avatar.FingerInterfacing;
 using Hypernex.Tools;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
@@ -12,7 +14,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VRCFaceTracking.Core.Models;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UIActions
 {
@@ -37,6 +38,7 @@ namespace Hypernex.UIActions
         public TMP_Dropdown ThemeSelection;
         public TMP_Dropdown EmojiTypeSelection;
         public TMP_Dropdown AudioCompressionSelection;
+        public TMP_Dropdown GestureSelection;
 
         public GameObject VRPanel;
         public TMP_Text UseSnapTurnValue;
@@ -130,6 +132,19 @@ namespace Hypernex.UIActions
                         ThemeSelection.value = i;
                 }
                 EmojiTypeSelection.value = ConfigManager.SelectedConfigUser.EmojiType;
+                List<TMP_Dropdown.OptionData> gestureOptions = new List<TMP_Dropdown.OptionData>();
+                FingerCalibration.GestureIdentifiers.ForEach(gestureIdentifier => gestureOptions.Add(
+                    new TMP_Dropdown.OptionData
+                    {
+                        text = gestureIdentifier.Name
+                    }));
+                GestureSelection.options = gestureOptions;
+                IGestureIdentifier gestureIdentifier =
+                    FingerCalibration.GetGestureIdentifierFromName(ConfigManager.SelectedConfigUser.GestureType) ??
+                    LocalPlayer.Instance.GestureIdentifier;
+                int gestureIndex = FingerCalibration.GetGestureIndex(gestureIdentifier);
+                if (gestureIndex < 0) gestureIndex = 0;
+                GestureSelection.value = gestureIndex;
             }
             AllPanels.ForEach(x => x.SetActive(false));
             UserPanel.SetActive(true);
@@ -280,6 +295,17 @@ namespace Hypernex.UIActions
                 if(ConfigManager.SelectedConfigUser == null)
                     return;
                 ConfigManager.SelectedConfigUser.EmojiType = i;
+            });
+            GestureSelection.onValueChanged.RemoveAllListeners();
+            GestureSelection.onValueChanged.AddListener(i =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                IGestureIdentifier gestureIdentifier =
+                    FingerCalibration.GetGestureIdentifierFromName(GestureSelection.options.ElementAt(i).text);
+                if(gestureIdentifier == null) return;
+                ConfigManager.SelectedConfigUser.GestureType = gestureIdentifier.Name;
+                LocalPlayer.Instance.GestureIdentifier = gestureIdentifier;
             });
             AudioCompressionSelection.onValueChanged.RemoveAllListeners();
             AudioCompressionSelection.onValueChanged.AddListener(i =>

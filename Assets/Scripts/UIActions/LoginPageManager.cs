@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Hypernex.Configuration;
+using Hypernex.Game;
+using Hypernex.Game.Avatar;
+using Hypernex.Game.Avatar.FingerInterfacing;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
@@ -143,6 +147,9 @@ namespace Hypernex.UIActions
                                                    result.message);
                 })), userFriendRequestId, null, true);
             }
+            IGestureIdentifier gestureIdentifier =
+                FingerCalibration.GetGestureIdentifierFromName(ConfigManager.SelectedConfigUser.GestureType);
+            if(gestureIdentifier != null) LocalPlayer.Instance.GestureIdentifier = gestureIdentifier;
         }
 
         void OnSocket()

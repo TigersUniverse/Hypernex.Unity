@@ -204,21 +204,5 @@ namespace Hypernex.Game.Bindings
                 //return;
             Grab = context.ReadValue<float>() >= 0.9f;
         }
-
-        public static List<(string, float)> GetFingerTrackingWeights(XRBinding left, XRBinding right)
-        {
-            List<(string, float)> weights = new List<(string, float)>();
-            weights.Add(("LeftThumbCurl", left.ThumbCurl));
-            weights.Add(("LeftIndexCurl", left.IndexCurl));
-            weights.Add(("LeftMiddleCurl", left.MiddleCurl));
-            weights.Add(("LeftRingCurl", left.RingCurl));
-            weights.Add(("LeftPinkyCurl", left.PinkyCurl));
-            weights.Add(("RightThumbCurl", right.ThumbCurl));
-            weights.Add(("RightIndexCurl", right.IndexCurl));
-            weights.Add(("RightMiddleCurl", right.MiddleCurl));
-            weights.Add(("RightRingCurl", right.RingCurl));
-            weights.Add(("RightPinkyCurl", right.PinkyCurl));
-            return weights;
-        }
     }
 }

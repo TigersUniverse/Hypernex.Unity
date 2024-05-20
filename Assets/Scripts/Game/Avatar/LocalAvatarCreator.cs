@@ -25,7 +25,10 @@ namespace Hypernex.Game.Avatar
             pelvisRotationWeight = 0
         };
         private List<AvatarNearClip> avatarNearClips = new();
-        private FingerCalibration fingerCalibration;
+        public FingerCalibration fingerCalibration;
+
+        public bool IsCrouched { get; private set; }
+        public bool IsCrawling { get; private set; }
 
         public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR)
         {
@@ -159,11 +162,9 @@ namespace Hypernex.Game.Avatar
         }
 
         internal void Update(bool areTwoTriggersClicked, Transform cameraTransform, Transform LeftHandReference, 
-            Transform RightHandReference, bool isMoving)
+            Transform RightHandReference, bool isMoving, LocalPlayer localPlayer)
         {
             Update();
-            if(MainAnimator != null && MainAnimator.isInitialized)
-                MainAnimator.SetFloat("MotionSpeed", 1f);
             switch (Calibrated)
             {
                 case false:
@@ -246,34 +247,25 @@ namespace Hypernex.Game.Avatar
                     vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
                 }
                 MainAnimator.runtimeAnimatorController = animatorController;
-                // MotionSpeed (4)
-                MainAnimator.SetFloat("MotionSpeed", 1f);
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }
             else if (vrik == null)
             {
                 MainAnimator.runtimeAnimatorController = animatorController;
-                // MotionSpeed (4)
-                MainAnimator.SetFloat("MotionSpeed", 1f);
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }
-            if(vrik != null)
-                fingerCalibration?.Update();
+            if (vrik != null || !LocalPlayer.IsVR)
+                fingerCalibration?.Update(localPlayer, localPlayer.GetLeftHandCurler(),
+                    localPlayer.GetRightHandCurler());
         }
 
-        internal void LateUpdate(bool isVR, Transform cameraTransform, bool lockCamera)
+        internal void LateUpdate(bool isVR, Transform cameraTransform, bool lockCamera, bool driveCamera)
         {
             LateUpdate();
             if (!isVR && HeadAlign != null && !lockCamera)
             {
                 cameraTransform.position = HeadAlign.transform.position;
-                Transform headBone = GetBoneFromHumanoid(HumanBodyBones.Head);
-                DriveCamera(headBone, cameraTransform);
-            }
-            if (isVR)
-            {
-                // TODO: Properly Rotate Finger Bones on Avatars
-                //fingerCalibration?.LateUpdate();
+                if(driveCamera) DriveCamera(cameraTransform);
             }
             if (!isVR)
             {
@@ -285,12 +277,31 @@ namespace Hypernex.Game.Avatar
             }
         }
 
-        // Speed (0)
-        internal void SetSpeed(float speed)
+        internal void SetMove(Vector2 move, bool isRunning)
         {
             if (MainAnimator == null || !MainAnimator.isInitialized)
                 return;
-            MainAnimator.SetFloat("Speed", speed);
+            MainAnimator.SetFloat("MoveX", move.x);
+            MainAnimator.SetFloat("MoveY", move.y);
+            MainAnimator.SetBool("Walking", !isRunning && !IsCrawling && !IsCrouched && (move.x != 0 || move.y != 0));
+        }
+
+        internal void SetRun(bool isRunning) => MainAnimator.SetBool("Running", isRunning);
+
+        internal void Jump(bool isJumping) => MainAnimator.SetBool("Jump", isJumping);
+
+        internal void SetCrouch(bool v)
+        {
+            if (IsCrawling) SetCrawl(false);
+            MainAnimator.SetBool("Crouching", v);
+            IsCrouched = v;
+        }
+
+        internal void SetCrawl(bool v)
+        {
+            if(IsCrouched) SetCrouch(false);
+            MainAnimator.SetBool("Crawling", v);
+            IsCrawling = v;
         }
 
         internal void SetIsGrounded(bool g)
@@ -306,7 +317,7 @@ namespace Hypernex.Game.Avatar
         private Quaternion GetEyeQuaternion(float x, float y, Quaternion up, Quaternion down, Quaternion left,
             Quaternion right)
         {
-            // what am i doing
+            // TODO: what am i doing
             float xx = (left.x - right.x) / 2;
             float yy = (up.y - down.y) / 2;
             float zz = (left.z + right.z + up.z + down.z) / 4;
@@ -470,26 +481,36 @@ namespace Hypernex.Game.Avatar
                 }
         }
 
-        internal void UpdateFace(Dictionary<FaceExpressions, float> weights)
+        internal void UpdateFace(Dictionary<string, float> weights)
         {
             if (FaceTrackingDescriptor == null)
             {
-                foreach (FaceExpressions faceExpression in weights.Keys)
-                    SetParameter(faceExpression.ToString(), 0);
+                foreach (string faceExpression in weights.Keys)
+                    SetParameter(faceExpression, 0);
                 return;
             }
-            foreach (KeyValuePair<FaceExpressions,float> keyValuePair in weights)
+            foreach (KeyValuePair<string,float> keyValuePair in weights)
             {
-                if (!FaceTrackingDescriptor.FaceValues.ContainsKey(keyValuePair.Key)) continue;
-                BlendshapeDescriptor blendshapeDescriptor = FaceTrackingDescriptor.FaceValues[keyValuePair.Key];
-                if (blendshapeDescriptor != null && blendshapeDescriptor.SkinnedMeshRenderer != null)
+                try
                 {
-                    SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
-                        blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value * 100);
-                    SetParameter(keyValuePair.Key.ToString(), keyValuePair.Value);
+                    FaceExpressions faceExpressions =
+                        (FaceExpressions) Enum.Parse(typeof(FaceExpressions), keyValuePair.Key);
+                    if (!FaceTrackingDescriptor.FaceValues.ContainsKey(faceExpressions)) continue;
+                    BlendshapeDescriptor blendshapeDescriptor = FaceTrackingDescriptor.FaceValues[faceExpressions];
+                    if (blendshapeDescriptor != null && blendshapeDescriptor.SkinnedMeshRenderer != null)
+                    {
+                        SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
+                            blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value * 100);
+                        SetParameter(keyValuePair.Key, keyValuePair.Value);
+                    }
+                    else
+                        SetParameter(keyValuePair.Key, 0);
                 }
-                else
-                    SetParameter(keyValuePair.Key.ToString(), 0);
+                catch (Exception)
+                {
+                    // Was not a valid Enum, handle as Custom
+                    SetParameter(keyValuePair.Key, keyValuePair.Value);
+                }
             }
         }
 

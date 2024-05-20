@@ -19,7 +19,7 @@ namespace Hypernex.Tools
         public static string SelectedDevice { get; private set; }
         public static bool IsRecording { get; private set; }
         public static AudioClip Clip { get; private set; }
-        public static Action<float[], AudioClip> OnClipReady { get; set; } = (data, clip) => { };
+        public static Action<float[], AudioClip, bool> OnClipReady { get; set; } = (data, clip, isEmpty) => { };
         public static int Frequency { get; private set; }
         public static int NumChannels => Clip.channels;
         public static int FrameSizeMs { get; set; } = 40;
@@ -65,7 +65,7 @@ namespace Hypernex.Tools
                     float[] data = new float[SampleBufferSize];
                     Clip.GetData(data, targetPos);
                     // UnityEngine.Debug.Log($"len {data.Length} pos {targetPos}");
-                    OnClipReady.Invoke(data, Clip);
+                    OnClipReady.Invoke(data, Clip, false);
                     lastPosition = position;
                 }
             }
@@ -77,7 +77,7 @@ namespace Hypernex.Tools
                 return;
             Microphone.End(SelectedDevice);
             IsRecording = false;
-            OnClipReady.Invoke(Array.Empty<float>(), Clip);
+            OnClipReady.Invoke(Array.Empty<float>(), Clip, true);
             OpusAudioCodec.MicrophoneOff();
             ConcentusAudioCodec.MicrophoneOff();
         }

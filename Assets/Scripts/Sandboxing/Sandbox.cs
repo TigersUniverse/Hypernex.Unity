@@ -20,6 +20,7 @@ namespace Hypernex.Sandboxing
             string h = avatar ? "AVATAR" : "WORLD";
             string t = $"[{h}] [{script.Name}{script.GetExtensionFromLanguage()}] {o}";
             ConsoleTemplate.AddMessage(t);
+            Logger.CurrentLogger.Debug(t);
         }
         
         public Sandbox(NexboxScript script, GameInstance gameInstance, GameObject attached)

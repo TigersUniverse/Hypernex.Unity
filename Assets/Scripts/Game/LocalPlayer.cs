@@ -9,6 +9,7 @@ using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
+using Hypernex.Game.Avatar.FingerInterfacing;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
@@ -24,6 +25,7 @@ using Nexport;
 using RNNoise.NET;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -140,6 +142,9 @@ namespace Hypernex.Game
         public float LowestPointRespawnThreshold = 50f;
         public CurrentAvatar CurrentAvatarDisplay;
         public LocalPlayerSyncController LocalPlayerSyncController;
+        public IGestureIdentifier GestureIdentifier = FingerCalibration.DefaultGestures;
+        public DesktopFingerCurler.Left LeftDesktopCurler = new();
+        public DesktopFingerCurler.Right RightDesktopCurler = new();
 
         private Denoiser denoiser;
         private float verticalVelocity;
@@ -389,7 +394,7 @@ namespace Hypernex.Game
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
             CreateDesktopBindings();
-            Mic.OnClipReady += (s, clip) =>
+            Mic.OnClipReady += (s, clip, isEmpty) =>
             {
                 float[] samples = s;
                 if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.NoiseSuppression)
@@ -424,7 +429,7 @@ namespace Hypernex.Game
                         GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice), MessageChannel.UnreliableSequenced);
                     }
                 }
-                avatar?.ApplyAudioClipToLipSync(samples);
+                if(!isEmpty) avatar?.ApplyAudioClipToLipSync(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta) =>
             {
@@ -442,6 +447,7 @@ namespace Hypernex.Game
                 {
                     lastCoroutine.ForEach(StopCoroutine);
                 };
+                if (avatarMeta == null) return;
                 if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                     ShareAvatarTokenToConnectedUsersInInstance(avatarMeta);
             };
@@ -458,7 +464,11 @@ namespace Hypernex.Game
                     allCamera.fieldOfView = 60f;
             }
             else
+            {
+                avatar?.SetCrouch(false);
+                avatar?.SetCrawl(false);
                 Init.Instance.StartVR();
+            }
             if(avatar != null)
                 RefreshAvatar();
         }
@@ -466,7 +476,22 @@ namespace Hypernex.Game
         private void CreateDesktopBindings()
         {
             Bindings.Add(new Bindings.Keyboard()
-                .RegisterCustomKeyDownEvent(KeyCode.V, () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled));
+                .RegisterCustomKeyDownEvent(KeyCode.V, () =>
+                {
+                    if(Dashboard.IsVisible) return;
+                    if(EventSystem.current.currentSelectedGameObject != null) return;
+                    Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
+                })
+                .RegisterCustomKeyDownEvent(KeyCode.C, () =>
+                {
+                    if(LockMovement || !groundedPlayer) return;
+                    avatar?.SetCrouch(!avatar?.IsCrouched ?? false);
+                })
+                .RegisterCustomKeyDownEvent(KeyCode.X, () =>
+                {
+                    if(LockMovement || !groundedPlayer) return;
+                    avatar?.SetCrawl(!avatar?.IsCrawling ?? false);
+                }));
             Bindings.Add(new Bindings.Mouse());
             Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
         }
@@ -494,6 +519,18 @@ namespace Hypernex.Game
             VRInputListener.AddXRBinding(rightBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
             CoroutineRunner.Run(PositionDashboardOnVRSwitch());
+        }
+
+        internal IFingerCurler GetLeftHandCurler()
+        {
+            if (IsVR) return LeftHandGetter;
+            return LeftDesktopCurler;
+        }
+
+        internal IFingerCurler GetRightHandCurler()
+        {
+            if (IsVR) return RightHandGetter;
+            return RightDesktopCurler;
         }
 
         private IEnumerator PositionDashboardOnVRSwitch()
@@ -543,8 +580,10 @@ namespace Hypernex.Game
 
         private float rotx;
         private float s_;
+        private bool isRunning;
+        private bool groundedPlayer;
 
-        private (Vector3, bool, bool)? HandleLeftBinding(IBinding binding, bool vr)
+        private (Vector3, bool, bool, Vector2)? HandleLeftBinding(IBinding binding, bool vr)
         {
             // Left-Hand
             Vector3 move;
@@ -555,13 +594,15 @@ namespace Hypernex.Game
                 move = transform.forward * (binding.Up + binding.Down * -1) +
                        transform.right * (binding.Left * -1 + binding.Right);
             move = Vector3.ClampMagnitude(move, 1);
-            s_ = binding.Button2 ? RunSpeed : WalkSpeed;
+            isRunning = binding.Button2 && (!avatar?.IsCrawling ?? true) && (!avatar?.IsCrouched ?? true);
+            s_ = isRunning ? RunSpeed : WalkSpeed;
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
                     if (!GameInstance.FocusedInstance.World.AllowRunning)
                         s_ = WalkSpeed;
             return (move * s_, binding.Button,
-                binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f);
+                binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f,
+                new(binding.Right - binding.Left, binding.Up - binding.Down));
         }
 
         private (Vector3, bool, bool)? HandleRightBinding(IBinding binding)
@@ -638,7 +679,7 @@ namespace Hypernex.Game
                 lineVisual.enabled = vr;
             CursorTools.ToggleMouseLock(vr || LockCamera);
             CursorTools.ToggleMouseVisibility(!vr);
-            bool groundedPlayer = CharacterController.isGrounded;
+            groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)
             {
                 if (groundedPlayer)
@@ -649,7 +690,7 @@ namespace Hypernex.Game
                     verticalVelocity = 0f;
                 verticalVelocity += Gravity * Time.deltaTime;
             }
-            (Vector3, bool, bool)? left_m = null;
+            (Vector3, bool, bool, Vector2)? left_m = null;
             (Vector3, bool, bool)? right_m = null;
             foreach (IBinding binding in new List<IBinding>(Bindings))
             {
@@ -659,7 +700,7 @@ namespace Hypernex.Game
                     g = binding.IsLook;
                 if (g)
                 {
-                    (Vector3, bool, bool)? r = HandleLeftBinding(binding, vr);
+                    (Vector3, bool, bool, Vector2)? r = HandleLeftBinding(binding, vr);
                     if (r != null)
                         left_m = r.Value;
                 }
@@ -671,12 +712,16 @@ namespace Hypernex.Game
                 }
             }
             Vector3 move = new Vector3();
-            if (right_m != null && right_m.Value.Item2)
-                if (groundedTimer > 0)
+            bool isJumping = false;
+            if (right_m != null)
+            {
+                isJumping = right_m.Value.Item2 && (!avatar?.IsCrouched ?? false) && (!avatar?.IsCrawling ?? false);
+                if (isJumping && groundedTimer > 0)
                 {
                     groundedTimer = 0;
                     verticalVelocity += Mathf.Sqrt(JumpHeight * 2 * -Gravity);
                 }
+            }
             if (left_m != null && !LockMovement)
             {
                 if(left_m.Value.Item3)
@@ -688,17 +733,22 @@ namespace Hypernex.Game
             {
                 move = new Vector3(move.x, verticalVelocity, move.z);
                 CharacterController.Move(move * Time.deltaTime);
-                avatar?.SetSpeed(left_m?.Item3 ?? false ? s_ : 0.0f);
+                avatar?.SetMove(left_m?.Item4 ?? Vector2.zero, isRunning);
                 avatar?.SetIsGrounded(groundedPlayer);
+                avatar?.SetRun(isRunning);
+                avatar?.Jump(isJumping && !groundedPlayer);
             }
             else
             {
-                avatar?.SetSpeed(0.0f);
+                avatar?.SetMove(Vector2.zero, false);
                 avatar?.SetIsGrounded(true);
+                avatar?.SetRun(false);
+                avatar?.Jump(false);
             }
             bool isMoving = left_m?.Item3 ?? false;
+            if (!IsVR) DesktopFingerCurler.Update(ref LeftDesktopCurler, ref RightDesktopCurler, GestureIdentifier);
             avatar?.Update(areTwoTriggersClicked(), FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
-                isMoving);
+                isMoving, this);
             // TODO: Non-Eye Tracking Eye Movement
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)
                 GameInstance.FocusedInstance.__SendMessage(Msg.Serialize(new JoinAuth
@@ -714,17 +764,14 @@ namespace Hypernex.Game
 
         private void LateUpdate()
         {
-            avatar?.LateUpdate(IsVR, Camera.transform, LockCamera);
+            avatar?.LateUpdate(IsVR, Camera.transform, LockCamera, !avatar?.IsCrawling ?? true);
             if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseFacialTracking &&
                 FaceTrackingManager.HasInitialized)
             {
                 avatar?.UpdateEyes(FaceTrackingManager.GetEyeWeights());
-                Dictionary<FaceExpressions, float> faceWeights = FaceTrackingManager.GetFaceWeights();
+                Dictionary<string, float> faceWeights = FaceTrackingManager.GetFaceWeights();
                 avatar?.UpdateFace(faceWeights);
-                foreach (KeyValuePair<FaceExpressions,float> faceWeight in faceWeights)
-                    avatar?.SetParameter(faceWeight.Key.ToString(), faceWeight.Value);
             }
-            //LocalPlayerSyncController?.LateUpdate();
         }
 
         private void OnDestroy() => Dispose();
@@ -732,10 +779,6 @@ namespace Hypernex.Game
         public void Dispose()
         {
             avatar?.Dispose();
-            /*cts?.Cancel();
-            cts?.Dispose();
-            mutex?.Dispose();
-            StopCoroutine(lastCoroutine);*/
             foreach (IBinding binding in Bindings)
             {
                 if(binding.GetType() == typeof(Bindings.Keyboard))

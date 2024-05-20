@@ -28,6 +28,7 @@ namespace Hypernex.Player
             (joinedInstance, worldMeta) => { };
         public static Action<LeftInstance> OnInstanceLeft { get; set; } = instanceLeft => { };
         public static Action<GotInvite> OnInvite { get; set; } = invite => { };
+        public static Action<GotInviteRequest> OnInviteRequest { get; set; } = inviteRequest => { };
 
         public static Dictionary<string, string> DownloadedWorlds = new();
 
@@ -70,6 +71,10 @@ namespace Hypernex.Player
                             QuickInvoke.InvokeActionOnMainThread(OnAssetToken, gotInvite.worldId, gotInvite.assetToken);
                         }));
                         QuickInvoke.InvokeActionOnMainThread(OnInvite, gotInvite);
+                        break;
+                    case "gotinviterequest":
+                        GotInviteRequest gotInviteRequest = (GotInviteRequest) response;
+                        QuickInvoke.InvokeActionOnMainThread(OnInviteRequest, gotInviteRequest);
                         break;
                     case "sharedavatartoken":
                         SharedAvatarToken sharedAvatarToken = (SharedAvatarToken) response;
@@ -282,6 +287,12 @@ namespace Hypernex.Player
                 if (APIPlayer.IsFullReady)
                     APIPlayer.UserSocket.SendInvite(user, instance.gameServerId, instance.instanceId);
             }
+        }
+
+        public static void RequestInvite(User requestToUser)
+        {
+            if(!requestToUser.isInWorld) return;
+            APIPlayer.UserSocket.RequestInvite(requestToUser);
         }
     }
 }

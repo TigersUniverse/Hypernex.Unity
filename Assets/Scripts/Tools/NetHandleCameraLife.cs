@@ -28,7 +28,7 @@ namespace Hypernex.Tools
             this.transform = transform;
             this.onDispose = onDispose;
             c1 = CoroutineRunner.Instance.StartCoroutine(Loop1());
-            t = transform.Find("Username").GetComponent<TMP_Text>();
+            t = transform.GetChild(1).GetComponent<TMP_Text>();
             t.text = $"@{u.Username}";
             c2 = CoroutineRunner.Instance.StartCoroutine(Loop2());
         }

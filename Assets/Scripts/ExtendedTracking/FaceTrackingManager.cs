@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK.Unity;
+using Hypernex.ExtendedTracking.CustomFaceExpressions;
 using Hypernex.Tools;
 using Microsoft.Extensions.Logging;
 using VRCFaceTracking;
@@ -19,6 +20,13 @@ namespace Hypernex.ExtendedTracking
         public static bool HasInitialized { get; private set; }
         public static bool EyeTracking => libManager?.ModuleMetadatas.Count(x => x.UsingEye && x.Active) > 0;
         public static bool LipTracking => libManager?.ModuleMetadatas.Count(x => x.UsingExpression && x.Active) > 0;
+
+        public static List<ICustomFaceExpression> CustomFaceExpressions = new()
+        {
+            new CombinedEyeLid(),
+            new TongueX(),
+            new TongueY()
+        };
         
         private static FaceTrackingServices.FTSettings settings;
         private static FaceTrackingServices.FTLoggerFactory loggerFactory;
@@ -47,6 +55,7 @@ namespace Hypernex.ExtendedTracking
             mutator = new UnifiedTrackingMutator(mutatorLogger, dispatcher, settings);
             mainIntegrated = new MainIntegrated(loggerFactory, libManager, mutator);
             mainIntegrated.InitializeAsync();
+            CustomFaceExpressions.Clear();
             HasInitialized = true;
         }
 
@@ -66,9 +75,9 @@ namespace Hypernex.ExtendedTracking
 
         public static UnifiedEyeData GetEyeWeights() => !HasInitialized ? null : UnifiedTracking.Data.Eye;
 
-        public static Dictionary<FaceExpressions, float> GetFaceWeights()
+        public static Dictionary<string, float> GetFaceWeights()
         {
-            Dictionary<FaceExpressions, float> weights = new();
+            Dictionary<string, float> weights = new();
             if (!HasInitialized || UnifiedTracking.Data == null || UnifiedTracking.Data.Shapes == null)
                 return weights;
             int i = 0;
@@ -77,10 +86,11 @@ namespace Hypernex.ExtendedTracking
                 if (i < (int) FaceExpressions.Max)
                 {
                     FaceExpressions faceExpressions = (FaceExpressions) i;
-                    weights.Add(faceExpressions, unifiedExpressionShape.Weight);
+                    weights.Add(faceExpressions.ToString(), unifiedExpressionShape.Weight);
                 }
                 i++;
             }
+            CustomFaceExpressions.ForEach(x => weights.Add(x.Name, x.GetWeight(UnifiedTracking.Data)));
             return weights;
         }
 

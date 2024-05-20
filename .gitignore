@@ -65,3 +65,7 @@ crashlytics-build.properties
 /[Aa]ssets/DynamicBone
 /[Aa]ssets/MagicaCloth2
 /[Aa]ssets/StreamingAssets
+
+# Publisher Specific
+/[Aa]ssets/Scripts/Game/BadgesRanks
+/[Aa]ssets/BadgeRankContent

@@ -89,6 +89,8 @@ namespace Hypernex.UI.Templates
                     });
             else
                 Banner.texture = DefaultBanner;
+            user.Badges.ForEach(x => BadgeRankHandler.GetBadgeHandlerByName(x)?.ApplyToNameplate(this, user));
+            BadgeRankHandler.GetRankHandlersByRank(user.Rank).ForEach(x => x.ApplyToNameplate(this, user));
         }
 
         public void OnNewAvatar(AvatarCreator avatarCreator)
@@ -107,7 +109,7 @@ namespace Hypernex.UI.Templates
                 return;
             }
             FollowTransform.transform.parent = head;
-            FollowTransform.transform.localPosition = avatarCreator.headRef * head.up;
+            FollowTransform.transform.localPosition = avatarCreator.headRotator.rootReference * head.up;
             FollowTransform.transform.SetParent(avatarCreator.Avatar.transform, true);
         }
         

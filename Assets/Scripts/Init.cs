@@ -25,10 +25,11 @@ using UnityEngine.Rendering;
 using UnityEngine.XR.Management;
 using Logger = Hypernex.CCK.Logger;
 using Material = UnityEngine.Material;
+using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.03.1b";
+    public const string VERSION = "2024.05.1b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -48,6 +49,7 @@ public class Init : MonoBehaviour
     public Texture2D CircleMouseTexture;
     public CreateInstanceTemplate CreateInstanceTemplate;
     public float SmoothingFrames = 0.1f;
+    public List<Object> BadgeRankAssets = new();
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 

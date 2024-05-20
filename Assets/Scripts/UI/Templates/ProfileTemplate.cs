@@ -33,6 +33,7 @@ namespace Hypernex.UI.Templates
         public Button FollowButton;
         public Button UnfollowButton;
         public Button InviteButton;
+        public Button RequestInviteButton;
         public Button WarnButton;
         public Button KickButton;
         public Button BanButton;
@@ -92,6 +93,8 @@ namespace Hypernex.UI.Templates
                     AddModeratorButton.gameObject.SetActive(false);
                     RemoveModeratorButton.gameObject.SetActive(false);
                 }
+                RequestInviteButton.gameObject.SetActive(UserBeingViewed.isInWorld &&
+                                                         APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
                 if (ConfigManager.SelectedConfigUser != null &&
                     ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
                     VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
@@ -188,6 +191,7 @@ namespace Hypernex.UI.Templates
                     }, APIPlayer.APIUser, APIPlayer.CurrentToken, UserBeingViewed.Id);
             });
             InviteButton.onClick.AddListener(() => GameInstance.FocusedInstance.InviteUser(lastUser));
+            RequestInviteButton.onClick.AddListener(() => SocketManager.RequestInvite(UserBeingViewed));
             WarnButton.onClick.AddListener(() => MessageOverlayTemplate.Render("Warn", lastUser.Username,
                 message => GameInstance.FocusedInstance.WarnUser(lastUser, message)));
             KickButton.onClick.AddListener(() => MessageOverlayTemplate.Render("Kick", lastUser.Username,
