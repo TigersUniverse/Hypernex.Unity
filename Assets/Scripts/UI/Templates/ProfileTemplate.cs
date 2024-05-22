@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
@@ -70,7 +71,10 @@ namespace Hypernex.UI.Templates
                     FollowButton.gameObject.SetActive(true);
                 if (GameInstance.FocusedInstance != null)
                 {
-                    InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite);
+                    InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite &&
+                                                      APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
+                    RequestInviteButton.gameObject.SetActive(UserBeingViewed.isInWorld &&
+                                                             APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
                     WarnButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
                     KickButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);
                     BanButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator &&
@@ -86,6 +90,7 @@ namespace Hypernex.UI.Templates
                 else
                 {
                     InviteButton.gameObject.SetActive(false);
+                    RequestInviteButton.gameObject.SetActive(false);
                     WarnButton.gameObject.SetActive(false);
                     KickButton.gameObject.SetActive(false);
                     BanButton.gameObject.SetActive(false);
@@ -93,8 +98,6 @@ namespace Hypernex.UI.Templates
                     AddModeratorButton.gameObject.SetActive(false);
                     RemoveModeratorButton.gameObject.SetActive(false);
                 }
-                RequestInviteButton.gameObject.SetActive(UserBeingViewed.isInWorld &&
-                                                         APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
                 if (ConfigManager.SelectedConfigUser != null &&
                     ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
                     VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
@@ -111,6 +114,7 @@ namespace Hypernex.UI.Templates
                 FollowButton.gameObject.SetActive(false);
                 UnfollowButton.gameObject.SetActive(false);
                 InviteButton.gameObject.SetActive(false);
+                RequestInviteButton.gameObject.SetActive(false);
                 WarnButton.gameObject.SetActive(false);
                 KickButton.gameObject.SetActive(false);
                 BanButton.gameObject.SetActive(false);
@@ -242,6 +246,7 @@ namespace Hypernex.UI.Templates
             FollowButton.onClick.RemoveAllListeners();
             UnfollowButton.onClick.RemoveAllListeners();
             InviteButton.onClick.RemoveAllListeners();
+            RequestInviteButton.onClick.RemoveAllListeners();
             WarnButton.onClick.RemoveAllListeners();
             KickButton.onClick.RemoveAllListeners();
             BanButton.onClick.RemoveAllListeners();
