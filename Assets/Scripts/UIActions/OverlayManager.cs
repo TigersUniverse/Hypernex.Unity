@@ -14,10 +14,22 @@ namespace Hypernex.UIActions
 {
     public class OverlayManager : MonoBehaviour, IDisposable
     {
-        private static OverlayManager Instance { get; set; }
+        public static OverlayManager Instance { get; set; }
 
         public static void AddMessageToQueue(MessageMeta messageMeta) =>
             Instance.MessagesToDisplay.Enqueue(messageMeta);
+        
+        public static void ClearNonImportantMessages()
+        {
+            List<MessageMeta> one = new List<MessageMeta>(Instance.MessagesToDisplay);
+            Instance.MessagesToDisplay.Clear();
+            for (int i = 0; i < one.Count; i++)
+            {
+                MessageMeta meta = one.ElementAt(i);
+                if(meta.MessageUrgency == MessageUrgency.Info) continue;
+                Instance.MessagesToDisplay.Enqueue(meta);
+            }
+        }
 
         public LocalPlayer LocalPlayer;
         public GameObject MicrophoneIcon;
@@ -38,26 +50,6 @@ namespace Hypernex.UIActions
             Instance = this;
             cts = new CancellationTokenSource();
             coroutine = StartCoroutine(MessageShowLoop());
-            /*UnityLogger.OnLog += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
-            {
-                Header = "Info",
-                Description = o.ToString()
-            });
-            UnityLogger.OnWarn += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Warning, MessageButtons.None)
-            {
-                Header = "Warning",
-                Description = o.ToString()
-            });
-            UnityLogger.OnError += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Error, MessageButtons.None)
-            {
-                Header = "Error",
-                Description = o.ToString()
-            });
-            UnityLogger.OnCritical += o => AddMessageToQueue(new MessageMeta(MessageUrgency.Error, MessageButtons.None)
-            {
-                Header = "Exception Raised",
-                Description = o.ToString()
-            });*/
             UnityLogger.OnLog += o => ConsoleTemplate.AddMessage($"[GAME] {o}");
             UnityLogger.OnWarn += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 1);
             UnityLogger.OnError += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 2);
