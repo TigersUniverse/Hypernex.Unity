@@ -237,16 +237,21 @@ namespace Hypernex.Game.Avatar
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (vrik != null && Calibrated)
             {
-                vrik.solver.spine.pelvisPositionWeight = 1f;
-                vrik.solver.spine.pelvisRotationWeight = 1f;
-                vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
-                if (!fbt)
+                if(fbt)
+                {
+                    vrik.solver.spine.pelvisPositionWeight = 1f;
+                    vrik.solver.spine.pelvisRotationWeight = 1f;
+                }
+                else
                 {
                     float scale = LocalPlayer.Instance.transform.localScale.y;
                     float height = LocalPlayer.Instance.CharacterController.height;
                     vrik.solver.locomotion.footDistance = 0.1f * scale * height;
                     vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
+                    vrik.solver.spine.pelvisPositionWeight = 0;
+                    vrik.solver.spine.pelvisRotationWeight = 0;
                 }
+                vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
                 if(MainAnimator.runtimeAnimatorController == null)
                     MainAnimator.runtimeAnimatorController = animatorController;
             }

@@ -9,7 +9,7 @@ namespace Hypernex.Game.Bindings
 {
     public class XRTracker : MonoBehaviour
     {
-        private const int MAX_STEPS = 1000;
+        private const int MAX_STEPS = 100;
         
         public static List<XRTracker> Trackers => new(_trackers);
         private static readonly List<XRTracker> _trackers = new();

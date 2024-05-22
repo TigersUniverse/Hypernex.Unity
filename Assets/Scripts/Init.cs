@@ -29,7 +29,7 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.05.1b";
+    public const string VERSION = "2024.05.2b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
