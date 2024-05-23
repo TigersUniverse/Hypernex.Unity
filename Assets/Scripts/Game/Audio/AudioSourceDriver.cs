@@ -54,7 +54,7 @@ namespace Hypernex.Game.Audio
             var buffer = audioSource.GetComponent<BufferAudioSource>();
             if (buffer == null)
                 buffer = audioSource.gameObject.AddComponent<BufferAudioSource>();
-            buffer.InsertQueue(pcm, channels, frequency, index);
+            buffer.AddInsertQueue(pcm, channels, frequency, index);
         }
 
         public static void AddQueueLater(AudioSource audioSource, float[] pcm, int channels, int frequency, float delay)
