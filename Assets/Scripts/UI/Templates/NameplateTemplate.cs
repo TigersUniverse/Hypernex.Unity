@@ -6,6 +6,7 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Templates
 {
@@ -89,6 +90,11 @@ namespace Hypernex.UI.Templates
                     });
             else
                 Banner.texture = DefaultBanner;
+            if (user.Badges == null)
+            {
+                Logger.CurrentLogger.Warn("User " + user.Id + " has null Badges! This is usually an API fault. Please report this to system administrators!");
+                return;
+            }
             user.Badges.ForEach(x => BadgeRankHandler.GetBadgeHandlerByName(x)?.ApplyToNameplate(this, user));
             BadgeRankHandler.GetRankHandlersByRank(user.Rank).ForEach(x => x.ApplyToNameplate(this, user));
         }
