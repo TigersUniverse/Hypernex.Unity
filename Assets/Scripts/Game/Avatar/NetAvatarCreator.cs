@@ -159,11 +159,11 @@ namespace Hypernex.Game.Avatar
         {
             VRIKRootController rootController = Avatar.GetComponent<VRIKRootController>();
             if(rootController != null)
-                Object.Destroy(rootController);
+                Object.DestroyImmediate(rootController);
             if(vrik != null)
-                Object.Destroy(vrik);
+                Object.DestroyImmediate(vrik);
             foreach (TwistRelaxer twistRelaxer in Avatar.gameObject.GetComponentsInChildren<TwistRelaxer>())
-                Object.Destroy(twistRelaxer);
+                Object.DestroyImmediate(twistRelaxer);
             SetAvatarPosition(false);
             if(vr)
                 Calibrated = false;
