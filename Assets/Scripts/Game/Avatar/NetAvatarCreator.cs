@@ -222,6 +222,9 @@ namespace Hypernex.Game.Avatar
             Transform rightFoot = netPlayer.GetReferenceFromCoreBone(CoreBone.RightFoot);
             if (body != null && leftFoot != null && rightFoot != null)
             {
+                body.ClearChildren(true);
+                leftFoot.ClearChildren(true);
+                rightFoot.ClearChildren(true);
                 VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference,
                     rightHandReference, leftFoot, rightFoot);
                 SetupAnimators();
@@ -259,6 +262,14 @@ namespace Hypernex.Game.Avatar
                 MainAnimator.runtimeAnimatorController = null;
             else if(vrik == null)
                 MainAnimator.runtimeAnimatorController = animatorController;
+            if(vrik == null || !Calibrated || !fbt) return;
+            Transform hipTarget = netPlayer.GetReferenceFromCoreBone(CoreBone.HipTarget);
+            Transform leftFootTarget = netPlayer.GetReferenceFromCoreBone(CoreBone.LeftFootTarget);
+            Transform rightFootTarget = netPlayer.GetReferenceFromCoreBone(CoreBone.RightFootTarget);
+            if(hipTarget == null || leftFootTarget == null || rightFootTarget == null) return;
+            vrik.solver.spine.pelvisTarget.SetPositionAndRotation(hipTarget.position, hipTarget.rotation);
+            vrik.solver.leftLeg.target.SetPositionAndRotation(leftFootTarget.position, leftFootTarget.rotation);
+            vrik.solver.rightLeg.target.SetPositionAndRotation(rightFootTarget.position, rightFootTarget.rotation);
         }
 
         internal void LateUpdate(Transform referenceHead)

@@ -41,6 +41,9 @@ namespace Hypernex.Game.Avatar
         protected VRIK vrik;
         internal RotationOffsetDriver headRotator;
 
+        protected readonly Vector3 PelvisTargetLocalPosition = new Vector3(-0.141f, -0.275f, 0.107f);
+        protected readonly Quaternion PelvisTargetLocalRotation = Quaternion.identity;
+
         protected void OnCreate(CCK.Unity.Avatar a, int layer)
         {
             FaceTrackingDescriptor = a.gameObject.GetComponent<FaceTrackingDescriptor>();
@@ -542,6 +545,16 @@ namespace Hypernex.Game.Avatar
             TwistSolver leftSolver = new TwistSolver { transform = leftLowerArm, children = new []{leftHand} };
             TwistSolver rightSolver = new TwistSolver { transform = rightLowerArm, children = new []{rightHand} };
             twistRelaxer.twistSolvers = new[] { leftSolver, rightSolver };
+        }
+        
+        public Transform GetTargetChild(Transform tracker)
+        {
+            for (int i = 0; i < tracker.childCount; i++)
+            {
+                Transform t = tracker.GetChild(0);
+                if (t.gameObject.name.Contains("Target")) return t;
+            }
+            return null;
         }
         
         internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.FixedUpdate());
