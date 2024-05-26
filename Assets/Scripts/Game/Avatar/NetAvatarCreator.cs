@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Game.Audio;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
@@ -32,6 +33,7 @@ namespace Hypernex.Game.Avatar
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             audioSource = VoiceAlign.AddComponent<AudioSource>();
+            VoiceAlign.AddComponent<BufferAudioSource>();
             audioSource.spatialize = true;
             audioSource.spatializePostEffects = true;
             audioSource.spatialBlend = 1f;

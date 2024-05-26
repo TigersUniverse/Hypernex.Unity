@@ -106,7 +106,7 @@ namespace Hypernex.Game.Audio
             else if (shouldStop && audioSource.isPlaying)
             {
                 audioSource.Stop();
-                Destroy(this);
+                // Destroy(this);
             }
         }
 
@@ -236,7 +236,7 @@ namespace Hypernex.Game.Audio
             if (queue.Count <= 0)
             {
                 Array.Fill(data, 0f);
-                Debug.LogWarning("Buffer is empty, filling with zero.");
+                // Debug.LogWarning("Buffer is empty, filling with zero.");
                 emptyReads += data.Length;
                 if (emptyReads >= maxEmptyReads)
                     shouldStop = true;
@@ -261,7 +261,7 @@ namespace Hypernex.Game.Audio
                 }
                 if (found > 0)
                 {
-                    Debug.LogWarning($"Buffer is empty ({found}).");
+                    // Debug.LogWarning($"Buffer is empty ({found}).");
                 }
                 mutex.ReleaseMutex();
             }
@@ -303,13 +303,10 @@ namespace Hypernex.Game.Audio
                 float[] temp = new float[CLIP_SAMPLE_SIZE];
                 Array.Fill(temp, 1f);
                 clip.SetData(temp, 0);
-                // clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, true, ReadCallback);
                 audioSource.clip = clip;
                 audioSource.loop = true;
                 audioSource.Stop();
-            #if true
                 audioSource.Play();
-            #endif
                 startTime = AudioSettings.dspTime;
                 PositionSamples = 0;
             #if false
@@ -319,9 +316,9 @@ namespace Hypernex.Game.Audio
                 StartCoroutine(routine);
             #endif
             }
-            if (audioSource.clip != clip)
+            if (!audioSource.isPlaying)
             {
-                // audioSource.clip = clip;
+                audioSource.Play();
             }
         }
 

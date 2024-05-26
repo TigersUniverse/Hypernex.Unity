@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Game.Audio;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Sandboxing.SandboxedTypes;
@@ -111,6 +112,7 @@ namespace Hypernex.Game.Avatar
             lipSyncContext.audioSource = audioSource;
             lipSyncContext.enableKeyboardInput = false;
             lipSyncContext.enableTouchInput = false;
+            lipSyncContext.skipAudioSource = true;
             morphTargets.Clear();
             foreach (KeyValuePair<Viseme, BlendshapeDescriptor> avatarVisemeRenderer in Avatar.VisemesDict)
             {
