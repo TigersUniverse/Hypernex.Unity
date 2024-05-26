@@ -294,7 +294,7 @@ namespace Hypernex.Game.Audio
                 maxEmptyReads = frequency * channels;
                 newClip = true;
             }
-            if (newClip && queue.Count > CLIP_SAMPLE_SIZE * 2)
+            if (newClip && queue.Count > CLIP_SAMPLE_SIZE)
             {
                 // Debug.Log("new clip");
                 startedQueue = false;
@@ -318,6 +318,7 @@ namespace Hypernex.Game.Audio
             }
             if (!audioSource.isPlaying)
             {
+                shouldStop = false;
                 audioSource.Play();
             }
         }
