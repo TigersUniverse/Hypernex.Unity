@@ -33,6 +33,7 @@ namespace Hypernex.Game.Avatar
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             audioSource = VoiceAlign.AddComponent<AudioSource>();
             audioSource.spatialize = true;
+            audioSource.spatializePostEffects = true;
             audioSource.spatialBlend = 1f;
             audioSource.rolloffMode = AudioRolloffMode.Linear;
             audioSource.minDistance = 0;

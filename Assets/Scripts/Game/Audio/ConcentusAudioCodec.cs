@@ -108,7 +108,7 @@ namespace Hypernex.Game.Audio
             // Debug.Assert(length == frameSize);
             Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);
 
-            AudioSourceDriver.InsertQueue(audioSource, pcmBuffer, decoder.NumChannels, decoder.SampleRate, packetIndexSamples);
+            AudioSourceDriver.AddQueue(audioSource, pcmBuffer, decoder.NumChannels, decoder.SampleRate);
         }
     }
 }

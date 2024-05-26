@@ -22,7 +22,7 @@ namespace Hypernex.Game.Audio
         }
 
         public const int SAMPLE_SIZE = 512;
-        public const int CLIP_SAMPLE_SIZE = 40960;
+        public const int CLIP_SAMPLE_SIZE = 4096;
         public const float MAX_DELAY = 0.1f;
         private float[] RingBuffer = new float[CLIP_SAMPLE_SIZE];
         private int RingBufferCount = 0;
@@ -43,6 +43,8 @@ namespace Hypernex.Game.Audio
         public List<AudioSource> sources = new List<AudioSource>();
 
         private double startTime;
+        private IEnumerator routine;
+        private bool playing = false;
 
         private float[] spectrum = new float[1024];
 
@@ -71,37 +73,19 @@ namespace Hypernex.Game.Audio
 
         private void Update()
         {
+            playing = audioSource.isPlaying;
             if (clip == null)
                 return;
-            
-            if (AudioSettings.dspTime - startTime >= clip.length)
+
+#if false
+            if (AudioSettings.dspTime - startTime >= clip.length - Time.deltaTime)
             {
-                if (shouldStop)
-                {
-                    // Debug.Log("stop");
-                    // /*
-                    audioSource.Stop();
-                    DestroyImmediate(clip);
-                    clip = null;
-                    Destroy(this);
-                    // */
-                }
-                else
-                {
-                    shouldStop = true;
-                }
+                var newClip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, clip.channels, clip.frequency, false, ReadCallback);
+                audioSource.clip = newClip;
+                startTime += clip.length;
+                audioSource.Play();
             }
-            // if (audioSource.isPlaying)
-            if (clip != null)
-            {
-                // shouldStop = true;
-                while (FillInsert(SAMPLE_SIZE))
-                {
-                    // audioSource.loop = true;
-                    // startTime += clip.length;
-                    startTime = AudioSettings.dspTime;
-                }
-            }
+#endif
 
             // /*
             audioSource.GetSpectrumData(spectrum, 0, FFTWindow.Rectangular);
@@ -113,14 +97,71 @@ namespace Hypernex.Game.Audio
                 Debug.DrawLine(new Vector3(Mathf.Log(i - 1), Mathf.Log(spectrum[i - 1]), 3), new Vector3(Mathf.Log(i), Mathf.Log(spectrum[i]), 3), Color.blue);
             }
             // */
+
+            if (audioSource.clip != clip)
+            {
+                // audioSource.loop = false;
+                // Destroy(this);
+            }
+            else if (shouldStop && audioSource.isPlaying)
+            {
+                audioSource.Stop();
+                Destroy(this);
+            }
         }
 
-        private void Fill(int size)
+        private void OnAudioFilterRead(float[] data, int channels)
+        {
+            if (!playing)
+                return;
+            if (TempRingBuffer.Length != data.Length / channels)
+                TempRingBuffer = new float[data.Length / channels];
+            ReadCallback(TempRingBuffer);
+            for (int i = 0; i < data.Length / channels; i++)
+            {
+                for (int j = 0; j < channels; j++)
+                {
+                    data[i * channels + j] *= TempRingBuffer[i];
+                }
+            }
+        }
+
+        private IEnumerator PlaybackLoop()
+        {
+            AudioClip clip0 = AudioClip.Create("Voice0", CLIP_SAMPLE_SIZE, audioSource.clip.channels, audioSource.clip.frequency, false);
+            AudioClip clip1 = AudioClip.Create("Voice1", CLIP_SAMPLE_SIZE, audioSource.clip.channels, audioSource.clip.frequency, false);
+            bool use0 = true;
+            startTime = AudioSettings.dspTime + 0.25f;
+            int div = 1;
+            // Fill(clip, audioSource.clip.samples / div);
+            Fill(use0 ? clip0 : clip1, audioSource.clip.samples / div);
+            audioSource.clip = use0 ? clip0 : clip1;
+            audioSource.PlayScheduled(startTime);
+            use0 = !use0;
+            while (!shouldStop)
+            {
+                startTime += (double)audioSource.clip.samples / audioSource.clip.frequency / div;
+                Fill(use0 ? clip0 : clip1, audioSource.clip.samples / div);
+                audioSource.clip = use0 ? clip0 : clip1;
+                audioSource.PlayScheduled(startTime);
+                use0 = !use0;
+                while (AudioSettings.dspTime - startTime < (double)audioSource.clip.samples / audioSource.clip.frequency / div - Time.unscaledDeltaTime * 0)
+                    yield return null;
+                // Fill(clip, audioSource.clip.samples / div);
+            }
+            Destroy(this);
+        }
+
+        private void Fill(AudioClip clip, int size)
         {
             if (TempRingBuffer.Length != size)
                 TempRingBuffer = new float[size];
             ReadCallback(TempRingBuffer);
+            clip.SetData(TempRingBuffer, 0);
+            clip.LoadAudioData();
+            return;
             clip.SetData(TempRingBuffer, PositionSamples % clip.samples);
+            clip.LoadAudioData();
             PositionSamples += size;
         }
 
@@ -163,7 +204,7 @@ namespace Hypernex.Game.Audio
                         if (AudioThreadPosition >= 0)
                         {
                             data[i] = RingBuffer[(AudioThreadPosition) % RingBuffer.Length];
-                            // RingBuffer[(AudioThreadPosition) % RingBuffer.Length] = 0f;
+                            RingBuffer[(AudioThreadPosition) % RingBuffer.Length] = 0f;
                         }
                         else
                         {
@@ -182,6 +223,12 @@ namespace Hypernex.Game.Audio
             }
         }
 
+        private void PositionCallbackInsert(int position)
+        {
+            Debug.Log(position);
+            AudioThreadPosition = position;
+        }
+
         private void ReadCallback(float[] data)
         {
             if (queue == null)
@@ -189,7 +236,7 @@ namespace Hypernex.Game.Audio
             if (queue.Count <= 0)
             {
                 Array.Fill(data, 0f);
-                // Debug.LogWarning("Buffer is empty, filling with zero.");
+                Debug.LogWarning("Buffer is empty, filling with zero.");
                 emptyReads += data.Length;
                 if (emptyReads >= maxEmptyReads)
                     shouldStop = true;
@@ -214,7 +261,7 @@ namespace Hypernex.Game.Audio
                 }
                 if (found > 0)
                 {
-                    // Debug.LogWarning($"Buffer is empty ({found}).");
+                    Debug.LogWarning($"Buffer is empty ({found}).");
                 }
                 mutex.ReleaseMutex();
             }
@@ -241,23 +288,36 @@ namespace Hypernex.Game.Audio
                 // Debug.LogWarning("Mutex not aquired, buffer not filled.");
             }
             // */
+            bool newClip = false;
             if (clip == null || clip.channels != channels || clip.frequency != frequency)
             {
                 maxEmptyReads = frequency * channels;
-                shouldStop = true;
+                newClip = true;
             }
-            if (queue.Count > SAMPLE_SIZE && !audioSource.isPlaying && clip == null)
+            if (newClip && queue.Count > CLIP_SAMPLE_SIZE * 2)
             {
                 // Debug.Log("new clip");
                 startedQueue = false;
                 shouldStop = false;
                 clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, false);
-                Fill(clip.samples / 2);
+                float[] temp = new float[CLIP_SAMPLE_SIZE];
+                Array.Fill(temp, 1f);
+                clip.SetData(temp, 0);
+                // clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, true, ReadCallback);
                 audioSource.clip = clip;
-                audioSource.loop = false;
+                audioSource.loop = true;
                 audioSource.Stop();
+            #if true
                 audioSource.Play();
+            #endif
                 startTime = AudioSettings.dspTime;
+                PositionSamples = 0;
+            #if false
+                if (routine != null)
+                    StopCoroutine(routine);
+                routine = PlaybackLoop();
+                StartCoroutine(routine);
+            #endif
             }
             if (audioSource.clip != clip)
             {
@@ -310,38 +370,52 @@ namespace Hypernex.Game.Audio
 
         public void InsertQueue(float[] pcm, int channels, int frequency, int index)
         {
+            bool newClip = false;
             if (clip == null || clip.channels != channels || clip.frequency != frequency)
             {
                 maxEmptyReads = frequency * channels;
-                shouldStop = true;
+                // shouldStop = true;
+                newClip = true;
             }
-            if (!audioSource.isPlaying && clip == null)
+            if (mutex.WaitOne(1000))
             {
+                if (newClip)
+                {
+                    Array.Fill(RingBuffer, 0f);
+                    RingBufferCount = 0;
+                }
+                else
+                {
+                    for (int i = 0; i < pcm.Length; i++)
+                    {
+                        RingBuffer[(index + i) % RingBuffer.Length] = pcm[i];
+                        RingBufferCount++;
+                    }
+                    PositionSamples = index;
+                }
+                mutex.ReleaseMutex();
+            }
+            if (newClip)
+            {
+                Debug.Log("new clip");
                 startedQueue = false;
                 shouldStop = false;
-                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, false);
+                // AudioSettings.GetDSPBufferSize(out int bufLen, out _);
+                // Debug.Log(bufLen);
+                AudioThreadPosition = 0;
+                // AudioThreadPosition = bufLen;
+                // AudioThreadPosition = frequency * channels;
+                // AudioThreadPosition = SAMPLE_SIZE;
+                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, true, ReadCallbackInsert);
                 audioSource.clip = clip;
                 audioSource.loop = true;
                 audioSource.Stop();
                 audioSource.Play();
-                PositionSamples = 0;
                 startTime = AudioSettings.dspTime;
             }
-            if (index == 0)
+            if (audioSource.clip != clip)
             {
-                // audioSource.Play();
-                // startTime = AudioSettings.dspTime;
-            }
-            if (mutex.WaitOne(1000))
-            {
-                PositionSamples = (int)((AudioSettings.dspTime - startTime) * frequency);
-                if (index > PositionSamples)
-                {
-                    shouldStop = false;
-                    // PositionSamples = index;
-                    clip.SetData(pcm, index % clip.samples);
-                }
-                mutex.ReleaseMutex();
+                audioSource.clip = clip;
             }
         }
     }
