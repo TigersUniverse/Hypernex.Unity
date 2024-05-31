@@ -102,7 +102,7 @@ namespace Hypernex.Game.Avatar
         }
         
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
-        protected List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
+        public List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
         {
             List<AnimatorControllerParameter> parameters = new();
             bool c = true;

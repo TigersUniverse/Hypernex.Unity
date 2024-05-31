@@ -6,5 +6,6 @@ namespace Hypernex.ExtendedTracking
     {
         public string Name { get; }
         public float GetWeight(UnifiedTrackingData unifiedTrackingData);
+        bool IsMatch(string parameterName);
     }
 }

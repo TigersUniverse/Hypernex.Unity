@@ -291,7 +291,7 @@ namespace Hypernex.Game
                 avatarMeta = am;
                 avatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
-                avatar = new LocalAvatarCreator(this, a, IsVR);
+                avatar = new LocalAvatarCreator(this, a, IsVR, am);
                 foreach (NexboxScript localAvatarScript in avatar.Avatar.LocalAvatarScripts)
                     avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
                         avatar.Avatar.gameObject));

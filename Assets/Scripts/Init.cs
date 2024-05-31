@@ -159,7 +159,7 @@ public class Init : MonoBehaviour
                     userTheme.ApplyThemeToUI();
                 if(configUser.UseFacialTracking)
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        FaceTrackingManager.Init(targetStreamingPath)));
+                        FaceTrackingManager.Init(targetStreamingPath, user)));
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
         };

@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
+using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -30,7 +32,7 @@ namespace Hypernex.Game.Avatar
         public bool IsCrouched { get; private set; }
         public bool IsCrawling { get; private set; }
 
-        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR)
+        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR, AvatarMeta avatarMeta)
         {
             a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Avatar>();
             Avatar = a;
@@ -102,6 +104,7 @@ namespace Hypernex.Game.Avatar
                 DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
                     bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
+            VRCFTParameters.UpdateParameters(avatarMeta, this);
         }
 
         private void SetupLipSyncLocalPlayer()
