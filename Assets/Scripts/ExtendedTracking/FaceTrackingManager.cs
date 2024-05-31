@@ -71,9 +71,9 @@ namespace Hypernex.ExtendedTracking
 
         public static UnifiedEyeData GetEyeWeights() => !HasInitialized ? null : UnifiedTracking.Data.Eye;
 
-        public static Dictionary<string, float> GetFaceWeights()
+        public static Dictionary<string, (float, ICustomFaceExpression)> GetFaceWeights()
         {
-            Dictionary<string, float> weights = new();
+            Dictionary<string, (float, ICustomFaceExpression)> weights = new();
             if (!HasInitialized || UnifiedTracking.Data == null || UnifiedTracking.Data.Shapes == null)
                 return weights;
             int i = 0;
@@ -82,14 +82,14 @@ namespace Hypernex.ExtendedTracking
                 if (i < (int) FaceExpressions.Max)
                 {
                     FaceExpressions faceExpressions = (FaceExpressions) i;
-                    weights.Add(faceExpressions.ToString(), unifiedExpressionShape.Weight);
+                    weights.Add(faceExpressions.ToString(), (unifiedExpressionShape.Weight, null));
                 }
                 i++;
             }
             CustomFaceExpressions.ForEach(x =>
             {
                 if(weights.ContainsKey(x.Name)) return;
-                weights.Add(x.Name, x.GetWeight(UnifiedTracking.Data));
+                weights.Add(x.Name, (x.GetWeight(UnifiedTracking.Data), x));
             });
             return weights;
         }

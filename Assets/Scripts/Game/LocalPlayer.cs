@@ -769,8 +769,7 @@ namespace Hypernex.Game
                 FaceTrackingManager.HasInitialized)
             {
                 avatar?.UpdateEyes(FaceTrackingManager.GetEyeWeights());
-                Dictionary<string, float> faceWeights = FaceTrackingManager.GetFaceWeights();
-                avatar?.UpdateFace(faceWeights);
+                avatar?.UpdateFace(FaceTrackingManager.GetFaceWeights());
             }
         }
 

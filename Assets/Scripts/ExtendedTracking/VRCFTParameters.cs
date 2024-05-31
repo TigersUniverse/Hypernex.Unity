@@ -25,34 +25,33 @@ namespace Hypernex.ExtendedTracking
         public static void UpdateParameters(AvatarMeta avatarMeta, LocalAvatarCreator avatarCreator, ParameterVersion parameterVersion = ParameterVersion.Both)
         {
             List<AvatarConfigFileParameter> parameters = new List<AvatarConfigFileParameter>();
-            avatarCreator.AnimatorPlayables.ForEach(playable => avatarCreator
-                .GetAllParameters(playable.AnimatorControllerPlayable)
-                .Where(x => x.type != AnimatorControllerParameterType.Trigger).ToList().ForEach(
-                    parameter =>
+            avatarCreator.Parameters.Where(x => x.type != AnimatorControllerParameterType.Trigger).ToList().ForEach(
+                parameter =>
+                {
+                    if (parameters.Count(x => x.name == parameter.name) > 0) return;
+                    AvatarConfigFileParameter p = new AvatarConfigFileParameter
                     {
-                        if (parameters.Count(x => x.name == parameter.name) > 0) return;
-                        AvatarConfigFileParameter p = new AvatarConfigFileParameter
+                        name = parameter.name,
+                        input = new AvatarConfigFileIODef
                         {
-                            name = parameter.name,
-                            input = new AvatarConfigFileIODef
-                            {
-                                address = "/avatar/parameters/" + parameter.name
-                            }
-                        };
-                        switch (parameter.type)
-                        {
-                            case AnimatorControllerParameterType.Int:
-                                p.input.type = "Int";
-                                break;
-                            case AnimatorControllerParameterType.Bool:
-                                p.input.type = "Bool";
-                                break;
-                            case AnimatorControllerParameterType.Float:
-                                p.input.type = "Float";
-                                break;
+                            address = "/avatar/parameters/" + parameter.name
                         }
-                        parameters.Add(p);
-                    }));
+                    };
+                    switch (parameter.type)
+                    {
+                        case AnimatorControllerParameterType.Int:
+                            p.input.type = "Int";
+                            break;
+                        case AnimatorControllerParameterType.Bool:
+                            p.input.type = "Bool";
+                            break;
+                        case AnimatorControllerParameterType.Float:
+                            p.input.type = "Float";
+                            break;
+                    }
+
+                    parameters.Add(p);
+                });
             AvatarConfigFile avatarConfigSpec = new AvatarConfigFile
             {
                 id = avatarMeta.Id,

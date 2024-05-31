@@ -26,6 +26,26 @@ namespace Hypernex.Game.Avatar
         public FaceTrackingDescriptor FaceTrackingDescriptor { get; protected set; }
         public List<AnimatorPlayable> AnimatorPlayables => new (PlayableAnimators);
         public bool Calibrated { get; protected set; }
+
+        private List<AnimatorControllerParameter> _parameters;
+        public List<AnimatorControllerParameter> Parameters
+        {
+            get
+            {
+                if (_parameters == null)
+                {
+                    List<AnimatorControllerParameter> allParameters = new();
+                    foreach (AnimatorPlayable animatorPlayable in AnimatorPlayables)
+                    {
+                        List<AnimatorControllerParameter> playableParameters =
+                            GetAllParameters(animatorPlayable.AnimatorControllerPlayable);
+                        allParameters = allParameters.Concat(playableParameters).ToList();
+                    }
+                    _parameters = allParameters;
+                }
+                return _parameters;
+            }
+        }
         
         protected GameObject HeadAlign;
         internal GameObject VoiceAlign;
@@ -102,7 +122,7 @@ namespace Hypernex.Game.Avatar
         }
         
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
-        public List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
+        private List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
         {
             List<AnimatorControllerParameter> parameters = new();
             bool c = true;
