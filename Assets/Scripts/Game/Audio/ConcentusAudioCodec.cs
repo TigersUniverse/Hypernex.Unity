@@ -28,18 +28,20 @@ namespace Hypernex.Game.Audio
         internal static void MicrophoneOff() => encoder = null;
 
         private Queue<float> queue = new Queue<float>();
-        private uint PacketCounter = 0;
+        private int PacketCounterSamples = 0;
 
         public PlayerVoice[] Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
         {
             if (pcm.Length == 0)
             {
+                PacketCounterSamples = 0;
                 queue.Clear();
                 return Array.Empty<PlayerVoice>();
             }
 
             if (encoder == null)
             {
+                PacketCounterSamples = 0;
                 encoder = new(clip.frequency, clip.channels, OpusApplication.OPUS_APPLICATION_VOIP);
                 encoder.Bitrate = 61440;
                 encoder.Complexity = 10;
@@ -62,9 +64,9 @@ namespace Hypernex.Game.Audio
                 }
                 byte[] outputEncodeBuffer = new byte[frameLength * sizeof(float)];
                 int packetSize = encoder.Encode(dataPcm, 0, frameLength / encoder.NumChannels, outputEncodeBuffer, 0, outputEncodeBuffer.Length);
-                byte[] buf = new byte[packetSize + sizeof(uint)];
-                BitConverter.TryWriteBytes(buf, PacketCounter);
-                Array.Copy(outputEncodeBuffer, 0, buf, sizeof(uint), Math.Min(buf.Length - sizeof(uint), outputEncodeBuffer.Length));
+                byte[] buf = new byte[packetSize + sizeof(int)];
+                BitConverter.TryWriteBytes(buf, PacketCounterSamples);
+                Array.Copy(outputEncodeBuffer, 0, buf, sizeof(int), Math.Min(buf.Length - sizeof(int), outputEncodeBuffer.Length));
                 // Array.Copy(outputEncodeBuffer, buf, Math.Min(buf.Length, outputEncodeBuffer.Length));
                 PlayerVoice voice = new PlayerVoice
                 {
@@ -77,7 +79,7 @@ namespace Hypernex.Game.Audio
                     SampleRate = encoder.SampleRate
                 };
                 voicePackets.Add(voice);
-                PacketCounter++;
+                PacketCounterSamples += frameLength / encoder.NumChannels;
             }
             // Debug.Log(voicePackets.Count);
             return voicePackets.ToArray();
@@ -97,11 +99,11 @@ namespace Hypernex.Game.Audio
             OpusDecoder decoder = playback.decoder;
 
             byte[] compressedPacket = playerVoice.Bytes;
-            uint packetIndex = BitConverter.ToUInt32(compressedPacket, 0);
+            int packetIndexSamples = BitConverter.ToInt32(compressedPacket, 0);
             int frameSize = playerVoice.EncodeLength;
             int frameLength = Mathf.RoundToInt(MaxFrameSize / 1000f * decoder.SampleRate * decoder.NumChannels);
             float[] outputBuffer = new float[frameLength];
-            int length = decoder.Decode(compressedPacket, sizeof(uint), compressedPacket.Length - sizeof(uint), outputBuffer, 0, outputBuffer.Length / decoder.NumChannels);
+            int length = decoder.Decode(compressedPacket, sizeof(int), compressedPacket.Length - sizeof(int), outputBuffer, 0, outputBuffer.Length / decoder.NumChannels);
             float[] pcmBuffer = new float[length];
             // Debug.Assert(length == frameSize);
             Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);

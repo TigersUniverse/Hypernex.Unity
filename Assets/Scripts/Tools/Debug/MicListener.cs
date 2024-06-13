@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System.Collections;
+using System.Linq;
 using Hypernex.Game.Audio;
+using Hypernex.Networking.Messages;
 using UnityEngine;
 
 namespace Hypernex.Tools.Debug
@@ -9,6 +11,8 @@ namespace Hypernex.Tools.Debug
     {
         private AudioSource AudioSource;
         public string driverName = "";
+        [Range(0f, 1f)]
+        public float jitterPercent = 0f;
 
         private void OnClip(float[] pcm, AudioClip clip, bool isEmpty)
         {
@@ -22,9 +26,16 @@ namespace Hypernex.Tools.Debug
                 var msgs = driver.Encode(pcm, clip, default);
                 foreach (var msg in msgs)
                 {
-                    driver.Decode(msg, AudioSource);
+                    StartCoroutine(PlayLate(Random.value * jitterPercent, driver, msg));
+                    // driver.Decode(msg, AudioSource);
                 }
             }
+        }
+
+        private IEnumerator PlayLate(float delay, IAudioCodec driver, PlayerVoice voice)
+        {
+            yield return new WaitForSeconds(delay);
+            driver.Decode(voice, AudioSource);
         }
 
         private void Update()
