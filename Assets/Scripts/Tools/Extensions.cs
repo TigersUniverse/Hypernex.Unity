@@ -4,6 +4,7 @@ using Hypernex.CCK.Unity;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Hypernex.Tools
 {
@@ -49,6 +50,20 @@ namespace Hypernex.Tools
             }
             found = default;
             return false;
+        }
+        
+        internal static void ClearChildren(this Transform t, bool immediate = false)
+        {
+            for (int i = 0; i < t.childCount; i++)
+            {
+                GameObject child = t.GetChild(i).gameObject;
+                if(!immediate)
+                {
+                    Object.Destroy(child);
+                    return;
+                }
+                Object.DestroyImmediate(child);
+            }
         }
 
         internal static RotationOffsetDriver GetOffsetRotator(this Transform t, Transform root) => new (t, root);

@@ -37,6 +37,7 @@ namespace Hypernex.Game
         private PlayerUpdate lastPlayerUpdate;
         private bool lastVR;
         private string lastVRIKjson;
+        private VRIKCalibrator.CalibrationData lastCalibrationData;
         private string CalibratedAvatarId;
         private string AvatarId;
         private SharedAvatarToken avatarFileToken;
@@ -325,8 +326,11 @@ namespace Hypernex.Game
                     if(lastPlayerUpdate.IsPlayerVR != lastVR || (lastVRIKjson != lastPlayerUpdate.VRIKJson && CalibratedAvatarId == AvatarId))
                         Avatar.DestroyIK(lastPlayerUpdate.IsPlayerVR);
                     if (!Avatar.Calibrated && !string.IsNullOrEmpty(lastPlayerUpdate.VRIKJson))
-                        Avatar.CalibrateVRIK(lastPlayerUpdate.IsFBT,
-                            JsonUtility.FromJson<VRIKCalibrator.CalibrationData>(lastPlayerUpdate.VRIKJson));
+                    {
+                        lastCalibrationData =
+                            JsonUtility.FromJson<VRIKCalibrator.CalibrationData>(lastPlayerUpdate.VRIKJson);
+                        Avatar.CalibrateVRIK(lastPlayerUpdate.IsFBT, lastCalibrationData);
+                    }
                     Avatar.Update();
                     Avatar.Update(lastPlayerUpdate.IsFBT);
                     if (Avatar.Calibrated)
@@ -433,8 +437,9 @@ namespace Hypernex.Game
         {
             foreach (KeyValuePair<int, NetworkedObject> keyValuePair in playerObjectUpdate.Objects)
             {
+                if(keyValuePair.Key == (int) CoreBone.Max) continue;
                 NetworkedObject networkedObject = keyValuePair.Value;
-                if (keyValuePair.Key > 6 && User != null)
+                if (keyValuePair.Key > (int) CoreBone.Max && User != null)
                 {
                     NetHandleCameraLife n = GetHandleCamera(keyValuePair.Key);
                     n.Ping();
@@ -444,7 +449,7 @@ namespace Hypernex.Game
                         networkedObject.Rotation.y, networkedObject.Rotation.z));
                     c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
                 }
-                if (keyValuePair.Key > 6) continue;
+                if (keyValuePair.Key > (int) CoreBone.Max) continue;
                 CoreBone coreBone = (CoreBone) keyValuePair.Key;
                 if (string.IsNullOrEmpty(networkedObject.ObjectLocation))
                     networkedObject.ObjectLocation = "";

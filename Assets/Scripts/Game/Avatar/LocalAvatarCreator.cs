@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Audio;
+using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
+using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -31,7 +33,7 @@ namespace Hypernex.Game.Avatar
         public bool IsCrouched { get; private set; }
         public bool IsCrawling { get; private set; }
 
-        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR)
+        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR, AvatarMeta avatarMeta)
         {
             a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Avatar>();
             Avatar = a;
@@ -103,6 +105,7 @@ namespace Hypernex.Game.Avatar
                 DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
                     bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
+            VRCFTParameters.UpdateParameters(avatarMeta, this);
         }
 
         private void SetupLipSyncLocalPlayer()
@@ -188,6 +191,8 @@ namespace Hypernex.Game.Avatar
             }
             if (vrik != null && vrik.solver.initiated && (!XRTracker.CanFBT || MainAnimator.avatar == null) && !Calibrated)
             {
+                LeftHandReference.ClearChildren(true);
+                RightHandReference.ClearChildren(true);
                 VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
                     cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
                 LocalPlayerSyncController.calibratedFBT = false;
@@ -220,6 +225,11 @@ namespace Hypernex.Game.Avatar
                             Transform[] newTs = FindClosestTrackers(body, leftFoot, rightFoot, ts);
                             if (newTs[0] != null && newTs[1] != null && newTs[2] != null)
                             {
+                                LeftHandReference.ClearChildren(true);
+                                RightHandReference.ClearChildren(true);
+                                newTs[0].ClearChildren(true);
+                                newTs[1].ClearChildren(true);
+                                newTs[2].ClearChildren(true);
                                 newTs[0].rotation = body.rotation;
                                 newTs[1].rotation = leftFoot.rotation;
                                 newTs[2].rotation = rightFoot.rotation;
@@ -241,12 +251,19 @@ namespace Hypernex.Game.Avatar
             else if (vrik != null && Calibrated)
             {
                 vrik.solver.locomotion.weight = isMoving || XRTracker.CanFBT ? 0f : 1f;
-                if (!XRTracker.CanFBT)
+                if (XRTracker.CanFBT)
+                {
+                    vrik.solver.spine.pelvisPositionWeight = 1f;
+                    vrik.solver.spine.pelvisRotationWeight = 1f;
+                }
+                else
                 {
                     float scale = LocalPlayer.Instance.transform.localScale.y;
                     float height = LocalPlayer.Instance.CharacterController.height;
                     vrik.solver.locomotion.footDistance = 0.1f * scale * height;
                     vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
+                    vrik.solver.spine.pelvisPositionWeight = 0;
+                    vrik.solver.spine.pelvisRotationWeight = 0;
                 }
                 MainAnimator.runtimeAnimatorController = animatorController;
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
@@ -483,7 +500,7 @@ namespace Hypernex.Game.Avatar
                 }
         }
 
-        internal void UpdateFace(Dictionary<string, float> weights)
+        internal void UpdateFace(Dictionary<string, (float, ICustomFaceExpression)> weights)
         {
             if (FaceTrackingDescriptor == null)
             {
@@ -491,7 +508,7 @@ namespace Hypernex.Game.Avatar
                     SetParameter(faceExpression, 0);
                 return;
             }
-            foreach (KeyValuePair<string,float> keyValuePair in weights)
+            foreach (KeyValuePair<string, (float, ICustomFaceExpression)> keyValuePair in weights)
             {
                 try
                 {
@@ -502,8 +519,8 @@ namespace Hypernex.Game.Avatar
                     if (blendshapeDescriptor != null && blendshapeDescriptor.SkinnedMeshRenderer != null)
                     {
                         SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
-                            blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value * 100);
-                        SetParameter(keyValuePair.Key, keyValuePair.Value);
+                            blendshapeDescriptor.BlendshapeIndex, keyValuePair.Value.Item1 * 100);
+                        SetParameter(keyValuePair.Key, keyValuePair.Value.Item1);
                     }
                     else
                         SetParameter(keyValuePair.Key, 0);
@@ -511,7 +528,16 @@ namespace Hypernex.Game.Avatar
                 catch (Exception)
                 {
                     // Was not a valid Enum, handle as Custom
-                    SetParameter(keyValuePair.Key, keyValuePair.Value);
+                    ICustomFaceExpression customFaceExpression = keyValuePair.Value.Item2;
+                    // This should NEVER happen, but if it does, we don't want to error
+                    if(customFaceExpression == null) continue;
+                    foreach (AnimatorControllerParameter animatorControllerParameter in Parameters)
+                    {
+                        // Check if the parameter name matches the expression name
+                        if(!customFaceExpression.IsMatch(animatorControllerParameter.name)) continue;
+                        // Set the parameter value
+                        SetParameter(keyValuePair.Key, keyValuePair.Value.Item1);
+                    }
                 }
             }
         }

@@ -22,7 +22,7 @@ namespace Hypernex.UI.Templates
             ApplyButton.onClick.AddListener(a.Invoke);
         }
 
-        public void Render(UnifiedMutation unifiedMutation, string n)
+        public void Render(MutationConfig unifiedMutation, string n)
         {
             MutationName.text = n;
             Name.text = unifiedMutation.Name;
@@ -31,9 +31,9 @@ namespace Hypernex.UI.Templates
             SmoothnessMult.text = unifiedMutation.SmoothnessMult.ToString(CultureInfo.InvariantCulture);
         }
 
-        public void CopyTo(ref UnifiedMutation unifiedMutation)
+        public void CopyTo(ref MutationConfig unifiedMutation)
         {
-            unifiedMutation.Name = string.IsNullOrEmpty(Name.text) ? null : Name.text;
+            unifiedMutation.Name = string.IsNullOrEmpty(Name.text) ? "" : Name.text;
             try{unifiedMutation.Ceil = Convert.ToSingle(Cecil.text);}catch(Exception){}
             try{unifiedMutation.Floor = Convert.ToSingle(Floor.text);}catch(Exception){}
             try{unifiedMutation.SmoothnessMult = Convert.ToSingle(SmoothnessMult.text);}catch(Exception){}

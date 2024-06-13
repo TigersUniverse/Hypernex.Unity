@@ -191,7 +191,7 @@ namespace Hypernex.UIActions
             DisplayMutations();
         }
 
-        private UnifiedMutationPanel CreateUnifiedMutationPanel(UnifiedMutation unifiedMutation, string n)
+        private UnifiedMutationPanel CreateUnifiedMutationPanel(MutationConfig unifiedMutation, string n)
         {
             GameObject panel = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("UnifiedMutationPanel").gameObject;
@@ -216,24 +216,24 @@ namespace Hypernex.UIActions
                 FaceConfig.Clear();
                 Mutations =
                     FaceTrackingManager.GetSettings<UnifiedMutationConfig>("Mutation");
-                UnifiedMutationPanel gazePanel = CreateUnifiedMutationPanel(Mutations.GazeMutations, "Gaze Mutations");
+                UnifiedMutationPanel gazePanel = CreateUnifiedMutationPanel(Mutations.GazeMutationsConfig, "Gaze Mutations");
                 gazePanel.AddAction(() =>
                 {
-                    gazePanel.CopyTo(ref Mutations.GazeMutations);
+                    gazePanel.CopyTo(ref Mutations.GazeMutationsConfig);
                     SaveMutations();
                 });
                 UnifiedMutationPanel openPanel =
-                    CreateUnifiedMutationPanel(Mutations.OpennessMutations, "Openness Mutations");
+                    CreateUnifiedMutationPanel(Mutations.OpennessMutationsConfig, "Openness Mutations");
                 openPanel.AddAction(() =>
                 {
-                    openPanel.CopyTo(ref Mutations.OpennessMutations);
+                    openPanel.CopyTo(ref Mutations.OpennessMutationsConfig);
                     SaveMutations();
                 });
                 UnifiedMutationPanel pupilPanel =
-                    CreateUnifiedMutationPanel(Mutations.PupilMutations, "Pupil Mutations");
+                    CreateUnifiedMutationPanel(Mutations.PupilMutationsConfig, "Pupil Mutations");
                 pupilPanel.AddAction(() =>
                 {
-                    pupilPanel.CopyTo(ref Mutations.PupilMutations);
+                    pupilPanel.CopyTo(ref Mutations.PupilMutationsConfig);
                     SaveMutations();
                 });
                 if (Mutations.ShapeMutations == null)

@@ -72,7 +72,11 @@ namespace Hypernex.UI.Templates
                 if (GameInstance.FocusedInstance != null)
                 {
                     InviteButton.gameObject.SetActive(GameInstance.FocusedInstance.CanInvite &&
-                                                      APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
+                                                      APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id) &&
+                                                      APIPlayer.APIUser.Bio.Status !=
+                                                      HypernexSharp.APIObjects.Status.DoNotDisturb &&
+                                                      APIPlayer.APIUser.Bio.Status !=
+                                                      HypernexSharp.APIObjects.Status.Offline);
                     RequestInviteButton.gameObject.SetActive(UserBeingViewed.isInWorld &&
                                                              APIPlayer.APIUser.Friends.Contains(UserBeingViewed.Id));
                     WarnButton.gameObject.SetActive(GameInstance.FocusedInstance.IsModerator);

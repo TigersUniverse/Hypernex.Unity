@@ -29,7 +29,7 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.05.2b";
+    public const string VERSION = "2024.05.3b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -159,7 +159,7 @@ public class Init : MonoBehaviour
                     userTheme.ApplyThemeToUI();
                 if(configUser.UseFacialTracking)
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        FaceTrackingManager.Init(targetStreamingPath)));
+                        FaceTrackingManager.Init(targetStreamingPath, user)));
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
         };

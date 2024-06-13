@@ -163,10 +163,28 @@ namespace Hypernex.Game.Networking
                     {
                         XRTrackerRole xrTrackerRole = tracker.TrackerRole;
                         if(xrTrackerRole == XRTrackerRole.Camera) continue;
-                        Transform vriktarget = tracker.transform.GetChild(0);
                         CoreBone? coreBone = TrackerRoleToCoreBone(xrTrackerRole);
                         if (coreBone == null) continue;
-                        coreTransforms.Add((int) coreBone.Value, vriktarget.GetNetworkTransform(localPlayer.transform));
+                        coreTransforms.Add((int) coreBone.Value, tracker.transform.GetNetworkTransform(localPlayer.transform));
+                        Transform vriktarget = localPlayer.avatar.GetTargetChild(tracker.transform);
+                        if(vriktarget != null)
+                        {
+                            CoreBone? targetBone = null;
+                            switch (coreBone.Value)
+                            {
+                                case CoreBone.Hip:
+                                    targetBone = CoreBone.HipTarget;
+                                    break;
+                                case CoreBone.LeftFoot:
+                                    targetBone = CoreBone.LeftFootTarget;
+                                    break;
+                                case CoreBone.RightFoot:
+                                    targetBone = CoreBone.RightFootTarget;
+                                    break;
+                            }
+                            if (targetBone.HasValue)
+                                coreTransforms.Add((int) targetBone, vriktarget.GetNetworkTransform(tracker.transform));
+                        }
                     }
                 }
             }

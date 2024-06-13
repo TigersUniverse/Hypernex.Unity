@@ -26,6 +26,26 @@ namespace Hypernex.Game.Avatar
         public FaceTrackingDescriptor FaceTrackingDescriptor { get; protected set; }
         public List<AnimatorPlayable> AnimatorPlayables => new (PlayableAnimators);
         public bool Calibrated { get; protected set; }
+
+        private List<AnimatorControllerParameter> _parameters;
+        public List<AnimatorControllerParameter> Parameters
+        {
+            get
+            {
+                if (_parameters == null)
+                {
+                    List<AnimatorControllerParameter> allParameters = new();
+                    foreach (AnimatorPlayable animatorPlayable in AnimatorPlayables)
+                    {
+                        List<AnimatorControllerParameter> playableParameters =
+                            GetAllParameters(animatorPlayable.AnimatorControllerPlayable);
+                        allParameters = allParameters.Concat(playableParameters).ToList();
+                    }
+                    _parameters = allParameters;
+                }
+                return _parameters;
+            }
+        }
         
         protected GameObject HeadAlign;
         internal GameObject VoiceAlign;
@@ -40,6 +60,9 @@ namespace Hypernex.Game.Avatar
         internal List<Sandbox> localAvatarSandboxes = new();
         protected VRIK vrik;
         internal RotationOffsetDriver headRotator;
+
+        protected readonly Vector3 PelvisTargetLocalPosition = new Vector3(-0.141f, -0.275f, 0.107f);
+        protected readonly Quaternion PelvisTargetLocalRotation = Quaternion.identity;
 
         protected void OnCreate(CCK.Unity.Avatar a, int layer)
         {
@@ -99,7 +122,7 @@ namespace Hypernex.Game.Avatar
         }
         
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
-        protected List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
+        private List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)
         {
             List<AnimatorControllerParameter> parameters = new();
             bool c = true;
@@ -542,6 +565,16 @@ namespace Hypernex.Game.Avatar
             TwistSolver leftSolver = new TwistSolver { transform = leftLowerArm, children = new []{leftHand} };
             TwistSolver rightSolver = new TwistSolver { transform = rightLowerArm, children = new []{rightHand} };
             twistRelaxer.twistSolvers = new[] { leftSolver, rightSolver };
+        }
+        
+        public Transform GetTargetChild(Transform tracker)
+        {
+            for (int i = 0; i < tracker.childCount; i++)
+            {
+                Transform t = tracker.GetChild(0);
+                if (t.gameObject.name.Contains("Target")) return t;
+            }
+            return null;
         }
         
         internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.FixedUpdate());
