@@ -23,24 +23,27 @@ namespace Hypernex.ExtendedTracking
             
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
-                switch (logLevel)
+                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
-                    case LogLevel.Information:
-                        Logger.CurrentLogger.Log(p + state);
-                        break;
-                    case LogLevel.Warning:
-                        Logger.CurrentLogger.Warn(p + state);
-                        break;
-                    case LogLevel.Error:
-                        Logger.CurrentLogger.Error(p + state);
-                        break;
-                    case LogLevel.Critical:
-                        Logger.CurrentLogger.Critical(new Exception(p, exception));
-                        break;
-                    default:
-                        Logger.CurrentLogger.Debug(p + state);
-                        break;
-                }
+                    switch (logLevel)
+                    {
+                        case LogLevel.Information:
+                            Logger.CurrentLogger.Log(p + state);
+                            break;
+                        case LogLevel.Warning:
+                            Logger.CurrentLogger.Warn(p + state);
+                            break;
+                        case LogLevel.Error:
+                            Logger.CurrentLogger.Error(p + state);
+                            break;
+                        case LogLevel.Critical:
+                            Logger.CurrentLogger.Critical(new Exception(p, exception));
+                            break;
+                        default:
+                            Logger.CurrentLogger.Debug(p + state);
+                            break;
+                    }
+                }));
             }
 
             public bool IsEnabled(LogLevel logLevel) => true;

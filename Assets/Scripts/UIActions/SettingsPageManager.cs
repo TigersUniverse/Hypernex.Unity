@@ -13,7 +13,10 @@ using Hypernex.UI.Templates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using VRCFaceTracking;
 using VRCFaceTracking.Core.Models;
+using VRCFaceTracking.Core.Params.Data;
+using Image = VRCFaceTracking.Core.Types.Image;
 
 namespace Hypernex.UIActions
 {
@@ -51,6 +54,10 @@ namespace Hypernex.UIActions
         public Toggle FaceTrackingToggle;
         public GameObject RestartPanel;
         public DynamicScroll FaceConfig;
+        public GameObject SelectedFaceConfig;
+        public GameObject Cameras;
+        public RawImage Eyes;
+        public RawImage Face;
 
         public GameObject ConsolePanel;
 
@@ -188,6 +195,7 @@ namespace Hypernex.UIActions
             AllPanels.ForEach(x => x.SetActive(false));
             FaceTrackingPanel.SetActive(true);
             lastVisiblePanel = OnFaceTrackingSettings;
+            HideAllFace();
             DisplayMutations();
         }
 
@@ -209,8 +217,15 @@ namespace Hypernex.UIActions
             ConfigManager.SaveConfigToFile();
         }
 
+        public void HideAllFace()
+        {
+            SelectedFaceConfig.SetActive(false);
+            Cameras.SetActive(false);
+        }
+
         public void DisplayMutations()
         {
+            SelectedFaceConfig.SetActive(true);
             try
             {
                 FaceConfig.Clear();
@@ -251,13 +266,24 @@ namespace Hypernex.UIActions
                 }
             }
             catch (Exception e){}
+            
         }
+
+        public void DisplayCameras() => Cameras.SetActive(true);
         
         public void OnConsoleSettings()
         {
             AllPanels.ForEach(x => x.SetActive(false));
             ConsolePanel.SetActive(true);
             lastVisiblePanel = OnConsoleSettings;
+        }
+
+        private void UpdateCameras()
+        {
+            if (!Cameras.activeSelf || !FaceTrackingPanel.activeSelf ||
+                LoginPageTopBarButton.VisiblePage.PageName != "Settings" || !FaceTrackingManager.HasInitialized) return;
+            // Update the face cameras
+            FaceTrackingManager.SetCameraTextures(ref Eyes, ref Face);
         }
 
         private void OnEnable()
@@ -372,6 +398,7 @@ namespace Hypernex.UIActions
         private void Update()
         {
             SelectedAudioLabel.text = "Selected Microphone: " + Mic.SelectedDevice;
+            UpdateCameras();
         }
     }
 }

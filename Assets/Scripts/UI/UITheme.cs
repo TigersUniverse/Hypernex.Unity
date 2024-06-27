@@ -45,6 +45,10 @@ namespace Hypernex.UI
         public Color SecondaryInputTextColor;
         public TMP_FontAsset SecondaryInputFont;
 
+        public Sprite InfoSprite;
+        public Sprite WarningSprite;
+        public Sprite ErrorSprite;
+
         public List<UIButtonTheme> ButtonThemes;
 
         public void ApplyThemeToUI()

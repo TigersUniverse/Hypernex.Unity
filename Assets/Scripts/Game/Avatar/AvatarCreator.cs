@@ -24,7 +24,7 @@ namespace Hypernex.Game.Avatar
         public CCK.Unity.Avatar Avatar { get; protected set; }
         public Animator MainAnimator { get; protected set; }
         public FaceTrackingDescriptor FaceTrackingDescriptor { get; protected set; }
-        public List<AnimatorPlayable> AnimatorPlayables => new (PlayableAnimators);
+        public List<AnimatorPlayable> AnimatorPlayables = new();
         public bool Calibrated { get; protected set; }
 
         private List<AnimatorControllerParameter> _parameters;
@@ -52,7 +52,6 @@ namespace Hypernex.Game.Avatar
 
         protected readonly RuntimeAnimatorController animatorController =
             Object.Instantiate(Init.Instance.DefaultAvatarAnimatorController);
-        private List<AnimatorPlayable> PlayableAnimators = new();
         private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
         protected List<OVRLipSyncContextMorphTarget> morphTargets = new();
         internal OVRLipSyncContext lipSyncContext;
@@ -109,7 +108,7 @@ namespace Hypernex.Game.Avatar
                 PlayableOutput playableOutput = AnimationPlayableOutput.Create(playableGraph,
                     customPlayableAnimator.AnimatorController.name, MainAnimator);
                 playableOutput.SetSourcePlayable(animatorControllerPlayable);
-                PlayableAnimators.Add(new AnimatorPlayable
+                AnimatorPlayables.Add(new AnimatorPlayable
                 {
                     CustomPlayableAnimator = customPlayableAnimator,
                     PlayableGraph = playableGraph,

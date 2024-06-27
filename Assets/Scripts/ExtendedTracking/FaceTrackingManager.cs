@@ -6,12 +6,17 @@ using Hypernex.CCK.Unity;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using Microsoft.Extensions.Logging;
+using UnityEngine;
+using UnityEngine.UI;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Contracts.Services;
 using VRCFaceTracking.Core.Library;
 using VRCFaceTracking.Core.Models;
 using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Services;
+using Image = VRCFaceTracking.Core.Types.Image;
+using Logger = Hypernex.CCK.Logger;
+using Utils = VRCFaceTracking.Core.Utils;
 
 namespace Hypernex.ExtendedTracking
 {
@@ -20,6 +25,7 @@ namespace Hypernex.ExtendedTracking
         public static bool HasInitialized { get; private set; }
         public static bool EyeTracking => libManager?.LoadedModulesMetadata.Count(x => x.UsingEye && x.Active) > 0;
         public static bool LipTracking => libManager?.LoadedModulesMetadata.Count(x => x.UsingExpression && x.Active) > 0;
+        public static Action<UnifiedTrackingData> OnTrackingUpdated = data => { };
 
         public static List<ICustomFaceExpression> CustomFaceExpressions = new();
         
@@ -37,8 +43,12 @@ namespace Hypernex.ExtendedTracking
         {
             if (HasInitialized)
                 return;
-            VRCFaceTracking.Core.Utils.PersistentDataDirectory = Path.Combine(persistentData, "VRCFaceTracking");
-            VRCFaceTracking.Core.Utils.CustomLibsDirectory = persistentData + "\\VRCFTModules";
+            Utils.PersistentDataDirectory = Path.Combine(persistentData, "VRCFaceTracking");
+            if (!Directory.Exists(Utils.PersistentDataDirectory))
+                Directory.CreateDirectory(Utils.PersistentDataDirectory);
+            Utils.CustomLibsDirectory = persistentData + "\\VRCFTModules";
+            if (!Directory.Exists(Utils.CustomLibsDirectory))
+                Directory.CreateDirectory(Utils.CustomLibsDirectory);
             settings = new FaceTrackingServices.FTSettings();
             loggerFactory = new FaceTrackingServices.FTLoggerFactory();
             dispatcher = new FaceTrackingServices.FTDispatcher();
@@ -52,6 +62,8 @@ namespace Hypernex.ExtendedTracking
             mainIntegrated = new MainIntegrated(loggerFactory, libManager, mutator);
             await mainIntegrated.InitializeAsync();
             CustomFaceExpressions.Clear();
+            UnifiedTracking.OnUnifiedDataUpdated +=
+                data => QuickInvoke.InvokeActionOnMainThread(OnTrackingUpdated, data);
             HasInitialized = true;
         }
 
@@ -92,6 +104,42 @@ namespace Hypernex.ExtendedTracking
                 weights.Add(x.Name, (x.GetWeight(UnifiedTracking.Data), x));
             });
             return weights;
+        }
+        
+        private static void CreateTextureFromImage(Image image, RawImage rawImage)
+        {
+            try
+            {
+                Texture2D texture2D;
+                try
+                {
+                    texture2D = (Texture2D) rawImage.texture;
+                }
+                catch (Exception)
+                {
+                    texture2D = null;
+                }
+                if(texture2D == null)
+                {
+                    texture2D ??= new Texture2D(image.ImageSize.x, image.ImageSize.y, TextureFormat.RGBA32, false);
+                    rawImage.texture = texture2D;
+                }
+                texture2D.LoadRawTextureData(image.ImageData);
+                texture2D.Apply(false);
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error("Failed to get image texture! " + e);
+            }
+        }
+
+        public static void SetCameraTextures(ref RawImage eyes, ref RawImage lips)
+        {
+            if (!HasInitialized) return;
+            if(UnifiedTracking.EyeImageData.SupportsImage)
+                CreateTextureFromImage(UnifiedTracking.EyeImageData, eyes);
+            if (UnifiedTracking.LipImageData.SupportsImage)
+                CreateTextureFromImage(UnifiedTracking.LipImageData, lips);
         }
 
         public static void Destroy()

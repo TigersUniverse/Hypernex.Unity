@@ -35,8 +35,6 @@ namespace Hypernex.UI.Templates
         public DynamicScroll Scroll;
         public GameObject ExecuteButton;
         public GameObject ServerButton;
-        public Sprite Warning;
-        public Sprite Error;
         public TMP_InputField ScriptText;
         public TMP_Dropdown ScriptLanguageDropdown;
         
@@ -52,14 +50,17 @@ namespace Hypernex.UI.Templates
             GameObject newG = Instantiate(g);
             RectTransform c = newG.GetComponent<RectTransform>();
             newG.transform.GetChild(1).GetComponent<TMP_Text>().text = text;
-            Image img = newG.transform.GetChild(0).GetComponent<Image>();
+            RawImage img = newG.transform.GetChild(0).GetComponent<RawImage>();
             switch (logLevel)
             {
                 case 1:
-                    img.sprite = Warning;
+                    img.texture = UITheme.SelectedTheme.WarningSprite.texture;
                     break;
                 case 2:
-                    img.sprite = Error;
+                    img.texture = UITheme.SelectedTheme.ErrorSprite.texture;
+                    break;
+                default:
+                    img.texture = UITheme.SelectedTheme.InfoSprite.texture;
                     break;
             }
             Scroll.AddItem(c);
