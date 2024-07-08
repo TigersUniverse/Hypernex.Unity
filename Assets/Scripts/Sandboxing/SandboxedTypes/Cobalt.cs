@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using CobaltSharp;
+using Hypernex.Configuration;
+using Hypernex.Game.Video;
 using Hypernex.Tools;
 using Nexbox;
 using UnityEngine;
@@ -30,6 +33,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                         foreach (PickerItem pickerItem in mediaResponse.picker)
                             options.Add(new CobaltOption(pickerItem, pickerItem.thumb ?? String.Empty));
                     }
+                    else if(mediaResponse.status == Status.Error)
+                        try
+                        {
+                            options.Add(new CobaltOption(new Uri(getMedia.url), getMedia.url));
+                        }catch(Exception){}
                     SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(callback), new CobaltOptions(options));
                 }));
             }).Start();
@@ -41,6 +49,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         private MediaResponse? mediaResponse;
         private PickerItem? pickerItem;
         private string thumbnail;
+        private Uri uri;
+        private string url;
 
         public CobaltOption() { throw new Exception("Cannot instantiate CobaltOption!"); }
 
@@ -56,11 +66,53 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             this.thumbnail = thumbnail;
         }
 
+        internal CobaltOption(Uri uri, string url)
+        {
+            this.uri = uri;
+            this.url = url;
+        }
+
         public void Download(object onDone)
         {
             string pathToCobalt = Path.Combine(Application.streamingAssetsPath, "Cobalt");
             if (!Directory.Exists(pathToCobalt))
                 Directory.CreateDirectory(pathToCobalt);
+            if (uri != null)
+            {
+                bool trusted = ConfigManager.LoadedConfig.UseTrustedURLs;
+                if(!trusted)
+                {
+                    foreach (Uri trustedUri in ConfigManager.LoadedConfig.TrustedURLs.Select(x => new Uri(x)))
+                    {
+                        if (uri.Host != trustedUri.Host) continue;
+                        trusted = true;
+                        break;
+                    }
+                }
+                if (!trusted)
+                {
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone), null)));
+                    return;
+                }
+                if (VideoPlayerManager.IsStream(uri))
+                {
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                            new CobaltDownload(url, true))));
+                }
+                else
+                {
+                    // TODO: Check URI ending to see if the extension is a valid one
+                    string fileName = DownloadTools.GetFileNameFromUrl(url) ?? DownloadTools.GetStringHash(url);
+                    string filePath = Path.Combine(pathToCobalt, fileName);
+                    DownloadTools.DownloadFile(url, filePath,
+                        downloadedFile => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                            SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                                new CobaltDownload(downloadedFile, false)))));
+                }
+                return;
+            }
             new Thread(() =>
             {
                 StreamResponse streamResponse;
@@ -90,7 +142,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 fs.Write(data, 0, data.Length);
                 fs.Dispose();
                 streamResponse.Dispose();
-                CobaltDownload cobaltDownload = new CobaltDownload(np);
+                CobaltDownload cobaltDownload = new CobaltDownload(np, false);
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                     SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone), cobaltDownload)));
             }).Start();
@@ -108,9 +160,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     public class CobaltDownload
     {
         internal string PathToFile;
+        internal bool isStream;
 
         public CobaltDownload() { throw new Exception("Cannot instantiate CobaltDownload!"); }
-        internal CobaltDownload(string ptf) => PathToFile = ptf;
+
+        internal CobaltDownload(string ptf, bool s)
+        {
+            PathToFile = ptf;
+            isStream = s;
+        }
     }
 
     public enum CobaltType

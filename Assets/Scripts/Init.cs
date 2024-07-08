@@ -23,13 +23,16 @@ using UnityEngine.Android;
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using UnityEngine.XR.Management;
+#if VLC
+using LibVLCSharp;
+#endif
 using Logger = Hypernex.CCK.Logger;
 using Material = UnityEngine.Material;
 using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.05.3b";
+    public const string VERSION = "2024.07.1b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -42,6 +45,7 @@ public class Init : MonoBehaviour
     public List<TMP_SpriteAsset> EmojiSprites = new ();
     public AudioMixerGroup VoiceGroup;
     public AudioMixerGroup WorldGroup;
+    public AudioMixerGroup AvatarGroup;
     public OverlayManager OverlayManager;
     public List<TMP_Text> VersionLabels = new();
     public CurrentAvatar ca;
@@ -50,6 +54,7 @@ public class Init : MonoBehaviour
     public CreateInstanceTemplate CreateInstanceTemplate;
     public float SmoothingFrames = 0.1f;
     public List<Object> BadgeRankAssets = new();
+    public bool NoVLC;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
 
@@ -70,6 +75,10 @@ public class Init : MonoBehaviour
         LocalPlayer.IsVR = false;
         LocalPlayer.StopVR();
     }
+
+#if VLC
+    private void Awake() => Core.Initialize(Application.dataPath);
+#endif
 
     private void Start()
     {
@@ -112,6 +121,7 @@ public class Init : MonoBehaviour
 #endif
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
+        NoVLC = args.Contains("--no-vlc");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;
@@ -126,6 +136,8 @@ public class Init : MonoBehaviour
                 targetStreamingPath = Application.streamingAssetsPath;
                 break;
         }
+        SecurityTools.AllowExtraTypes();
+        SecurityTools.ImplementRestrictions();
         kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
         RenderPipelineManager.beginCameraRendering += BeginRender_NoAvatar;
         AvatarNearClip.BeforeClip += BeginRender_Avatar;

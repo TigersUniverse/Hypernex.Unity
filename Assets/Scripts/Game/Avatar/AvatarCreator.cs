@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 using Object = UnityEngine.Object;
+using Security = Hypernex.CCK.Unity.Security;
 
 namespace Hypernex.Game.Avatar
 {
@@ -60,11 +61,11 @@ namespace Hypernex.Game.Avatar
         protected VRIK vrik;
         internal RotationOffsetDriver headRotator;
 
-        protected readonly Vector3 PelvisTargetLocalPosition = new Vector3(-0.141f, -0.275f, 0.107f);
-        protected readonly Quaternion PelvisTargetLocalRotation = Quaternion.identity;
-
-        protected void OnCreate(CCK.Unity.Avatar a, int layer)
+        protected void OnCreate(CCK.Unity.Avatar a, int layer, AllowedAvatarComponent allowedAvatarComponent)
         {
+            Security.RemoveOffendingItems(a, allowedAvatarComponent,
+                SecurityTools.AdditionalAllowedAvatarTypes.ToArray());
+            Security.ApplyComponentRestrictions(a);
             FaceTrackingDescriptor = a.gameObject.GetComponent<FaceTrackingDescriptor>();
             a.gameObject.AddComponent<AvatarBehaviour>();
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in a.gameObject

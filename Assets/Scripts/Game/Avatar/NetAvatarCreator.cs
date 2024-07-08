@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Configuration;
 using Hypernex.Game.Audio;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
@@ -28,7 +29,9 @@ namespace Hypernex.Game.Avatar
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, np.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
-            OnCreate(Avatar, 10);
+            OnCreate(Avatar, 10,
+                ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(np.UserId) ??
+                new AllowedAvatarComponent(false, false, false, false, false, false));
             VoiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);

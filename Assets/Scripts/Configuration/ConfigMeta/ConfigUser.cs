@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Hypernex.CCK.Unity;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Player;
 using Hypernex.Tools;
 
 namespace Hypernex.Configuration.ConfigMeta
@@ -25,7 +27,8 @@ namespace Hypernex.Configuration.ConfigMeta
         public string GestureType = "hypernex";
 
         public float VoicesBoost = 0f;
-        public float WorldAudioVolume = 1f;
+        public float WorldAudioVolume = 0f;
+        public float AvatarAudioVolume = 0f;
         public bool NoiseSuppression;
 
         public float VRPlayerHeight;
@@ -33,9 +36,18 @@ namespace Hypernex.Configuration.ConfigMeta
         public float SnapTurnAngle = 45f;
         public float SmoothTurnSpeed = 1f;
 
+        public AllowedAvatarComponent AnyoneAvatarComponents = new(true, true, true, true, true, true);
+        public AllowedAvatarComponent FriendsAvatarComponents = new(true, true, true, true, true, true);
+
         public Dictionary<string, float> UserVolumes = new();
 
         public float2 DefaultCameraDimensions = new(1920, 1080);
+
+        public AllowedAvatarComponent GetAllowedAvatarComponents(string userId)
+        {
+            if (APIPlayer.APIUser.Friends.Contains(userId)) return FriendsAvatarComponents;
+            return AnyoneAvatarComponents;
+        }
 
         public void Clone(ConfigUser c)
         {

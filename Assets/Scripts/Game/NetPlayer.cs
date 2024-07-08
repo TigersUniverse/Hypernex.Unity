@@ -146,10 +146,15 @@ namespace Hypernex.Game
                             return;
                         Avatar?.Dispose();
                         Avatar = new NetAvatarCreator(this, a, lastPlayerUpdate.IsPlayerVR);
-                        foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
-                            Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
-                        foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                            Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                        if ((ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(UserId) ??
+                             new AllowedAvatarComponent()).Scripting)
+                        {
+                            foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
+                                Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
+                                    a.gameObject));
+                            foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
+                                Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                        }
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
                                 new Vector3(0, transform.localScale.y + 0.9f, 0),

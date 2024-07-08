@@ -20,6 +20,9 @@ namespace Hypernex.Configuration
 
         [TomlProperty("SavedAccounts")]
         public List<ConfigUser> SavedAccounts { get; set; } = new();
+
+        [TomlProperty("UseTrustedURLs")]
+        public bool UseTrustedURLs { get; set; } = true;
         
         [TomlProperty("TrustedURLs")]
         public List<string> TrustedURLs { get; set; } = new()

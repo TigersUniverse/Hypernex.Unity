@@ -115,13 +115,14 @@ namespace Hypernex.Game.Avatar
             if (fingerCurler.IsCurled(thumb) && fingerCurler.IsCurled(ring) && fingerCurler.IsCurled(little) &&
                 !fingerCurler.IsCurled(index) && !fingerCurler.IsCurled(middle))
                 return gestureIdentifier.Peace;
+            // 2 or 3
+            if (fingerCurler.IsCurled(middle) && fingerCurler.IsCurled(ring) && !fingerCurler.IsCurled(index) &&
+                !fingerCurler.IsCurled(little))
+                return gestureIdentifier.RockAndRoll;
             // 2
             if (fingerCurler.IsCurled(thumb) && fingerCurler.IsCurled(index) && !fingerCurler.IsCurled(middle) &&
                 !fingerCurler.IsCurled(ring) && !fingerCurler.IsCurled(little))
                 return gestureIdentifier.OkHand;
-            if (fingerCurler.IsCurled(middle) && fingerCurler.IsCurled(ring) && !fingerCurler.IsCurled(thumb) &&
-                !fingerCurler.IsCurled(index) && !fingerCurler.IsCurled(little))
-                return gestureIdentifier.RockAndRoll;
             // 0
             if (!fingerCurler.IsCurled(thumb) && !fingerCurler.IsCurled(index) && !fingerCurler.IsCurled(middle) &&
                 !fingerCurler.IsCurled(ring) && !fingerCurler.IsCurled(little))

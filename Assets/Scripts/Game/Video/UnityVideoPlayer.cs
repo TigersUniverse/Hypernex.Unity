@@ -19,8 +19,14 @@ namespace Hypernex.Game.Video
             if (videoPlayer == null)
                 videoPlayer = attachedObject.AddComponent<VideoPlayer>();
             videoPlayer.source = VideoSource.Url;
-            audioSource = attachedObject.GetComponent<AudioSource>();
+            audioSource = descriptor.AudioOutput;
+            if (audioSource == null) audioSource = attachedObject.GetComponent<AudioSource>();
+            if (audioSource == null) audioSource = attachedObject.AddComponent<AudioSource>();
+            descriptor.AudioOutput = audioSource;
+            audioSource.outputAudioMixerGroup = Init.Instance.WorldGroup;
+            audioSource.spatialize = true;
             videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
+            videoPlayer.SetTargetAudioSource(0, audioSource);
             // Create the RenderTexture
             renderTexture = new RenderTexture(1920, 1080, 16);
             renderTexture.useDynamicScale = false;
@@ -35,15 +41,16 @@ namespace Hypernex.Game.Video
                     descriptor.ShaderEmissionProperty = "_EmissionMap";
                 }
                 renderer.material.mainTexture = renderTexture;
-                renderer.material.SetTexture(descriptor.ShaderEmissionProperty, renderTexture);
+                if(descriptor.IsEmissive)
+                    renderer.material.SetTexture(descriptor.ShaderEmissionProperty, renderTexture);
             }
             videoPlayer.SetTargetAudioSource(0, descriptor.AudioOutput);
             descriptor.CurrentVideoPlayer = this;
         }
         
-        public bool CanBeUsed() => true;
+        public static bool CanBeUsed() => true;
 
-        public bool CanBeUsed(Uri source)
+        public static bool CanBeUsed(Uri source)
         {
             if (source.Scheme != "file") return false;
             // TODO: Check to see if file is in compatible format

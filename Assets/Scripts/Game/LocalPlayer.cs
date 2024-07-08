@@ -62,8 +62,6 @@ namespace Hypernex.Game
                 mic = value;
             }
         }
-        
-        public DontDestroyMe DontDestroyMe { get; private set; }
 
         //private Dictionary<InputDevice, GameObject> WorldTrackers = new();
         //private List<InputDevice> trackers = new();
@@ -160,7 +158,6 @@ namespace Hypernex.Game
 
         public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {
-            DontDestroyMe.Register();
             AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(s);
             yield return new WaitUntil(() => asyncOperation.isDone);
             Scene currentScene = SceneManager.GetSceneByPath(s);
@@ -168,7 +165,6 @@ namespace Hypernex.Game
             if(onAsyncDone != null)
                 onAsyncDone.Invoke(currentScene);
             yield return new WaitUntil(() => currentScene.isLoaded);
-            DontDestroyMe.MoveToScene(currentScene);
             if(onDone != null)
                 onDone.Invoke(currentScene);
             LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
@@ -176,7 +172,6 @@ namespace Hypernex.Game
         
         public IEnumerator SafeSwitchScene(int i, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {
-            DontDestroyMe.Register();
             AsyncOperation asyncOperation = SceneManager.LoadSceneAsync(i);
             yield return new WaitUntil(() => asyncOperation.isDone);
             Scene currentScene = SceneManager.GetSceneByBuildIndex(i);
@@ -184,7 +179,6 @@ namespace Hypernex.Game
             if(onAsyncDone != null)
                 onAsyncDone.Invoke(currentScene);
             yield return new WaitUntil(() => currentScene.isLoaded);
-            DontDestroyMe.MoveToScene(currentScene);
             if(onDone != null)
                 onDone.Invoke(currentScene);
             LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
@@ -388,7 +382,6 @@ namespace Hypernex.Game
             }
             Instance = this;
             LocalPlayerSyncController = new LocalPlayerSyncController(this, i => lastCoroutine.Add(StartCoroutine(i)));
-            DontDestroyMe = gameObject.GetComponent<DontDestroyMe>();
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;

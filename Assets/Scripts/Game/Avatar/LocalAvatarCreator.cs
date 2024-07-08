@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
-using Hypernex.Game.Audio;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
@@ -28,6 +27,7 @@ namespace Hypernex.Game.Avatar
             pelvisRotationWeight = 0
         };
         private List<AvatarNearClip> avatarNearClips = new();
+        private readonly AllowedAvatarComponent allowedAvatarComponent = new(true, true, true, true, true, true);
         public FingerCalibration fingerCalibration;
 
         public bool IsCrouched { get; private set; }
@@ -40,7 +40,7 @@ namespace Hypernex.Game.Avatar
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
             MainAnimator.updateMode = AnimatorUpdateMode.Normal;
-            OnCreate(Avatar, 7);
+            OnCreate(Avatar, 7, allowedAvatarComponent);
             fingerCalibration = new FingerCalibration(this);
             HeadAlign = new GameObject("headalign_" + Guid.NewGuid());
             HeadAlign.transform.SetParent(a.ViewPosition.transform);

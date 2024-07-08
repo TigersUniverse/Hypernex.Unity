@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Networking;
@@ -16,16 +15,12 @@ using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
-using kTools.Mirrors;
 using Nexport;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
-using UnityEngine.Video;
-using UnityEngine.XR.Interaction.Toolkit.UI;
 using Object = UnityEngine.Object;
 using Physics = UnityEngine.Physics;
+using Security = Hypernex.CCK.Unity.Security;
 
 namespace Hypernex.Game
 {
@@ -361,103 +356,12 @@ namespace Hypernex.Game
         private void LoadScene(bool open, string s) => CoroutineRunner.Instance.Run(
             LocalPlayer.Instance.SafeSwitchScene(s, currentScene =>
             {
-                foreach (GameObject rootGameObject in currentScene.GetRootGameObjects())
+                Security.RemoveOffendingItems(currentScene, SecurityTools.AdditionalAllowedWorldTypes.ToArray());
+                Security.ApplyComponentRestrictions(currentScene);
+                try
                 {
-                    if (rootGameObject.GetComponent<LocalPlayer>() != null ||
-                        rootGameObject.GetComponent<NetPlayer>() != null) continue;
-                    Transform[] ts = rootGameObject.GetComponentsInChildren<Transform>(true);
-                    foreach (Transform transform in ts)
-                    {
-                        World w1 = transform.gameObject.GetComponent<World>();
-                        if (w1 != null)
-                            World = w1;
-                        Camera c1 = transform.gameObject.GetComponent<Camera>();
-                        if (c1 != null && c1.transform.parent != null &&
-                            c1.transform.parent.gameObject.GetComponent<Mirror>() == null)
-                        {
-                            c1.gameObject.tag = "Untagged";
-                            c1.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
-                        }
-                        Mirror mirror = transform.gameObject.GetComponent<Mirror>();
-                        if (mirror != null)
-                        {
-                            LayerMask mask = LayerMask.GetMask("Default", "Water", "AvatarClip", "ExtraCamera",
-                                "LocalPlayer", "MainCamera", "NetAvatar", "UI", "TransparentFX", "Ignore Raycast");
-                            mirror.layerMask = mask;
-                        }
-                        AudioListener a1 = transform.gameObject.GetComponent<AudioListener>();
-                        if (a1 != null)
-                            Object.Destroy(a1);
-                        Canvas c2 = transform.gameObject.GetComponent<Canvas>();
-                        if (c2 != null)
-                        {
-                            c2.worldCamera = LocalPlayer.Instance.Camera;
-                            if (c2.renderMode == RenderMode.WorldSpace)
-                            {
-                                TrackedDeviceGraphicRaycaster trackedDeviceGraphicRaycaster =
-                                    c2.gameObject.GetComponent<TrackedDeviceGraphicRaycaster>();
-                                if (trackedDeviceGraphicRaycaster == null)
-                                    c2.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-                                /*trackedDeviceGraphicRaycaster.checkFor3DOcclusion = true;
-                                trackedDeviceGraphicRaycaster.blockingMask = ~0;*/
-                            }
-                        }
-                        NetworkSyncDescriptor networkSyncDescriptor = transform.gameObject.GetComponent<NetworkSyncDescriptor>();
-                        if (networkSyncDescriptor != null)
-                        {
-                            NetworkSync networkSync = networkSyncDescriptor.gameObject.AddComponent<NetworkSync>();
-                            networkSync.InstanceHostOnly = networkSyncDescriptor.InstanceHostOnly;
-                            networkSync.CanSteal = networkSyncDescriptor.CanSteal;
-                            networkSync.AlwaysSync = networkSyncDescriptor.AlwaysSync;
-                            if(networkSyncDescriptor.InstanceHostOnly && isHost)
-                                networkSync.Claim();
-                        }
-                        GrabbableDescriptor grabbableDescriptor =
-                            transform.gameObject.GetComponent<GrabbableDescriptor>();
-                        if (grabbableDescriptor != null)
-                        {
-                            Grabbable grabbable = grabbableDescriptor.gameObject.AddComponent<Grabbable>();
-                            grabbable.ApplyVelocity = grabbableDescriptor.ApplyVelocity;
-                            grabbable.VelocityAmount = grabbableDescriptor.VelocityAmount;
-                            grabbable.VelocityThreshold = grabbableDescriptor.VelocityThreshold;
-                            grabbable.GrabByLaser = grabbableDescriptor.GrabByLaser;
-                            grabbable.LaserGrabDistance = grabbableDescriptor.LaserGrabDistance;
-                            grabbable.GrabDistance = grabbableDescriptor.GrabDistance;
-                            grabbable.GrabDistance = grabbableDescriptor.GrabDistance;
-                        }
-                        RespawnableDescriptor respawnableDescriptor =
-                            transform.gameObject.GetComponent<RespawnableDescriptor>();
-                        if (respawnableDescriptor != null)
-                        {
-                            Respawnable respawnable = respawnableDescriptor.gameObject.AddComponent<Respawnable>();
-                            respawnable.LowestPointRespawnThreshold = respawnableDescriptor.LowestPointRespawnThreshold;
-                        }
-                        EventSystem eventSystem = transform.gameObject.GetComponent<EventSystem>();
-                        if(eventSystem != null)
-                            Object.Destroy(eventSystem.gameObject);
-                        AudioSource[] audios = transform.gameObject.GetComponents<AudioSource>();
-                        foreach (AudioSource audioSource in audios)
-                        {
-                            Transform root = AnimationUtility.GetRootOfChild(audioSource.transform);
-                            if (root != null && (root.GetComponent<NetPlayer>() != null ||
-                                                 root.GetComponent<LocalPlayer>() != null))
-                                continue;
-                            audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
-                            audioSource.spatialize = true;
-                        }
-                        VideoPlayer[] videoPlayers = transform.gameObject.GetComponents<VideoPlayer>();
-                        foreach (VideoPlayer videoPlayer in videoPlayers)
-                        {
-                            AudioSource audioSource = videoPlayer.gameObject.GetComponent<AudioSource>();
-                            if (audioSource == null)
-                                audioSource = videoPlayer.gameObject.AddComponent<AudioSource>();
-                            audioSource.outputAudioMixerGroup = global::Init.Instance.WorldGroup;
-                            audioSource.spatialize = true;
-                            videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
-                            videoPlayer.SetTargetAudioSource(0, audioSource);
-                        }
-                    }
-                }
+                    World = Object.FindObjectsOfType<World>().First(x => x.gameObject.scene == currentScene);
+                } catch(Exception){}
                 if (World == null)
                     Dispose();
                 else

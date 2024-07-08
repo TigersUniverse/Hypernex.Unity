@@ -13,10 +13,7 @@ using Hypernex.UI.Templates;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using VRCFaceTracking;
 using VRCFaceTracking.Core.Models;
-using VRCFaceTracking.Core.Params.Data;
-using Image = VRCFaceTracking.Core.Types.Image;
 
 namespace Hypernex.UIActions
 {
@@ -35,6 +32,8 @@ namespace Hypernex.UIActions
         public TMP_Text VoicesBoostSliderValueText;
         public Slider WorldAudioSlider;
         public TMP_Text WorldAudioSliderValueText;
+        public Slider AvatarAudioSlider;
+        public TMP_Text AvatarAudioSliderValueText;
         public Toggle NoiseSuppressionToggle;
 
         public GameObject UserPanel;
@@ -42,6 +41,12 @@ namespace Hypernex.UIActions
         public TMP_Dropdown EmojiTypeSelection;
         public TMP_Dropdown AudioCompressionSelection;
         public TMP_Dropdown GestureSelection;
+
+        public GameObject SecurityPanel;
+        public List<ComponentToggleButton> ComponentToggleButtons = new();
+        public int SelectedSecurityType;
+        public Button AnyoneButton;
+        public Button FriendsButton;
 
         public GameObject VRPanel;
         public TMP_Text UseSnapTurnValue;
@@ -115,6 +120,9 @@ namespace Hypernex.UIActions
                 float waRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.WorldAudioVolume, 2);
                 WorldAudioSlider.value = waRounded;
                 WorldAudioSliderValueText.text = waRounded.ToString(CultureInfo.InvariantCulture) + " dB";
+                float aaRounded = (float) Math.Round(ConfigManager.SelectedConfigUser.AvatarAudioVolume, 2);
+                AvatarAudioSlider.value = aaRounded;
+                AvatarAudioSliderValueText.text = aaRounded.ToString(CultureInfo.InvariantCulture) + " dB";
                 NoiseSuppressionToggle.isOn = ConfigManager.SelectedConfigUser.NoiseSuppression;
                 AudioCompressionSelection.value = (int) ConfigManager.SelectedConfigUser.AudioCompression;
             }
@@ -157,6 +165,15 @@ namespace Hypernex.UIActions
             UserPanel.SetActive(true);
             lastVisiblePanel = OnUserSettings;
         }
+
+        public void OnSecuritySettings()
+        {
+            AllPanels.ForEach(x => x.SetActive(false));
+            SecurityPanel.SetActive(true);
+            lastVisiblePanel = OnSecuritySettings;
+        }
+
+        private void UpdateAllComponentButtons() => ComponentToggleButtons.ForEach(x => x.UpdateColors());
 
         public void OnVRSettings()
         {
@@ -358,12 +375,33 @@ namespace Hypernex.UIActions
                 ConfigManager.SelectedConfigUser.WorldAudioVolume = rounded;
                 WorldAudioSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture) + " dB";
             });
+            AvatarAudioSlider.onValueChanged.RemoveAllListeners();
+            AvatarAudioSlider.onValueChanged.AddListener(v =>
+            {
+                if(ConfigManager.SelectedConfigUser == null)
+                    return;
+                float rounded = (float) Math.Round(v, 2);
+                ConfigManager.SelectedConfigUser.AvatarAudioVolume = rounded;
+                AvatarAudioSliderValueText.text = rounded.ToString(CultureInfo.InvariantCulture) + " dB";
+            });
             NoiseSuppressionToggle.onValueChanged.RemoveAllListeners();
             NoiseSuppressionToggle.onValueChanged.AddListener(v =>
             {
                 if(ConfigManager.SelectedConfigUser == null)
                     return;
                 ConfigManager.SelectedConfigUser.NoiseSuppression = v;
+            });
+            AnyoneButton.onClick.RemoveAllListeners();
+            AnyoneButton.onClick.AddListener(() =>
+            {
+                SelectedSecurityType = 0;
+                UpdateAllComponentButtons();
+            });
+            FriendsButton.onClick.RemoveAllListeners();
+            FriendsButton.onClick.AddListener(() =>
+            {
+                SelectedSecurityType = 1;
+                UpdateAllComponentButtons();
             });
             SnapTurnDegreeSlider.onValueChanged.RemoveAllListeners();
             SnapTurnDegreeSlider.onValueChanged.AddListener(v =>

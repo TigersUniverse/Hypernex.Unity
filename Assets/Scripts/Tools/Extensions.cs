@@ -97,12 +97,13 @@ namespace Hypernex.Tools
         /// </summary>
         /// <param name="descriptor">The descriptor</param>
         /// <param name="videoPlayerType">The type of IVideoPlayer. Requires a one-parameter constructor (input VideoPlayerDescriptor)</param>
-        public static void Replace(this VideoPlayerDescriptor descriptor, Type videoPlayerType)
+        public static IVideoPlayer Replace(this VideoPlayerDescriptor descriptor, Type videoPlayerType)
         {
             if (descriptor.CurrentVideoPlayer != null)
                 descriptor.CurrentVideoPlayer.Dispose();
             IVideoPlayer videoPlayer = (IVideoPlayer) Activator.CreateInstance(videoPlayerType, new object[1]{descriptor});
             descriptor.CurrentVideoPlayer = videoPlayer;
+            return videoPlayer;
         }
     }
 }

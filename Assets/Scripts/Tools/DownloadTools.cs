@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using Hypernex.Configuration;
 using HypernexSharp.APIObjects;
@@ -46,6 +47,34 @@ namespace Hypernex.Tools
             Queue.Enqueue(meta);
             Logger.CurrentLogger.Debug("Added " + url + " to download queue!");
             Check();
+        }
+
+#nullable enable
+        public static string? GetFileNameFromUrl(string url)
+        {
+            try
+            {
+                WebRequest webRequest = WebRequest.Create(url);
+                webRequest.Method = "HEAD";
+                using WebResponse webResponse = webRequest.GetResponse();
+                string contentDispositionHeader = webResponse.Headers["Content-Disposition"];
+                if(string.IsNullOrEmpty(contentDispositionHeader)) return null;
+                const string FILE_NAME_MARKER = "filename=\"";
+                int fileNameBeginIndex = contentDispositionHeader.ToLower().IndexOf(FILE_NAME_MARKER);
+                return contentDispositionHeader.Substring(fileNameBeginIndex + FILE_NAME_MARKER.Length).Replace("\"", "");
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+#nullable restore
+
+        public static string GetStringHash(string s)
+        {
+            using MD5 md5 = MD5.Create();
+            byte[] hash = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         }
 
         private static string GetFileHash(string file)

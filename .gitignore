@@ -66,6 +66,11 @@ crashlytics-build.properties
 /[Aa]ssets/MagicaCloth2
 /[Aa]ssets/StreamingAssets
 
+# VLCUnity (kinda paid but not really)
+/[Aa]ssets/VLCUnity
+# For people testing the trial VLCUnity package
+logo.png
+
 # Publisher Specific
 /[Aa]ssets/Scripts/Game/BadgesRanks
 /[Aa]ssets/BadgeRankContent
