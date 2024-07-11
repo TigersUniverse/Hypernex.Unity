@@ -165,9 +165,9 @@ namespace Hypernex.Game
             if(onAsyncDone != null)
                 onAsyncDone.Invoke(currentScene);
             yield return new WaitUntil(() => currentScene.isLoaded);
+            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
             if(onDone != null)
                 onDone.Invoke(currentScene);
-            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
         }
         
         public IEnumerator SafeSwitchScene(int i, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
@@ -179,9 +179,9 @@ namespace Hypernex.Game
             if(onAsyncDone != null)
                 onAsyncDone.Invoke(currentScene);
             yield return new WaitUntil(() => currentScene.isLoaded);
+            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
             if(onDone != null)
                 onDone.Invoke(currentScene);
-            LowestPoint = AnimationUtility.GetLowestObject(currentScene).position;
         }
 
         // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
@@ -211,7 +211,7 @@ namespace Hypernex.Game
                     searchSpawn = SceneManager.GetActiveScene().GetRootGameObjects()
                         .FirstOrDefault(x => x.name.ToLower() == "spawn");
                 else
-                    searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "Spawn");
+                    searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "spawn");
                 if (searchSpawn != null)
                     spawnPosition = searchSpawn.transform.position;
             }

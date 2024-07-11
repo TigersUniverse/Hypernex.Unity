@@ -32,7 +32,7 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.07.1b";
+    public const string VERSION = "2024.07.2b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }

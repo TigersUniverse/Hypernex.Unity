@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using UnityEngine.EventSystems;
 using Object = UnityEngine.Object;
 using Security = Hypernex.CCK.Unity.Security;
 #if MAGICACLOTH2
@@ -81,6 +82,8 @@ namespace Hypernex.Tools
 
         public static void ImplementRestrictions()
         {
+            Security.RegisterForceDeleteObject<EventSystem>();
+            Security.RegisterForceDeleteObject<StandaloneInputModule>();
             Security.RegisterComponentRestriction<Camera>((component, _) =>
             {
                 Camera camera = (Camera) component;
