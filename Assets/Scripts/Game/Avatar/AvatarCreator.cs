@@ -120,6 +120,24 @@ namespace Hypernex.Game.Avatar
                 playableGraph.Play();
             }
         }
+
+        private Bounds GetAvatarBounds()
+        {
+            Bounds bounds = new Bounds(MainAnimator.transform.localPosition, Vector3.zero);
+            foreach (Renderer renderer in MainAnimator.GetComponentsInChildren<Renderer>())
+                bounds.Encapsulate(renderer.bounds);
+            return bounds;
+        }
+
+        protected void AlignAvatar(bool isVR)
+        {
+            Bounds b = GetAvatarBounds();
+            float avatarBottom = b.min.y - MainAnimator.transform.localPosition.y;
+            float requiredOffset = -avatarBottom;
+            Vector3 pos = new Vector3(0, requiredOffset - (1.36144f / 2f), 0);
+            Avatar.transform.localPosition = isVR ? Vector3.zero : pos;
+            Avatar.transform.localRotation = Quaternion.identity;
+        }
         
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
         private List<AnimatorControllerParameter> GetAllParameters(AnimatorControllerPlayable animatorControllerPlayable)

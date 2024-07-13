@@ -62,11 +62,8 @@ namespace Hypernex.Game.Avatar
             if(head != null)
                 vrikSettings.headOffset = head.position - HeadAlign.transform.position;
             a.gameObject.name = "avatar";
-            a.transform.SetParent(localPlayer.transform);
-            if(isVR)
-                a.transform.SetLocalPositionAndRotation(new Vector3(0, 0, 0), new Quaternion(0, 0, 0, 0));
-            else
-                a.transform.SetLocalPositionAndRotation(new Vector3(0, -(a.transform.localScale.y * 0.75f), 0), new Quaternion(0, 0, 0, 0));
+            a.transform.SetParent(localPlayer.transform, true);
+            AlignAvatar(isVR);
             a.transform.localScale = Vector3.one;
             if (isVR)
             {

@@ -48,7 +48,7 @@ namespace Hypernex.Game.Avatar
                 np.nameplateTemplate.OnNewAvatar(this);
             a.transform.SetParent(np.transform);
             a.gameObject.name = "avatar";
-            SetAvatarPosition(isVR);
+            AlignAvatar(isVR);
             if (isVR)
                 StartVRIK(np);
             else
@@ -58,10 +58,6 @@ namespace Hypernex.Game.Avatar
             }
             SetupLipSyncNetPlayer();
         }
-
-        private void SetAvatarPosition(bool isVR) => Avatar.transform.SetLocalPositionAndRotation(
-            isVR ? new Vector3(0, 0, 0) : new Vector3(0, -(Avatar.transform.localScale.y * 0.75f), 0),
-            new Quaternion(0, 0, 0, 0));
         
         private void SetupLipSyncNetPlayer()
         {
@@ -170,14 +166,14 @@ namespace Hypernex.Game.Avatar
                 Object.DestroyImmediate(vrik);
             foreach (TwistRelaxer twistRelaxer in Avatar.gameObject.GetComponentsInChildren<TwistRelaxer>())
                 Object.DestroyImmediate(twistRelaxer);
-            SetAvatarPosition(false);
+            AlignAvatar(false);
             if(vr)
                 Calibrated = false;
         }
 
         private void StartVRIK(NetPlayer np)
         {
-            SetAvatarPosition(true);
+            AlignAvatar(true);
             vrik = Avatar.gameObject.AddComponent<VRIK>();
             Transform headReference = np.GetReferenceFromCoreBone(CoreBone.Head);
             Transform leftHandReference = np.GetReferenceFromCoreBone(CoreBone.LeftHand);

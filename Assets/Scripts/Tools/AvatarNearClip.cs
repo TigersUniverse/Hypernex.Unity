@@ -20,6 +20,8 @@ namespace Hypernex.Tools
         
         internal static List<AvatarNearClip> instances = new();
 
+        private static bool didInvokeClip;
+
         private SkinnedMeshRenderer skinnedMeshRenderer;
         private SkinnedMeshRenderer skinnedMeshRendererShadowClone;
         private Transform[] originalBones;
@@ -69,19 +71,19 @@ namespace Hypernex.Tools
                 Destroy(this);
                 return false;
             }
-            if (!originalBones.Contains(head))
+            // If the SkinnedMeshRenderer has no root bone, and it's a part of the Head, then it's stray
+            if (skinnedMeshRenderer.rootBone == null)
+                isStraySMR = AnimationUtility.IsChildOfTransform(skinnedMeshRenderer.transform, head);
+            // If the SkinnedMeshRenderer's root bone is a part of the Head, then it's also stray
+            else if (AnimationUtility.IsChildOfTransform(skinnedMeshRenderer.rootBone, head))
+                isStraySMR = true;
+            else if (!originalBones.Contains(head))
             {
                 if (skinnedMeshRenderer.rootBone != null &&
                     AnimationUtility.IsChildOfTransform(skinnedMeshRenderer.rootBone, head))
                 {
                     // This SkinnedMeshRenderer's rootBone is apart of the head
                     head = skinnedMeshRenderer.rootBone;
-                }
-                else
-                {
-                    // Suspect that this is a stray SkinnedMeshRenderer, we will treat it like a stray but also
-                    // sync blendshapes
-                    isStraySMR = true;
                 }
             }
             // Make sure our target renderCamera is set
@@ -160,7 +162,10 @@ namespace Hypernex.Tools
                 // Make sure we have the original bones
                 skinnedMeshRendererShadowClone.bones = originalBones;
                 // Make it a child of the skinnedMeshRenderer
-                skinnedMeshRendererShadowClone.transform.SetParent(skinnedMeshRenderer.transform, false);
+                skinnedMeshRendererShadowClone.transform.SetParent(skinnedMeshRenderer.transform);
+                skinnedMeshRendererShadowClone.transform.localRotation = new Quaternion(0,0,0,0);
+                skinnedMeshRendererShadowClone.transform.localPosition = Vector3.zero;
+                skinnedMeshRendererShadowClone.transform.localScale = Vector3.one;
                 // Enable ShadowsOnly for the Shadow Clone
                 skinnedMeshRendererShadowClone.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
                 // Disable Shadows for the SkinnedMeshRenderer
@@ -199,8 +204,12 @@ namespace Hypernex.Tools
         {
             if (c == r)
             {
-                if(instances.FirstOrDefault(x => x.skinnedMeshRenderer.enabled && x.gameObject.activeInHierarchy) == this)
+                if (instances.FirstOrDefault(x => x.skinnedMeshRenderer.enabled && x.gameObject.activeInHierarchy) ==
+                    this && !didInvokeClip)
+                {
                     BeforeClip.Invoke(context, c);
+                    didInvokeClip = true;
+                }
                 // If the Camera in this context is our renderCamera, then show the excludedBones
                 if (isStraySMR)
                     skinnedMeshRenderer.enabled = false;
@@ -220,6 +229,8 @@ namespace Hypernex.Tools
                 skinnedMeshRenderer.bones = originalBones;
             // Show the Renderers in the Avatar again
             strayRenderers.ForEach(x => x.enabled = true);
+            // Allow clip again
+            if (!isStraySMR) didInvokeClip = false;
         }
 
         private void Update()
