@@ -334,7 +334,7 @@ namespace Hypernex.Game
                     {
                         lastCalibrationData =
                             JsonUtility.FromJson<VRIKCalibrator.CalibrationData>(lastPlayerUpdate.VRIKJson);
-                        Avatar.CalibrateVRIK(lastPlayerUpdate.IsFBT, lastCalibrationData);
+                        Avatar.CalibrateNetAvatar(lastPlayerUpdate.IsFBT, lastCalibrationData);
                     }
                     Avatar.Update();
                     Avatar.Update(lastPlayerUpdate.IsFBT);

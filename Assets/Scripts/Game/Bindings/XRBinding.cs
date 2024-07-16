@@ -31,6 +31,17 @@ namespace Hypernex.Game.Bindings
 
         private HandGetter HandGetter;
 
+        public static GameObject GetControllerModel(Transform handReference)
+        {
+            for (int i = 0; i < handReference.childCount; i++)
+            {
+                Transform child = handReference.GetChild(i);
+                if(!child.name.ToLower().Contains("model")) continue;
+                return child.gameObject;
+            }
+            return null;
+        }
+
         public XRBinding(bool isLook, HandGetter handGetter)
         {
             IsLook = isLook;

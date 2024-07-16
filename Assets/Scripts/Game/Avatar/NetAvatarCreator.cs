@@ -196,7 +196,7 @@ namespace Hypernex.Game.Avatar
             }
         }
 
-        internal void CalibrateVRIK(bool fbt, VRIKCalibrator.CalibrationData calibrationData)
+        internal void CalibrateNetAvatar(bool fbt, VRIKCalibrator.CalibrationData calibrationData)
         {
             if (vrik == null)
                 StartVRIK(netPlayer);
@@ -210,11 +210,7 @@ namespace Hypernex.Game.Avatar
             Transform rightHandReference = netPlayer.GetReferenceFromCoreBone(CoreBone.RightHand);
             if (!fbt)
             {
-                VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference,
-                    rightHandReference);
-                vrik.solver.locomotion.stepThreshold = 0.01f;
-                vrik.solver.locomotion.angleThreshold = 20;
-                vrik.solver.plantFeet = false;
+                CalibrateVRIK(calibrationData, headReference, leftHandReference, rightHandReference);
                 SetupAnimators();
                 Calibrated = true;
                 return;
@@ -227,8 +223,8 @@ namespace Hypernex.Game.Avatar
                 body.ClearChildren(true);
                 leftFoot.ClearChildren(true);
                 rightFoot.ClearChildren(true);
-                VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference,
-                    rightHandReference, leftFoot, rightFoot);
+                CalibrateVRIK(calibrationData, headReference, body, leftHandReference, rightHandReference, leftFoot,
+                    rightFoot);
                 SetupAnimators();
                 Calibrated = true;
             }
@@ -242,21 +238,7 @@ namespace Hypernex.Game.Avatar
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (vrik != null && Calibrated)
             {
-                if(fbt)
-                {
-                    vrik.solver.spine.pelvisPositionWeight = 1f;
-                    vrik.solver.spine.pelvisRotationWeight = 1f;
-                }
-                else
-                {
-                    float scale = LocalPlayer.Instance.transform.localScale.y;
-                    float height = LocalPlayer.Instance.CharacterController.height;
-                    vrik.solver.locomotion.footDistance = 0.1f * scale * height;
-                    vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
-                    vrik.solver.spine.pelvisPositionWeight = 0;
-                    vrik.solver.spine.pelvisRotationWeight = 0;
-                }
-                vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
+                UpdateVRIK(fbt, isMoving, netPlayer.transform.localScale.y);
                 if(MainAnimator.runtimeAnimatorController == null)
                     MainAnimator.runtimeAnimatorController = animatorController;
             }

@@ -63,9 +63,6 @@ namespace Hypernex.Game
             }
         }
 
-        //private Dictionary<InputDevice, GameObject> WorldTrackers = new();
-        //private List<InputDevice> trackers = new();
-
         private float _walkSpeed = 5f;
         public float WalkSpeed
         {
@@ -575,6 +572,7 @@ namespace Hypernex.Game
         private float s_;
         private bool isRunning;
         private bool groundedPlayer;
+        private bool CanRun => (!avatar?.IsCrawling ?? true) && (!avatar?.IsCrouched ?? true);
 
         private (Vector3, bool, bool, Vector2)? HandleLeftBinding(IBinding binding, bool vr)
         {
@@ -587,8 +585,11 @@ namespace Hypernex.Game
                 move = transform.forward * (binding.Up + binding.Down * -1) +
                        transform.right * (binding.Left * -1 + binding.Right);
             move = Vector3.ClampMagnitude(move, 1);
-            isRunning = binding.Button2 && (!avatar?.IsCrawling ?? true) && (!avatar?.IsCrouched ?? true);
-            s_ = isRunning ? RunSpeed : WalkSpeed;
+            if(!vr)
+            {
+                isRunning = binding.Button2 && CanRun;
+                s_ = isRunning ? RunSpeed : WalkSpeed;
+            }
             if (GameInstance.FocusedInstance != null)
                 if(GameInstance.FocusedInstance.World != null)
                     if (!GameInstance.FocusedInstance.World.AllowRunning)
@@ -598,7 +599,7 @@ namespace Hypernex.Game
                 new(binding.Right - binding.Left, binding.Up - binding.Down));
         }
 
-        private (Vector3, bool, bool)? HandleRightBinding(IBinding binding)
+        private (Vector3, bool, bool)? HandleRightBinding(IBinding binding, bool vr)
         {
             if (!LockCamera && binding.Id == "Mouse" && !IsVR)
             {
@@ -610,11 +611,12 @@ namespace Hypernex.Game
             }
             if (!LockCamera)
             {
+                const float NEEDED_TURN = 0.8f;
                 // Right-Hand
                 if (ConfigManager.SelectedConfigUser != null && ConfigManager.SelectedConfigUser.UseSnapTurn)
                 {
                     float amountTurn = binding.Left * -1 + binding.Right;
-                    if (!didSnapTurn && (amountTurn > 0.1f || amountTurn < -0.1f))
+                    if (!didSnapTurn && (amountTurn > NEEDED_TURN || amountTurn < -NEEDED_TURN))
                     {
                         float val = 1f;
                         if (amountTurn < 0)
@@ -625,7 +627,7 @@ namespace Hypernex.Game
                         transform.Rotate(0, turnDegree * val, 0);
                         didSnapTurn = true;
                     }
-                    else if (didSnapTurn && (amountTurn < 0.1f && amountTurn > -0.1f))
+                    else if (didSnapTurn && (amountTurn < NEEDED_TURN && amountTurn > -NEEDED_TURN))
                         didSnapTurn = false;
                 }
                 else
@@ -633,7 +635,12 @@ namespace Hypernex.Game
                     float turnSpeed = 1;
                     if (ConfigManager.SelectedConfigUser != null)
                         turnSpeed = ConfigManager.SelectedConfigUser.SmoothTurnSpeed;
-                    transform.Rotate(0, (binding.Left * -1 + binding.Right) * turnSpeed, 0);
+                    transform.Rotate(0, (binding.Left * -1 + binding.Right) * Time.deltaTime * 100 * turnSpeed, 0);
+                }
+                if(vr)
+                {
+                    isRunning = (binding.Up > NEEDED_TURN || binding.Down > NEEDED_TURN) && CanRun;
+                    s_ = isRunning ? RunSpeed : WalkSpeed;
                 }
                 if (LockMovement)
                     return null;
@@ -666,8 +673,9 @@ namespace Hypernex.Game
             XROrigin.enabled = vr;
             foreach (TrackedPoseDriver trackedPoseDriver in TrackedPoseDriver)
                 trackedPoseDriver.enabled = vr;
-            LeftHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
-            RightHandReference.GetChild(1).GetChild(0).gameObject.SetActive(vr && avatar == null);
+            XRBinding.GetControllerModel(LeftHandReference)?.SetActive(vr && avatar == null);
+            XRBinding.GetControllerModel(RightHandReference)?.SetActive(vr && avatar == null);
+            if (vr) XRRays.ForEach(x => x.lineWidth = 0.01f);
             foreach (XRInteractorLineVisual lineVisual in XRRays)
                 lineVisual.enabled = vr;
             CursorTools.ToggleMouseLock(vr || LockCamera);
@@ -699,7 +707,7 @@ namespace Hypernex.Game
                 }
                 else
                 {
-                    (Vector3, bool, bool)? r = HandleRightBinding(binding);
+                    (Vector3, bool, bool)? r = HandleRightBinding(binding, vr);
                     if (r != null)
                         right_m = r.Value;
                 }
@@ -739,7 +747,7 @@ namespace Hypernex.Game
                 avatar?.Jump(false);
             }
             bool isMoving = left_m?.Item3 ?? false;
-            if (!IsVR) DesktopFingerCurler.Update(ref LeftDesktopCurler, ref RightDesktopCurler, GestureIdentifier);
+            if (!vr) DesktopFingerCurler.Update(ref LeftDesktopCurler, ref RightDesktopCurler, GestureIdentifier);
             avatar?.Update(areTwoTriggersClicked(), FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
                 isMoving, this);
             // TODO: Non-Eye Tracking Eye Movement
@@ -753,6 +761,7 @@ namespace Hypernex.Game
                 Respawn(scene);
             if (Input.GetKeyDown(KeyCode.F5))
                 SwitchVR();
+            isRunning = false;
         }
 
         private void LateUpdate()

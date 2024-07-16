@@ -19,13 +19,6 @@ namespace Hypernex.Game.Avatar
 {
     public class LocalAvatarCreator : AvatarCreator
     {
-        private VRIKCalibrator.Settings vrikSettings = new()
-        {
-            scaleMlp = 0.9f,
-            handOffset = new Vector3(0, 0.01f, -0.1f),
-            pelvisPositionWeight = 0,
-            pelvisRotationWeight = 0
-        };
         private List<AvatarNearClip> avatarNearClips = new();
         private readonly AllowedAvatarComponent allowedAvatarComponent = new(true, true, true, true, true, true);
         public FingerCalibration fingerCalibration;
@@ -40,8 +33,6 @@ namespace Hypernex.Game.Avatar
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
             MainAnimator.updateMode = AnimatorUpdateMode.Normal;
-            OnCreate(Avatar, 7, allowedAvatarComponent);
-            fingerCalibration = new FingerCalibration(this);
             HeadAlign = new GameObject("headalign_" + Guid.NewGuid());
             HeadAlign.transform.SetParent(a.ViewPosition.transform);
             HeadAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -49,6 +40,8 @@ namespace Hypernex.Game.Avatar
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             audioSource = VoiceAlign.AddComponent<AudioSource>();
+            OnCreate(Avatar, 7, allowedAvatarComponent);
+            fingerCalibration = new FingerCalibration(this);
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in
                      a.transform.GetComponentsInChildren<SkinnedMeshRenderer>())
                 if (!skinnedMeshRenderer.name.Contains("shadowclone_"))
@@ -58,9 +51,6 @@ namespace Hypernex.Game.Avatar
                         avatarNearClips.Add(avatarNearClip);
                 }
             avatarNearClips.ForEach(x => x.CreateShadows());
-            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
-            if(head != null)
-                vrikSettings.headOffset = head.position - HeadAlign.transform.position;
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform, true);
             AlignAvatar(isVR);
@@ -190,13 +180,8 @@ namespace Hypernex.Game.Avatar
             {
                 LeftHandReference.ClearChildren(true);
                 RightHandReference.ClearChildren(true);
-                VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
-                    cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
                 LocalPlayerSyncController.calibratedFBT = false;
-                LocalPlayerSyncController.CalibrationData = JsonUtility.ToJson(calibrationData);
-                vrik.solver.locomotion.stepThreshold = 0.01f;
-                vrik.solver.locomotion.angleThreshold = 20;
-                vrik.solver.plantFeet = false;
+                LocalPlayerSyncController.CalibrationData = JsonUtility.ToJson(CalibrateVRIK(cameraTransform, LeftHandReference, RightHandReference));
                 SetupAnimators();
                 Calibrated = true;
             }
@@ -230,11 +215,10 @@ namespace Hypernex.Game.Avatar
                                 newTs[0].rotation = body.rotation;
                                 newTs[1].rotation = leftFoot.rotation;
                                 newTs[2].rotation = rightFoot.rotation;
-                                VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
-                                    cameraTransform, newTs[0], LeftHandReference.transform,
-                                    RightHandReference.transform, newTs[1], newTs[2]);
                                 LocalPlayerSyncController.calibratedFBT = true;
-                                LocalPlayerSyncController.CalibrationData = JsonUtility.ToJson(calibrationData);
+                                LocalPlayerSyncController.CalibrationData = JsonUtility.ToJson(
+                                    CalibrateVRIK(cameraTransform, newTs[0], LeftHandReference, RightHandReference,
+                                        newTs[1], newTs[2]));
                                 RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
                                     GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
                                     GetBoneFromHumanoid(HumanBodyBones.RightHand));
@@ -247,21 +231,7 @@ namespace Hypernex.Game.Avatar
             }
             else if (vrik != null && Calibrated)
             {
-                vrik.solver.locomotion.weight = isMoving || XRTracker.CanFBT ? 0f : 1f;
-                if (XRTracker.CanFBT)
-                {
-                    vrik.solver.spine.pelvisPositionWeight = 1f;
-                    vrik.solver.spine.pelvisRotationWeight = 1f;
-                }
-                else
-                {
-                    float scale = LocalPlayer.Instance.transform.localScale.y;
-                    float height = LocalPlayer.Instance.CharacterController.height;
-                    vrik.solver.locomotion.footDistance = 0.1f * scale * height;
-                    vrik.solver.locomotion.stepThreshold = 0.2f * scale * height;
-                    vrik.solver.spine.pelvisPositionWeight = 0;
-                    vrik.solver.spine.pelvisRotationWeight = 0;
-                }
+                UpdateVRIK(XRTracker.CanFBT, isMoving, LocalPlayer.Instance.transform.localScale.y);
                 MainAnimator.runtimeAnimatorController = animatorController;
                 MainAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }

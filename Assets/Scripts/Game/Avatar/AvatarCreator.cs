@@ -21,12 +21,20 @@ namespace Hypernex.Game.Avatar
         public const string BLENDSHAPE_ID = "blendshape";
         public const string MAIN_ANIMATOR = "*main";
         public const string ALL_ANIMATOR_LAYERS = "*all";
+        protected const float CHARACTER_HEIGHT = 1.36144f;
         
         public CCK.Unity.Avatar Avatar { get; protected set; }
         public Animator MainAnimator { get; protected set; }
         public FaceTrackingDescriptor FaceTrackingDescriptor { get; protected set; }
         public List<AnimatorPlayable> AnimatorPlayables = new();
         public bool Calibrated { get; protected set; }
+        
+        private VRIKCalibrator.Settings vrikSettings = new()
+        {
+            handOffset = new Vector3(0, 0.01f, -0.1f),
+            pelvisPositionWeight = 0f,
+            pelvisRotationWeight = 0f
+        };
 
         private List<AnimatorControllerParameter> _parameters;
         public List<AnimatorControllerParameter> Parameters
@@ -67,7 +75,6 @@ namespace Hypernex.Game.Avatar
                 SecurityTools.AdditionalAllowedAvatarTypes.ToArray());
             Security.ApplyComponentRestrictions(a);
             FaceTrackingDescriptor = a.gameObject.GetComponent<FaceTrackingDescriptor>();
-            a.gameObject.AddComponent<AvatarBehaviour>();
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in a.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
             {
@@ -87,6 +94,8 @@ namespace Hypernex.Game.Avatar
             Transform head = MainAnimator.GetBoneTransform(HumanBodyBones.Head);
             if(head == null) return;
             headRotator = new RotationOffsetDriver(head, a.transform);
+            vrikSettings.headOffset = head.position - HeadAlign.transform.position;
+            vrikSettings.scaleMlp = a.transform.localScale.y;
         }
 
         protected void DriveCamera(Transform cam)
@@ -134,9 +143,58 @@ namespace Hypernex.Game.Avatar
             Bounds b = GetAvatarBounds();
             float avatarBottom = b.min.y - MainAnimator.transform.localPosition.y;
             float requiredOffset = -avatarBottom;
-            Vector3 pos = new Vector3(0, requiredOffset - (1.36144f / 2f), 0);
+            Vector3 pos = new Vector3(0, requiredOffset - (CHARACTER_HEIGHT / 2f), 0);
             Avatar.transform.localPosition = isVR ? Vector3.zero : pos;
             Avatar.transform.localRotation = Quaternion.identity;
+        }
+
+        private void SetCalibrationMeta()
+        {
+            vrik.solver.locomotion.stepThreshold = 0.01f;
+            vrik.solver.locomotion.angleThreshold = 20;
+            vrik.solver.plantFeet = false;
+        }
+
+        protected VRIKCalibrator.CalibrationData CalibrateVRIK(Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
+        {
+            VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
+                cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
+            SetCalibrationMeta();
+            return calibrationData;
+        }
+
+        protected VRIKCalibrator.CalibrationData CalibrateVRIK(Transform cameraTransform, Transform bodyTracker,
+            Transform LeftHandReference, Transform RightHandReference, Transform leftFootTracker,
+            Transform rightFootTracker) => VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, bodyTracker,
+            LeftHandReference, RightHandReference, leftFootTracker, rightFootTracker);
+
+        protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference, Transform leftHandReference, Transform rightHandReference)
+        {
+            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference,
+                rightHandReference);
+            SetCalibrationMeta();
+        }
+
+        protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
+            Transform body, Transform leftHandReference, Transform rightHandReference, Transform leftFootTracker,
+            Transform rightFootTracker) => VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body,
+            leftHandReference, rightHandReference, leftFootTracker, rightFootTracker);
+
+        protected void UpdateVRIK(bool fbt, bool isMoving, float scale)
+        {
+            if(fbt)
+            {
+                vrik.solver.spine.pelvisPositionWeight = 1f;
+                vrik.solver.spine.pelvisRotationWeight = 1f;
+            }
+            else
+            {
+                vrik.solver.locomotion.footDistance = 0.1f * scale * CHARACTER_HEIGHT;
+                vrik.solver.locomotion.stepThreshold = 0.2f * scale * CHARACTER_HEIGHT;
+                vrik.solver.spine.pelvisPositionWeight = 0f;
+                vrik.solver.spine.pelvisRotationWeight = 0f;
+            }
+            vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
         }
         
         // Here's an idea Unity.. EXPOSE THE PARAMETERS??
@@ -621,19 +679,6 @@ namespace Hypernex.Game.Avatar
                 localAvatarSandbox.Dispose();
             }
             Object.Destroy(Avatar.gameObject);
-        }
-        
-        public class AvatarBehaviour : MonoBehaviour
-        {
-            private void OnFootstep(AnimationEvent animationEvent)
-            {
-            
-            }
-
-            private void OnLand(AnimationEvent animationEvent)
-            {
-            
-            }
         }
     }
 }
