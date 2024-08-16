@@ -5,9 +5,10 @@ using System.Linq;
 using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
+using Hypernex.Databasing;
+using Hypernex.Databasing.Objects;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
-using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Networking.Messages.Data;
@@ -22,7 +23,6 @@ using HypernexSharp.Socketing.SocketMessages;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game
 {
@@ -33,6 +33,7 @@ namespace Hypernex.Game
         private Scene scene;
         public User User;
         public NetAvatarCreator Avatar;
+        public PlayerOverrides PlayerOverrides;
 
         private PlayerUpdate lastPlayerUpdate;
         private bool lastVR;
@@ -54,11 +55,12 @@ namespace Hypernex.Game
         {
             get
             {
-                if (ConfigManager.SelectedConfigUser == null)
+                Database database = ConfigManager.GetDatabase();
+                if (database == null)
                     return 1.0f;
-                if (!ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserId))
+                if (PlayerOverrides == null)
                     return 1.0f;
-                return ConfigManager.SelectedConfigUser.UserVolumes[UserId];
+                return PlayerOverrides.Volume;
             }
         }
         private AudioClip voice;
@@ -145,7 +147,7 @@ namespace Hypernex.Game
                         if (a == null)
                             return;
                         Avatar?.Dispose();
-                        Avatar = new NetAvatarCreator(this, a, lastPlayerUpdate.IsPlayerVR);
+                        Avatar = new NetAvatarCreator(this, a, avatarMeta, lastPlayerUpdate.IsPlayerVR);
                         if ((ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(UserId) ??
                              new AllowedAvatarComponent()).Scripting)
                         {
@@ -174,7 +176,7 @@ namespace Hypernex.Game
                     if (a == null)
                         return;
                     Avatar?.Dispose();
-                    Avatar = new NetAvatarCreator(this, a, lastPlayerUpdate.IsPlayerVR);
+                    Avatar = new NetAvatarCreator(this, a, avatarMeta, lastPlayerUpdate.IsPlayerVR);
                     foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
                         Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
                     foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
@@ -363,7 +365,7 @@ namespace Hypernex.Game
             {
                 foreach (WeightedObjectContainer weightedObjectContainer in new List<WeightedObjectContainer>(
                              weightedObjectUpdates))
-                    Avatar?.HandleNetParameter(weightedObjectContainer.Weight);
+                    Avatar?.SetParameter(weightedObjectContainer.Weight);
             }
             Avatar?.LateUpdate();
             Avatar?.LateUpdate(GetReferenceFromCoreBone(CoreBone.Head));
@@ -375,6 +377,8 @@ namespace Hypernex.Game
             scene = gameInstance.loadedScene;
             instance = gameInstance;
             APIPlayer.APIObject.GetUser(OnUser, UserId, isUserId: true);
+            PlayerOverrides = ConfigManager.GetDatabase().Get<PlayerOverrides>(PlayerOverrides.TABLE, userid);
+            PlayerOverrides ??= ConfigManager.GetDatabase().Insert(PlayerOverrides.TABLE, new PlayerOverrides(userid));
         }
 
         public void VoiceUpdate(PlayerVoice playerVoice)

@@ -8,6 +8,8 @@ using Hypernex.Game.Audio;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
+using Hypernex.UIActions;
+using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,23 +17,23 @@ using Object = UnityEngine.Object;
 
 namespace Hypernex.Game.Avatar
 {
-    public class NetAvatarCreator : AvatarCreator
+    public sealed class NetAvatarCreator : AvatarCreator
     {
         private NetPlayer netPlayer;
 
-        private Dictionary<string, Transform> cachedTransforms = new();
-        private Dictionary<Transform, SkinnedMeshRenderer> cachedSkinnedMeshRenderers = new();
-
-        public NetAvatarCreator(NetPlayer np, CCK.Unity.Avatar a, bool isVR)
+        public NetAvatarCreator(NetPlayer np, CCK.Unity.Avatar a, AvatarMeta avatarMeta, bool isVR)
         {
             netPlayer = np;
             a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Avatar>();
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, np.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
+            HeadAlign = new GameObject("headalign_" + Guid.NewGuid());
+            HeadAlign.transform.SetParent(a.ViewPosition.transform);
+            HeadAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             OnCreate(Avatar, 10,
                 ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(np.UserId) ??
-                new AllowedAvatarComponent(false, false, false, false, false, false));
+                new AllowedAvatarComponent(false, false, false, false, false, false), avatarMeta);
             VoiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
@@ -75,87 +77,6 @@ namespace Hypernex.Game.Avatar
                 SetVisemeAsBlendshape(ref morphTarget, avatarVisemeRenderer.Key, avatarVisemeRenderer.Value);
             }
         }
-        
-        internal void HandleNetParameter(WeightedObjectUpdate weight)
-        {
-            switch (weight.TypeOfWeight.ToLower())
-            {
-                case PARAMETER_ID:
-                {
-                    string parameterName = weight.WeightIndex;
-                    if (weight.PathToWeightContainer == MAIN_ANIMATOR)
-                    {
-                        if(MainAnimator == null || MainAnimator.runtimeAnimatorController == null) break;
-                        try
-                        {
-                            AnimatorControllerParameter parameter =
-                                MainAnimator.parameters.First(x => x.name == weight.WeightIndex);
-                            switch (parameter.type)
-                            {
-                                case AnimatorControllerParameterType.Bool:
-                                    MainAnimator.SetBool(parameter.name, Math.Abs(weight.Weight - 1.00f) < 0.01);
-                                    break;
-                                case AnimatorControllerParameterType.Int:
-                                    MainAnimator.SetInteger(parameter.name, (int) weight.Weight);
-                                    break;
-                                case AnimatorControllerParameterType.Float:
-                                    MainAnimator.SetFloat(parameter.name, weight.Weight);
-                                    break;
-                            }
-                        } catch(Exception){}
-                        break;
-                    }
-                    foreach (AnimatorPlayable playableAnimator in AnimatorPlayables)
-                    {
-                        if (playableAnimator.CustomPlayableAnimator.AnimatorController.name !=
-                            weight.PathToWeightContainer && weight.PathToWeightContainer != ALL_ANIMATOR_LAYERS) continue;
-                        try
-                        {
-                            AnimatorControllerParameter parameter = GetParameterByName(parameterName, playableAnimator);
-                            if (parameter != null)
-                            {
-                                switch (parameter.type)
-                                {
-                                    case AnimatorControllerParameterType.Bool:
-                                        playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
-                                            Math.Abs(weight.Weight - 1.00f) < 0.01);
-                                        break;
-                                    case AnimatorControllerParameterType.Int:
-                                        playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
-                                            (int) weight.Weight);
-                                        break;
-                                    case AnimatorControllerParameterType.Float:
-                                        playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
-                                            weight.Weight);
-                                        break;
-                                }
-                            }
-                        } catch(Exception){}
-                    }
-                    break;
-                }
-                case BLENDSHAPE_ID:
-                {
-                    try
-                    {
-                        if(!cachedTransforms.TryGetValue(weight.PathToWeightContainer, out Transform t))
-                        {
-                            t = Avatar.transform.parent.Find(weight.PathToWeightContainer);
-                            if(t == null) break;
-                            cachedTransforms.Add(weight.PathToWeightContainer, t);
-                        }
-                        if(!cachedSkinnedMeshRenderers.TryGetValue(t, out SkinnedMeshRenderer s))
-                        {
-                            s = t.gameObject.GetComponent<SkinnedMeshRenderer>();
-                            if (s == null) break;
-                            cachedSkinnedMeshRenderers.Add(t, s);
-                        }
-                        s.SetBlendShapeWeight(Convert.ToInt32(weight.WeightIndex), weight.Weight);
-                    } catch(Exception){}
-                    break;
-                }
-            }
-        }
 
         internal void DestroyIK(bool vr)
         {
@@ -174,7 +95,7 @@ namespace Hypernex.Game.Avatar
         private void StartVRIK(NetPlayer np)
         {
             AlignAvatar(true);
-            vrik = Avatar.gameObject.AddComponent<VRIK>();
+            vrik = AddVRIK(Avatar.gameObject);
             Transform headReference = np.GetReferenceFromCoreBone(CoreBone.Head);
             Transform leftHandReference = np.GetReferenceFromCoreBone(CoreBone.LeftHand);
             Transform rightHandReference = np.GetReferenceFromCoreBone(CoreBone.RightHand);
@@ -260,13 +181,6 @@ namespace Hypernex.Game.Avatar
         {
             if(MainAnimator.GetBool("Crawling")) return;
             DriveCamera(referenceHead);
-        }
-
-        public override void Dispose()
-        {
-            cachedTransforms.Clear();
-            cachedSkinnedMeshRenderers.Clear();
-            base.Dispose();
         }
     }
 }

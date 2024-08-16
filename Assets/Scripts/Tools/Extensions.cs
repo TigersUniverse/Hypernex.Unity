@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Tools
@@ -104,6 +106,17 @@ namespace Hypernex.Tools
             IVideoPlayer videoPlayer = (IVideoPlayer) Activator.CreateInstance(videoPlayerType, new object[1]{descriptor});
             descriptor.CurrentVideoPlayer = videoPlayer;
             return videoPlayer;
+        }
+
+        public static void SelectVolume(this Volume[] volumes)
+        {
+            if(volumes == null) return;
+            VolumeManager.instance.SetCustomDefaultProfiles(volumes.Where(x =>
+            {
+                GameObject gameObject = x.gameObject;
+                if (gameObject == null) return false;
+                return gameObject.activeSelf && x.enabled;
+            }).Select(x => x.profile).ToList());
         }
     }
 }

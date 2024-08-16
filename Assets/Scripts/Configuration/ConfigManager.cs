@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Hypernex.Configuration.ConfigMeta;
+using Hypernex.Databasing;
 using Tomlet;
 using Tomlet.Models;
 using UnityEngine;
@@ -18,6 +19,8 @@ namespace Hypernex.Configuration
 
         public static Action<Config> OnConfigSaved = config => { };
         public static Action<Config> OnConfigLoaded = config => { };
+
+        private static Database userDatabase;
 
         public void Start()
         {
@@ -51,6 +54,26 @@ namespace Hypernex.Configuration
                 LoadedConfig = new Config();
                 OnConfigLoaded.Invoke(LoadedConfig);
                 SaveConfigToFile();
+            }
+        }
+
+        public static Database GetDatabase()
+        {
+            if (SelectedConfigUser == null) return null;
+            if (userDatabase != null && !userDatabase.IsSame(SelectedConfigUser))
+            {
+                userDatabase.Dispose();
+                userDatabase = null;
+            }
+            try
+            {
+                userDatabase ??= new Database(SelectedConfigUser);
+                return userDatabase;
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Error("Could not load database! " + e);
+                return null;
             }
         }
 

@@ -410,9 +410,14 @@ namespace Hypernex.Game
                 Transform reference = Camera.main.transform;
                 if (localPlayer != null && LocalPlayer.Instance.avatar != null)
                 {
-                    Transform h = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(HumanBodyBones.Chest);
-                    if (h != null)
-                        reference = h;
+                    Transform chest = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(HumanBodyBones.Chest);
+                    Transform head = LocalPlayer.Instance.avatar.GetBoneFromHumanoid(HumanBodyBones.Head);
+                    if (chest != null && head != null)
+                        reference = Vector3.Distance(transform.position, head.position) < 2 ? head : chest;
+                    else if (chest != null)
+                        reference = chest;
+                    else if (head != null)
+                        reference = head;
                 }
                 LinkedCamera.transform.LookAt(reference);
             }

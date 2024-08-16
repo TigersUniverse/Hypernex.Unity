@@ -17,6 +17,7 @@ using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
 using Nexport;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using Physics = UnityEngine.Physics;
@@ -27,7 +28,9 @@ namespace Hypernex.Game
     public class GameInstance
     {
         public static GameInstance FocusedInstance { get; internal set; }
-        public static Action<GameInstance, WorldMeta> OnGameInstanceLoaded { get; set; } = (instance, meta) => { };
+
+        public static Action<GameInstance, WorldMeta, Scene> OnGameInstanceLoaded { get; set; } =
+            (instance, meta, scene) => { };
 
         internal static void Init()
         {
@@ -120,6 +123,7 @@ namespace Hypernex.Game
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
         internal ScriptEvents ScriptEvents;
+        private Volume[] volumes;
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
         {
@@ -393,7 +397,9 @@ namespace Hypernex.Game
             }, currentScene =>
             {
                 LocalPlayer.Instance.Respawn();
-                OnGameInstanceLoaded.Invoke(this, worldMeta);
+                volumes = Object.FindObjectsOfType<Volume>(true).Where(x => x.gameObject.scene == currentScene)
+                    .ToArray();
+                OnGameInstanceLoaded.Invoke(this, worldMeta, currentScene);
             }));
 
         private void Load(bool open = true)
@@ -466,6 +472,7 @@ namespace Hypernex.Game
                     DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             }
             sandboxes.ForEach(x => x.Runtime.Update());
+            volumes.SelectVolume();
         }
         
         internal void LateUpdate() => sandboxes.ForEach(x => x.Runtime.LateUpdate());
@@ -482,6 +489,8 @@ namespace Hypernex.Game
             HandleCamera.DisposeAll();
             Close();
             DynamicGI.UpdateEnvironment();
+            Array.Empty<Volume>().SelectVolume();
+            VolumeManager.instance.SetGlobalDefaultProfile(global::Init.Instance.DefaultVolumeProfile);
         }
     }
 }

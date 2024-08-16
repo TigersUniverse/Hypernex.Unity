@@ -39,8 +39,6 @@ namespace Hypernex.Configuration.ConfigMeta
         public AllowedAvatarComponent AnyoneAvatarComponents = new(true, true, true, true, true, true);
         public AllowedAvatarComponent FriendsAvatarComponents = new(true, true, true, true, true, true);
 
-        public Dictionary<string, float> UserVolumes = new();
-
         public float2 DefaultCameraDimensions = new(1920, 1080);
 
         public AllowedAvatarComponent GetAllowedAvatarComponents(string userId)
@@ -61,8 +59,18 @@ namespace Hypernex.Configuration.ConfigMeta
             SavedWorlds = c.SavedWorlds;
             UseFacialTracking = c.UseFacialTracking;
             FacialTrackingSettings = c.FacialTrackingSettings;
+            Theme = c.Theme;
             EmojiType = c.EmojiType;
-            UserVolumes = c.UserVolumes;
+            AudioCompression = c.AudioCompression;
+            GestureType = c.GestureType;
+            VoicesBoost = c.VoicesBoost;
+            WorldAudioVolume = c.WorldAudioVolume;
+            AvatarAudioVolume = c.AvatarAudioVolume;
+            NoiseSuppression = c.NoiseSuppression;
+            VRPlayerHeight = c.VRPlayerHeight;
+            UseSnapTurn = c.UseSnapTurn;
+            SnapTurnAngle = c.SnapTurnAngle;
+            SmoothTurnSpeed = c.SmoothTurnSpeed;
         }
     }
 }

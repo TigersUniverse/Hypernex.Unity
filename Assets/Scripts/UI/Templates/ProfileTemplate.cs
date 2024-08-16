@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Configuration;
+using Hypernex.Databasing;
+using Hypernex.Databasing.Objects;
 using Hypernex.Game;
 using Hypernex.Player;
 using HypernexSharp.APIObjects;
@@ -102,11 +104,7 @@ namespace Hypernex.UI.Templates
                     AddModeratorButton.gameObject.SetActive(false);
                     RemoveModeratorButton.gameObject.SetActive(false);
                 }
-                if (ConfigManager.SelectedConfigUser != null &&
-                    ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(UserBeingViewed.Id))
-                    VolumeSlider.value = ConfigManager.SelectedConfigUser.UserVolumes[UserBeingViewed.Id];
-                else
-                    VolumeSlider.value = 1f;
+                VolumeSlider.value = GetUserVolume(UserBeingViewed);
                 ExtraRemovals.ForEach(x => x.SetActive(true));
             }
             else
@@ -228,17 +226,7 @@ namespace Hypernex.UI.Templates
                 AddModeratorButton.gameObject.SetActive(true);
                 RemoveModeratorButton.gameObject.SetActive(false);
             });
-            VolumeSlider.onValueChanged.AddListener(v =>
-            {
-                if(ConfigManager.SelectedConfigUser == null)
-                    return;
-                if (ConfigManager.SelectedConfigUser.UserVolumes.ContainsKey(lastUser.Id))
-                {
-                    ConfigManager.SelectedConfigUser.UserVolumes[lastUser.Id] = v;
-                    return;
-                }
-                ConfigManager.SelectedConfigUser.UserVolumes.Add(lastUser.Id, v);
-            });
+            VolumeSlider.onValueChanged.AddListener(v => SetUserVolume(UserBeingViewed, v));
         }
 
         private void DeregisterButtonEvents()
@@ -331,6 +319,54 @@ namespace Hypernex.UI.Templates
             if(!skipShow)
                 ProfilePage.Show();
             lastUser = user;
+        }
+
+        private float GetUserVolume(User targetUser)
+        {
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.ConnectedUsers.Count(x => x.Id == targetUser.Id) > 0)
+            {
+                NetPlayer netPlayer = PlayerManagement.GetNetPlayer(GameInstance.FocusedInstance, targetUser.Id);
+                if (netPlayer != null && netPlayer.PlayerOverrides != null)
+                    return netPlayer.PlayerOverrides.Volume;
+            }
+            Database database = ConfigManager.GetDatabase();
+            if(database == null) return 0f;
+            PlayerOverrides playerOverrides =
+                database.Get<PlayerOverrides>(PlayerOverrides.TABLE, targetUser.Id);
+            if (playerOverrides != null)
+                return playerOverrides.Volume;
+            playerOverrides = new PlayerOverrides(targetUser.Id);
+            database.Insert(PlayerOverrides.TABLE, playerOverrides);
+            return playerOverrides.Volume;
+        }
+
+        private void SetUserVolume(User targetUser, float v)
+        {
+            Database database = ConfigManager.GetDatabase();
+            if(database == null) return;
+            if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.ConnectedUsers.Count(x => x.Id == targetUser.Id) > 0)
+            {
+                NetPlayer netPlayer = PlayerManagement.GetNetPlayer(GameInstance.FocusedInstance, targetUser.Id);
+                if (netPlayer != null)
+                {
+                    netPlayer.PlayerOverrides.Volume = v;
+                    database.Insert(PlayerOverrides.TABLE, netPlayer.PlayerOverrides);
+                    return;
+                }
+            }
+            PlayerOverrides playerOverrides =
+                database.Get<PlayerOverrides>(PlayerOverrides.TABLE, targetUser.Id);
+            if (playerOverrides != null)
+            {
+                playerOverrides.Volume = v;
+                database.Insert(PlayerOverrides.TABLE, playerOverrides);
+            }
+            else
+            {
+                playerOverrides = new PlayerOverrides(targetUser.Id);
+                playerOverrides.Volume = v;
+                database.Insert(PlayerOverrides.TABLE, playerOverrides);
+            }
         }
 
         private void Start()

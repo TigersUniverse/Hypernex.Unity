@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Configuration;
+using Hypernex.Databasing;
+using Hypernex.Databasing.Objects;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
+using Hypernex.Networking.Messages;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -22,12 +26,17 @@ namespace Hypernex.Game.Avatar
         private List<AvatarNearClip> avatarNearClips = new();
         private readonly AllowedAvatarComponent allowedAvatarComponent = new(true, true, true, true, true, true);
         public FingerCalibration fingerCalibration;
+        public readonly AvatarConfiguration AvatarConfiguration;
 
         public bool IsCrouched { get; private set; }
         public bool IsCrawling { get; private set; }
 
         public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR, AvatarMeta avatarMeta)
         {
+            AvatarConfiguration = ConfigManager.GetDatabase()
+                .Get<AvatarConfiguration>(AvatarConfiguration.TABLE, avatarMeta.Id);
+            AvatarConfiguration ??= ConfigManager.GetDatabase()
+                .Insert(AvatarConfiguration.TABLE, new AvatarConfiguration(avatarMeta));
             a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Avatar>();
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
@@ -40,7 +49,7 @@ namespace Hypernex.Game.Avatar
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             audioSource = VoiceAlign.AddComponent<AudioSource>();
-            OnCreate(Avatar, 7, allowedAvatarComponent);
+            OnCreate(Avatar, 7, allowedAvatarComponent, avatarMeta);
             fingerCalibration = new FingerCalibration(this);
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in
                      a.transform.GetComponentsInChildren<SkinnedMeshRenderer>())
@@ -57,7 +66,6 @@ namespace Hypernex.Game.Avatar
             a.transform.localScale = Vector3.one;
             if (isVR)
             {
-                vrik = Avatar.gameObject.AddComponent<VRIK>();
                 for (int i = 0; i < LocalPlayer.Instance.Camera.transform.childCount; i++)
                 {
                     Transform child = LocalPlayer.Instance.Camera.transform.GetChild(i);
@@ -74,6 +82,7 @@ namespace Hypernex.Game.Avatar
                     Transform child = LocalPlayer.Instance.RightHandVRIKTarget.GetChild(i);
                     Object.Destroy(child.gameObject);
                 }
+                vrik = AddVRIK(Avatar.gameObject);
                 if (!XRTracker.CanFBT)
                 {
                     RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
@@ -261,6 +270,26 @@ namespace Hypernex.Game.Avatar
                         LocalPlayer.Instance.SavedTransforms.Remove(pathDescriptor);
                 });
             }
+        }
+        
+        internal void SaveAvatarConfiguration()
+        {
+            Database database = ConfigManager.GetDatabase();
+            if(database == null)
+            {
+                CCK.Logger.CurrentLogger.Error("No database loaded!");
+                return;
+            }
+            database.Insert(AvatarConfiguration.TABLE, AvatarConfiguration);
+        }
+
+        protected sealed override void SetupAnimators()
+        {
+            base.SetupAnimators();
+            if(string.IsNullOrEmpty(AvatarConfiguration.SelectedWeight)) return;
+            if (!AvatarConfiguration.SavedWeights.TryGetValue(AvatarConfiguration.SelectedWeight,
+                   out WeightedObjectUpdate[] weights)) return;
+            SetParameters(weights);
         }
 
         internal void SetMove(Vector2 move, bool isRunning)

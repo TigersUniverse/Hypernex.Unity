@@ -32,7 +32,7 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.07.2b";
+    public const string VERSION = "2024.08.1b";
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -55,8 +55,10 @@ public class Init : MonoBehaviour
     public float SmoothingFrames = 0.1f;
     public List<Object> BadgeRankAssets = new();
     public bool NoVLC;
+    public VolumeProfile DefaultVolumeProfile;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
+    public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
 
     internal void StartVR()
     {
@@ -223,6 +225,7 @@ public class Init : MonoBehaviour
             GameInstance.FocusedInstance.Dispose();
         if (APIPlayer.UserSocket != null && APIPlayer.UserSocket.IsOpen)
             APIPlayer.UserSocket.Close();
+        ConfigManager.GetDatabase()?.Dispose();
         OverlayManager.Dispose();
         DiscordTools.Stop();
         StopVR();

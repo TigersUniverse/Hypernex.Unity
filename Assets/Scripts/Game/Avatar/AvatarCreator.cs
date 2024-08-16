@@ -6,6 +6,7 @@ using Hypernex.CCK.Unity.Internals;
 using Hypernex.Networking.Messages;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
+using HypernexSharp.APIObjects;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -24,10 +25,13 @@ namespace Hypernex.Game.Avatar
         protected const float CHARACTER_HEIGHT = 1.36144f;
         
         public CCK.Unity.Avatar Avatar { get; protected set; }
+        public AvatarMeta AvatarMeta { get; private set; }
         public Animator MainAnimator { get; protected set; }
         public FaceTrackingDescriptor FaceTrackingDescriptor { get; protected set; }
         public List<AnimatorPlayable> AnimatorPlayables = new();
         public bool Calibrated { get; protected set; }
+
+        internal List<WeightedObjectUpdate> DefaultWeights;
         
         private VRIKCalibrator.Settings vrikSettings = new()
         {
@@ -35,6 +39,9 @@ namespace Hypernex.Game.Avatar
             pelvisPositionWeight = 0f,
             pelvisRotationWeight = 0f
         };
+        
+        private Dictionary<string, Transform> cachedTransforms = new();
+        private Dictionary<Transform, SkinnedMeshRenderer> cachedSkinnedMeshRenderers = new();
 
         private List<AnimatorControllerParameter> _parameters;
         public List<AnimatorControllerParameter> Parameters
@@ -69,11 +76,12 @@ namespace Hypernex.Game.Avatar
         protected VRIK vrik;
         internal RotationOffsetDriver headRotator;
 
-        protected void OnCreate(CCK.Unity.Avatar a, int layer, AllowedAvatarComponent allowedAvatarComponent)
+        protected void OnCreate(CCK.Unity.Avatar a, int layer, AllowedAvatarComponent allowedAvatarComponent, AvatarMeta meta)
         {
             Security.RemoveOffendingItems(a, allowedAvatarComponent,
                 SecurityTools.AdditionalAllowedAvatarTypes.ToArray());
             Security.ApplyComponentRestrictions(a);
+            AvatarMeta = meta;
             FaceTrackingDescriptor = a.gameObject.GetComponent<FaceTrackingDescriptor>();
             foreach (SkinnedMeshRenderer skinnedMeshRenderer in a.gameObject
                          .GetComponentsInChildren<SkinnedMeshRenderer>())
@@ -104,7 +112,7 @@ namespace Hypernex.Game.Avatar
             headRotator.Rotate(cam.rotation);
         }
         
-        protected void SetupAnimators()
+        protected virtual void SetupAnimators()
         {
             foreach (CustomPlayableAnimator customPlayableAnimator in Avatar.Animators)
             {
@@ -128,6 +136,7 @@ namespace Hypernex.Game.Avatar
                 });
                 playableGraph.Play();
             }
+            DefaultWeights = GetAnimatorWeights(true);
         }
 
         private Bounds GetAvatarBounds()
@@ -154,11 +163,39 @@ namespace Hypernex.Game.Avatar
             vrik.solver.locomotion.angleThreshold = 20;
             vrik.solver.plantFeet = false;
         }
+        
+        /*private Quaternion leftHandRot;
+        private Quaternion rightHandRot;*/
+
+        protected VRIK AddVRIK(GameObject avatar)
+        {
+            /*Transform leftHand = GetBoneFromHumanoid(HumanBodyBones.LeftHand);
+            Transform rightHand = GetBoneFromHumanoid(HumanBodyBones.RightHand);
+            Transform leftHandTemp = new GameObject("templefthandalign_" + Guid.NewGuid()).transform;
+            Transform rightHandTemp = new GameObject("temprighthandalign_" + Guid.NewGuid()).transform;
+            leftHandTemp.SetParent(leftHand);
+            leftHandTemp.localPosition = Vector3.zero;
+            leftHandTemp.localRotation = Quaternion.identity;
+            rightHandTemp.SetParent(rightHand);
+            rightHandTemp.localPosition = Vector3.zero;
+            rightHandTemp.localRotation = Quaternion.identity;
+            leftHandRot = leftHandTemp.rotation;
+            rightHandRot = rightHandTemp.rotation;
+            Object.Destroy(leftHandTemp.gameObject);
+            Object.Destroy(rightHandTemp.gameObject);*/
+            VRIK v = avatar.AddComponent<VRIK>();
+            return v;
+        }
 
         protected VRIKCalibrator.CalibrationData CalibrateVRIK(Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
         {
             VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
                 cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
+            // TODO: Rotate Correctly
+            /*LeftHandReference.GetComponent<RotationConstraint>().rotationOffset = leftHandRot.eulerAngles;
+            RightHandReference.GetComponent<RotationConstraint>().rotationOffset = rightHandRot.eulerAngles;
+            vrik.solver.leftArm.target = LeftHandReference;
+            vrik.solver.rightArm.target = RightHandReference;*/
             SetCalibrationMeta();
             return calibrationData;
         }
@@ -440,35 +477,125 @@ namespace Hypernex.Game.Avatar
                 }
             }
         }
+        
+        public void SetParameter(WeightedObjectUpdate weight)
+        {
+            switch (weight.TypeOfWeight.ToLower())
+            {
+                case PARAMETER_ID:
+                {
+                    string parameterName = weight.WeightIndex;
+                    if (weight.PathToWeightContainer == MAIN_ANIMATOR)
+                    {
+                        if(MainAnimator == null || MainAnimator.runtimeAnimatorController == null) break;
+                        try
+                        {
+                            AnimatorControllerParameter parameter =
+                                MainAnimator.parameters.First(x => x.name == weight.WeightIndex);
+                            switch (parameter.type)
+                            {
+                                case AnimatorControllerParameterType.Bool:
+                                    MainAnimator.SetBool(parameter.name, Math.Abs(weight.Weight - 1.00f) < 0.01);
+                                    break;
+                                case AnimatorControllerParameterType.Int:
+                                    MainAnimator.SetInteger(parameter.name, (int) weight.Weight);
+                                    break;
+                                case AnimatorControllerParameterType.Float:
+                                    MainAnimator.SetFloat(parameter.name, weight.Weight);
+                                    break;
+                            }
+                        } catch(Exception){}
+                        break;
+                    }
+                    foreach (AnimatorPlayable playableAnimator in AnimatorPlayables)
+                    {
+                        if (playableAnimator.CustomPlayableAnimator.AnimatorController.name !=
+                            weight.PathToWeightContainer && weight.PathToWeightContainer != ALL_ANIMATOR_LAYERS) continue;
+                        try
+                        {
+                            AnimatorControllerParameter parameter = GetParameterByName(parameterName, playableAnimator);
+                            if (parameter != null)
+                            {
+                                switch (parameter.type)
+                                {
+                                    case AnimatorControllerParameterType.Bool:
+                                        playableAnimator.AnimatorControllerPlayable.SetBool(parameterName,
+                                            Math.Abs(weight.Weight - 1.00f) < 0.01);
+                                        break;
+                                    case AnimatorControllerParameterType.Int:
+                                        playableAnimator.AnimatorControllerPlayable.SetInteger(parameterName,
+                                            (int) weight.Weight);
+                                        break;
+                                    case AnimatorControllerParameterType.Float:
+                                        playableAnimator.AnimatorControllerPlayable.SetFloat(parameterName,
+                                            weight.Weight);
+                                        break;
+                                }
+                            }
+                        } catch(Exception){}
+                    }
+                    break;
+                }
+                case BLENDSHAPE_ID:
+                {
+                    try
+                    {
+                        if(!cachedTransforms.TryGetValue(weight.PathToWeightContainer, out Transform t))
+                        {
+                            t = Avatar.transform.parent.Find(weight.PathToWeightContainer);
+                            if(t == null) break;
+                            cachedTransforms.Add(weight.PathToWeightContainer, t);
+                        }
+                        if(!cachedSkinnedMeshRenderers.TryGetValue(t, out SkinnedMeshRenderer s))
+                        {
+                            s = t.gameObject.GetComponent<SkinnedMeshRenderer>();
+                            if (s == null) break;
+                            cachedSkinnedMeshRenderers.Add(t, s);
+                        }
+                        s.SetBlendShapeWeight(Convert.ToInt32(weight.WeightIndex), weight.Weight);
+                    } catch(Exception){}
+                    break;
+                }
+            }
+        }
 
-        internal List<WeightedObjectUpdate> GetAnimatorWeights()
+        public void SetParameters(WeightedObjectUpdate[] weights)
+        {
+            foreach (WeightedObjectUpdate weight in weights)
+                SetParameter(weight);
+        }
+
+        internal List<WeightedObjectUpdate> GetAnimatorWeights(bool skipMain = false)
         {
             List<WeightedObjectUpdate> weights = new();
-            foreach (AnimatorControllerParameter animatorControllerParameter in MainAnimator.parameters)
+            if(MainAnimator != null && !skipMain)
             {
-                float weight;
-                switch (animatorControllerParameter.type)
+                foreach (AnimatorControllerParameter animatorControllerParameter in MainAnimator.parameters)
                 {
-                    case AnimatorControllerParameterType.Bool:
-                        weight = MainAnimator.GetBool(animatorControllerParameter.name) ? 1f : 0f;
-                        break;
-                    case AnimatorControllerParameterType.Int:
-                        weight = MainAnimator.GetInteger(animatorControllerParameter.name);
-                        break;
-                    case AnimatorControllerParameterType.Float:
-                        weight = MainAnimator.GetFloat(animatorControllerParameter.name);
-                        break;
-                    default:
-                        continue;
+                    float weight;
+                    switch (animatorControllerParameter.type)
+                    {
+                        case AnimatorControllerParameterType.Bool:
+                            weight = MainAnimator.GetBool(animatorControllerParameter.name) ? 1f : 0f;
+                            break;
+                        case AnimatorControllerParameterType.Int:
+                            weight = MainAnimator.GetInteger(animatorControllerParameter.name);
+                            break;
+                        case AnimatorControllerParameterType.Float:
+                            weight = MainAnimator.GetFloat(animatorControllerParameter.name);
+                            break;
+                        default:
+                            continue;
+                    }
+                    WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
+                    {
+                        PathToWeightContainer = MAIN_ANIMATOR,
+                        TypeOfWeight = PARAMETER_ID,
+                        WeightIndex = animatorControllerParameter.name,
+                        Weight = weight
+                    };
+                    weights.Add(weightedObjectUpdate);
                 }
-                WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
-                {
-                    PathToWeightContainer = MAIN_ANIMATOR,
-                    TypeOfWeight = PARAMETER_ID,
-                    WeightIndex = animatorControllerParameter.name,
-                    Weight = weight
-                };
-                weights.Add(weightedObjectUpdate);
             }
             foreach (AnimatorPlayable playableAnimator in AnimatorPlayables)
             {
@@ -678,6 +805,8 @@ namespace Hypernex.Game.Avatar
                 localAvatarSandboxes.Remove(localAvatarSandbox);
                 localAvatarSandbox.Dispose();
             }
+            cachedTransforms.Clear();
+            cachedSkinnedMeshRenderers.Clear();
             Object.Destroy(Avatar.gameObject);
         }
     }

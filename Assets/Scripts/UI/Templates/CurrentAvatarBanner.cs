@@ -18,11 +18,11 @@ namespace Hypernex.UI.Templates
 
         public Texture2D DefaultBanner;
 
-        private AvatarCreator avatarCreator;
+        private LocalAvatarCreator avatarCreator;
 
         public void OnNavigate() => CurrentAvatarPage.Render(avatarCreator);
 
-        public void Render(AvatarCreator AvatarCreator, byte[] banner)
+        public void Render(LocalAvatarCreator AvatarCreator, byte[] banner)
         {
             avatarCreator = AvatarCreator;
             AvatarName.text = LocalPlayer.Instance.avatarMeta.Name;

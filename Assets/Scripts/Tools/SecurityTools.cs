@@ -12,6 +12,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 using Security = Hypernex.CCK.Unity.Security;
 #if MAGICACLOTH2
@@ -45,6 +46,7 @@ namespace Hypernex.Tools
             } catch(Exception){}
             Security.LightTypes.Allow(typeof(UniversalAdditionalLightData));
             AdditionalAllowedWorldTypes.Allow(typeof(UniversalAdditionalCameraData));
+            AdditionalAllowedWorldTypes.Allow(typeof(Volume));
             AdditionalAllowedWorldTypes.Allow(typeof(Mirror));
             List<Type> uiTypes = new List<Type>
             {

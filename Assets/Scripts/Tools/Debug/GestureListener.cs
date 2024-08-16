@@ -18,15 +18,17 @@ namespace Hypernex.Tools.Debug
         {
             LocalPlayer localPlayer = LocalPlayer.Instance;
             if(localPlayer == null) return;
+            IGestureIdentifier gestureIdentifier = localPlayer.GestureIdentifier;
             if(localPlayer.avatar == null) return;
             if (localPlayer.avatar.fingerCalibration == null) return;
             IFingerCurler left = localPlayer.GetLeftHandCurler();
             IFingerCurler right = localPlayer.GetRightHandCurler();
             GUILayout.BeginArea(new Rect(50, 10, 500, Screen.height));
+            GUILayout.Label("Gesture Identifier: " + gestureIdentifier.Name);
             GUILayout.Label("LeftHand:\n" + GetCurlText(left));
-            GUILayout.Label("GestureLeft: " + FingerCalibration.GetGestureNumberFromHandGetter(left));
+            GUILayout.Label("GestureLeft: " + FingerCalibration.GetGestureNumberFromHandGetter(left, gestureIdentifier));
             GUILayout.Label("RightHand:\n" + GetCurlText(right));
-            GUILayout.Label("GestureRight: " + FingerCalibration.GetGestureNumberFromHandGetter(right));
+            GUILayout.Label("GestureRight: " + FingerCalibration.GetGestureNumberFromHandGetter(right, gestureIdentifier));
             GUILayout.EndArea();
         }
     }

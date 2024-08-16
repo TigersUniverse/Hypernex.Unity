@@ -348,7 +348,6 @@ namespace Hypernex.UIActions
                     FingerCalibration.GetGestureIdentifierFromName(GestureSelection.options.ElementAt(i).text);
                 if(gestureIdentifier == null) return;
                 ConfigManager.SelectedConfigUser.GestureType = gestureIdentifier.Name;
-                LocalPlayer.Instance.GestureIdentifier = gestureIdentifier;
             });
             AudioCompressionSelection.onValueChanged.RemoveAllListeners();
             AudioCompressionSelection.onValueChanged.AddListener(i =>

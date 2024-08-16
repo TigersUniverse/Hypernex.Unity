@@ -113,6 +113,20 @@ namespace Hypernex.Game
         
         public bool LockMovement { get; set; }
         public bool LockCamera { get; set; }
+        
+        public IGestureIdentifier GestureIdentifier
+        {
+            get
+            {
+                if (avatar != null && !string.IsNullOrEmpty(avatar.AvatarConfiguration.GestureIdentifierOverride))
+                    return FingerCalibration.GetGestureIdentifierFromName(avatar.AvatarConfiguration
+                        .GestureIdentifierOverride);
+                if (ConfigManager.SelectedConfigUser != null &&
+                    !string.IsNullOrEmpty(ConfigManager.SelectedConfigUser.GestureType))
+                    return FingerCalibration.GetGestureIdentifierFromName(ConfigManager.SelectedConfigUser.GestureType);
+                return FingerCalibration.DefaultGestures;
+            }
+        }
 
         public List<IBinding> Bindings = new();
 
@@ -137,7 +151,6 @@ namespace Hypernex.Game
         public float LowestPointRespawnThreshold = 50f;
         public CurrentAvatar CurrentAvatarDisplay;
         public LocalPlayerSyncController LocalPlayerSyncController;
-        public IGestureIdentifier GestureIdentifier = FingerCalibration.DefaultGestures;
         public DesktopFingerCurler.Left LeftDesktopCurler = new();
         public DesktopFingerCurler.Right RightDesktopCurler = new();
 
@@ -421,7 +434,7 @@ namespace Hypernex.Game
                 }
                 if(!isEmpty) avatar?.ApplyAudioClipToLipSync(samples);
             };
-            GameInstance.OnGameInstanceLoaded += (instance, meta) =>
+            GameInstance.OnGameInstanceLoaded += (instance, meta, _) =>
             {
                 instance.OnUserLoaded += user =>
                 {
