@@ -32,7 +32,7 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
-    public const string VERSION = "2024.08.1b";
+    public string Version => Application.version;
 
     public static Init Instance;
     public static bool IsQuitting { get; private set; }
@@ -144,7 +144,7 @@ public class Init : MonoBehaviour
         RenderPipelineManager.beginCameraRendering += BeginRender_NoAvatar;
         AvatarNearClip.BeforeClip += BeginRender_Avatar;
         DefaultTheme.ApplyThemeToUI();
-        VersionLabels.ForEach(x => x.text = VERSION);
+        VersionLabels.ForEach(x => x.text = Version);
         DiscordTools.StartDiscord();
         GeoTools.Init();
 

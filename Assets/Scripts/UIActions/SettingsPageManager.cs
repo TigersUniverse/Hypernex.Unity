@@ -230,7 +230,7 @@ namespace Hypernex.UIActions
 
         private void SaveMutations()
         {
-            FaceTrackingManager.SetSettings("Mutation", Mutations);
+            FaceTrackingManager.SetSettings("Mutations", Mutations);
             ConfigManager.SaveConfigToFile();
         }
 
@@ -247,7 +247,7 @@ namespace Hypernex.UIActions
             {
                 FaceConfig.Clear();
                 Mutations =
-                    FaceTrackingManager.GetSettings<UnifiedMutationConfig>("Mutation");
+                    FaceTrackingManager.GetSettings<UnifiedMutationConfig>("Mutations");
                 UnifiedMutationPanel gazePanel = CreateUnifiedMutationPanel(Mutations.GazeMutationsConfig, "Gaze Mutations");
                 gazePanel.AddAction(() =>
                 {
@@ -287,6 +287,8 @@ namespace Hypernex.UIActions
         }
 
         public void DisplayCameras() => Cameras.SetActive(true);
+
+        public void RestartFaceTracking() => FaceTrackingManager.Restart();
         
         public void OnConsoleSettings()
         {

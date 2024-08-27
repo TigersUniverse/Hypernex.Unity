@@ -79,7 +79,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 Directory.CreateDirectory(pathToCobalt);
             if (uri != null)
             {
-                bool trusted = ConfigManager.LoadedConfig.UseTrustedURLs;
+                bool trusted = !ConfigManager.LoadedConfig.UseTrustedURLs;
                 if(!trusted)
                 {
                     foreach (Uri trustedUri in ConfigManager.LoadedConfig.TrustedURLs.Select(x => new Uri(x)))

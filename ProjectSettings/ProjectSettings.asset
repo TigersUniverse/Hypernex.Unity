@@ -12,8 +12,8 @@ PlayerSettings:
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
-  companyName: 200Tigersbloxed
-  productName: Hypernex
+  companyName: TigersUniverse
+  productName: Hypernex.Unity
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -138,8 +138,10 @@ PlayerSettings:
   vulkanEnableLateAcquireNextImage: 0
   vulkanEnableCommandBufferRecycling: 1
   loadStoreDebugModeEnabled: 0
-  bundleVersion: 0.1.0
-  preloadedAssets: []
+  bundleVersion: 2024.08.2b
+  preloadedAssets:
+  - {fileID: -5264253658483339981, guid: 95c4cfd8338326e45922c4ac0ed2ff73, type: 2}
+  - {fileID: 5711663381222140903, guid: a08e1849d99fdcd4ea4a7ae8dfb275d4, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1

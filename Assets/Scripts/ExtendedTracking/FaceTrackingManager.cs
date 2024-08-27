@@ -141,11 +141,23 @@ namespace Hypernex.ExtendedTracking
             if (UnifiedTracking.LipImageData.SupportsImage)
                 CreateTextureFromImage(UnifiedTracking.LipImageData, lips);
         }
+        
+        public static void Restart()
+        {
+            if(!HasInitialized || mainIntegrated == null) return;
+            HasInitialized = false;
+            mainIntegrated.Teardown();
+            mainIntegrated.InitializeAsync();
+            HasInitialized = true;
+        }
 
         public static void Destroy()
         {
             if(HasInitialized)
-                mainIntegrated.Teardown();
+            {
+                mainIntegrated?.Teardown();
+                HasInitialized = false;
+            }
         }
     }
 }
