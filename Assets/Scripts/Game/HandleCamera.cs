@@ -185,8 +185,11 @@ namespace Hypernex.Game
                 isCapturing = true;
                 yield return new WaitForSeconds(WaitTime);
                 SetCameraProperties(d);
-                LinkedCamera.GetUniversalAdditionalCameraData().antialiasing =
-                    Camera.main.GetUniversalAdditionalCameraData().antialiasing;
+                UniversalAdditionalCameraData mainUniversal = LocalPlayer.Instance.Camera.GetUniversalAdditionalCameraData();
+                UniversalAdditionalCameraData thisUniversal = LinkedCamera.GetUniversalAdditionalCameraData();
+                thisUniversal.antialiasing = mainUniversal.antialiasing;
+                thisUniversal.renderPostProcessing = true;
+                yield return new WaitForSeconds(0.01f);
                 requestCapture = true;
             }
         }
@@ -343,7 +346,9 @@ namespace Hypernex.Game
                     {
                         SetCameraProperties((int) CameraRenderOutput.rectTransform.rect.width / 2,
                             (int) CameraRenderOutput.rectTransform.rect.height / 2);
-                        LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
+                        UniversalAdditionalCameraData universalAdditionalCameraData = LinkedCamera.GetUniversalAdditionalCameraData();
+                        universalAdditionalCameraData.antialiasing = AntialiasingMode.None;
+                        universalAdditionalCameraData.renderPostProcessing = false;
                     }
                     OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
@@ -372,10 +377,10 @@ namespace Hypernex.Game
 
         private void RenderPipelineManagerOnbeginCameraRendering(ScriptableRenderContext arg1, Camera arg2)
         {
+            UniversalAdditionalCameraData mainUniversal = LocalPlayer.Instance.Camera.GetUniversalAdditionalCameraData();
             if(arg2 == LinkedCamera && requestCapture)
             {
-                LinkedCamera.GetUniversalAdditionalCameraData().antialiasing =
-                    Camera.main.GetUniversalAdditionalCameraData().antialiasing;
+                LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = mainUniversal.antialiasing;
                 return;
             }
             if (IsOutputting)
@@ -385,13 +390,6 @@ namespace Hypernex.Game
 
         private void Update()
         {
-#if !DEBUG
-            if(!LocalPlayer.IsVR)
-            {
-                Dispose();
-                return;
-            }
-#endif
             LocalPlayer localPlayer = LocalPlayer.Instance;
             if (localPlayer != null && !IsAnchored)
                 transform.localScale = new Vector3(localPlayer.transform.localScale.x,
@@ -421,6 +419,7 @@ namespace Hypernex.Game
                 }
                 LinkedCamera.transform.LookAt(reference);
             }
+            if(!LocalPlayer.IsVR && Input.GetKeyDown(KeyCode.Backspace)) Dispose();
         }
 
         private void OnDestroy()

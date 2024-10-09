@@ -18,7 +18,7 @@ namespace Hypernex.Tools
         public static Action<ScriptableRenderContext, Camera> BeforeClip = (context, camera1) => { };
         public static List<AvatarNearClip> Instances => new (instances);
         
-        internal static List<AvatarNearClip> instances = new();
+        private static List<AvatarNearClip> instances = new();
 
         private static bool didInvokeClip;
 
@@ -233,17 +233,6 @@ namespace Hypernex.Tools
             if (!isStraySMR) didInvokeClip = false;
         }
 
-        private void Update()
-        {
-            // Sanity check for events
-            for (int i = 0; i < Instances.Count; i++)
-            {
-                AvatarNearClip avatarNearClip = Instances[i];
-                if(avatarNearClip == null)
-                    instances.RemoveAt(i);
-            }
-        }
-
         // Run this on LateUpdate to make sure this is the last thing to happen
         private void LateUpdate()
         {
@@ -266,10 +255,7 @@ namespace Hypernex.Tools
 
         private void OnDestroy()
         {
-            try
-            {
-                instances.Remove(this);
-            } catch(Exception){}
+            instances.Remove(this);
             if (gameObject.name.Contains("shadowclone_"))
                 return;
             // Revert all RenderPipeline Events

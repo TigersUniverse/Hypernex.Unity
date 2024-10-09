@@ -9,6 +9,7 @@ using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
+using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
 using Hypernex.UIActions;
@@ -16,8 +17,6 @@ using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
-using System.Runtime.InteropServices;
-using Unity.XR.Oculus;
 using UnityEngine.Android;
 #endif
 using UnityEngine.Audio;
@@ -56,6 +55,8 @@ public class Init : MonoBehaviour
     public List<Object> BadgeRankAssets = new();
     public bool NoVLC;
     public VolumeProfile DefaultVolumeProfile;
+
+    internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
@@ -112,14 +113,17 @@ public class Init : MonoBehaviour
                 Permission.RequestUserPermission(Permission.ExternalStorageWrite);
         }
         catch(Exception){}
-        try
+        /*try
         {
             StartVR();
             SystemHeadset systemHeadset = Utils.GetSystemHeadsetType();
             bool isOculus = systemHeadset != SystemHeadset.None;
             if (!isOculus)
                 StopVR();
-        } catch(Exception e){Logger.CurrentLogger.Critical(e);}
+        } catch(Exception e){Logger.CurrentLogger.Critical(e);}*/
+#if !UNITY_EDITOR
+        StartVR();
+#endif
 #endif
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
@@ -147,6 +151,10 @@ public class Init : MonoBehaviour
         VersionLabels.ForEach(x => x.text = Version);
         DiscordTools.StartDiscord();
         GeoTools.Init();
+        TimeSettings.Is24HourClock = () => DateTools.Is24H;
+        audioMixers.Add(VoiceGroup, VoiceGroup.audioMixer);
+        audioMixers.Add(WorldGroup, WorldGroup.audioMixer);
+        audioMixers.Add(AvatarGroup, AvatarGroup.audioMixer);
 
         int pluginsLoaded;
         try
@@ -204,8 +212,8 @@ public class Init : MonoBehaviour
         DiscordTools.RunCallbacks();
         if (ConfigManager.SelectedConfigUser != null)
         {
-            VoiceGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.VoicesBoost);
-            WorldGroup.audioMixer.SetFloat("volume", ConfigManager.SelectedConfigUser.WorldAudioVolume);
+            audioMixers[VoiceGroup].SetFloat("volume", ConfigManager.SelectedConfigUser.VoicesBoost);
+            audioMixers[WorldGroup].SetFloat("volume", ConfigManager.SelectedConfigUser.WorldAudioVolume);
         }
         GameInstance.FocusedInstance?.Update();
     }

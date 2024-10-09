@@ -49,14 +49,5 @@ namespace Hypernex.UIActions
             APIPlayer.OnLogout += () => LoggedInObjects.ForEach(x => x.SetActive(false));
             PowerButton.onClick.AddListener(() => ExitPage.SetActive(true));
         }
-
-        private void Update()
-        {
-#if DEBUG
-            CameraButton.gameObject.SetActive(true);
-#else
-            CameraButton.gameObject.SetActive(LocalPlayer.IsVR && AssetBundleTools.Platform == BuildPlatform.Windows);
-#endif
-        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hypernex.CCK;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
@@ -9,6 +10,7 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
+using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -102,6 +104,29 @@ namespace Hypernex.Game.Avatar
                     bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
             VRCFTParameters.UpdateParameters(avatarMeta, this);
+            GameInstance.OnGameInstanceLoaded += OnGameInstanceLoaded;
+            GameInstance.OnGameInstanceDisconnect += OnGameInstanceDisconnect;
+            LoadScripts();
+        }
+        
+        private void OnGameInstanceLoaded(GameInstance arg1, WorldMeta arg2, Scene arg3) => LoadScripts();
+        private void OnGameInstanceDisconnect(GameInstance arg1) => LoadScripts();
+
+        private List<(GameObject, NexboxScript)> localAvatarScripts;
+
+        private void LoadScripts()
+        {
+            DisposeScripts();
+            if (localAvatarScripts == null)
+            {
+                localAvatarScripts = new List<(GameObject, NexboxScript)>();
+                foreach (NexboxScript localAvatarScript in Avatar.LocalAvatarScripts)
+                    localAvatarScripts.Add((Avatar.gameObject, localAvatarScript));
+                foreach (LocalScript ls in Avatar.gameObject.GetComponentsInChildren<LocalScript>())
+                    localAvatarScripts.Add((ls.gameObject, ls.NexboxScript));
+            }
+            foreach ((GameObject, NexboxScript) avatarScript in localAvatarScripts)
+                localAvatarSandboxes.Add(new Sandbox(avatarScript.Item2, LocalPlayer.Instance.transform, avatarScript.Item1));
         }
 
         private void SetupLipSyncLocalPlayer()
@@ -542,7 +567,7 @@ namespace Hypernex.Game.Avatar
         {
             LocalPlayerSyncController.CalibrationData = null;
             LocalPlayerSyncController.calibratedFBT = false;
-            foreach (string s in new List<string>(LocalAvatarLocalAvatar.AssignedTags))
+            foreach (string s in new List<string>(Sandboxing.SandboxedTypes.Player.AssignedTags))
             {
                 foreach (string morePlayerAssignedTag in new List<string>(LocalPlayer.MorePlayerAssignedTags))
                 {
@@ -550,13 +575,15 @@ namespace Hypernex.Game.Avatar
                         LocalPlayer.MorePlayerAssignedTags.Remove(morePlayerAssignedTag);
                 }
             }
-            foreach (string s in new List<string>(LocalAvatarLocalAvatar.ExtraneousKeys))
+            foreach (string s in new List<string>(Sandboxing.SandboxedTypes.Player.ExtraneousKeys))
             {
                 foreach (KeyValuePair<string, object> extraneousObject in new Dictionary<string, object>(LocalPlayer
                              .MoreExtraneousObjects))
                     if (s == extraneousObject.Key)
                         LocalPlayer.MoreExtraneousObjects.Remove(extraneousObject.Key);
             }
+            GameInstance.OnGameInstanceLoaded -= OnGameInstanceLoaded;
+            GameInstance.OnGameInstanceDisconnect -= OnGameInstanceDisconnect;
             base.Dispose();
         }
     }

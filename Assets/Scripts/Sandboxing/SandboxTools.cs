@@ -1,16 +1,17 @@
 ﻿using Hypernex.CCK.Unity;
 using Hypernex.Game;
+using Hypernex.Sandboxing.SandboxedTypes;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing
 {
     public static class SandboxTools
     {
-        public static Object GetObjectFromWorldResource(string asset)
+        public static Object GetObjectFromWorldResource(string asset, GameInstance gameInstance)
         {
-            if (GameInstance.FocusedInstance == null)
+            if (gameInstance == null)
                 return null;
-            foreach (ScriptAsset worldScriptAsset in GameInstance.FocusedInstance.World.ScriptAssets)
+            foreach (ScriptAsset worldScriptAsset in gameInstance.World.ScriptAssets)
             {
                 if (worldScriptAsset.AssetName == asset)
                     return worldScriptAsset.Asset;

@@ -62,6 +62,21 @@ namespace Hypernex.Game.Avatar
                 return _parameters;
             }
         }
+
+        private AnimatorControllerParameter[] _mainParameters;
+
+        public AnimatorControllerParameter[] MainAnimatorParameters
+        {
+            get
+            {
+                if (_mainParameters == null)
+                {
+                    if (MainAnimator == null) return Array.Empty<AnimatorControllerParameter>();
+                    _mainParameters = MainAnimator.parameters;
+                }
+                return _mainParameters;
+            }
+        }
         
         protected GameObject HeadAlign;
         internal GameObject VoiceAlign;
@@ -141,7 +156,7 @@ namespace Hypernex.Game.Avatar
 
         private Bounds GetAvatarBounds()
         {
-            Bounds bounds = new Bounds(MainAnimator.transform.localPosition, Vector3.zero);
+            Bounds bounds = new Bounds(MainAnimator.transform.position, Vector3.zero);
             foreach (Renderer renderer in MainAnimator.GetComponentsInChildren<Renderer>())
                 bounds.Encapsulate(renderer.bounds);
             return bounds;
@@ -150,7 +165,7 @@ namespace Hypernex.Game.Avatar
         protected void AlignAvatar(bool isVR)
         {
             Bounds b = GetAvatarBounds();
-            float avatarBottom = b.min.y - MainAnimator.transform.localPosition.y;
+            float avatarBottom = MainAnimator.transform.parent.InverseTransformPoint(b.min).y - MainAnimator.transform.localPosition.y;
             float requiredOffset = -avatarBottom;
             Vector3 pos = new Vector3(0, requiredOffset - (CHARACTER_HEIGHT / 2f), 0);
             Avatar.transform.localPosition = isVR ? Vector3.zero : pos;
@@ -381,7 +396,7 @@ namespace Hypernex.Game.Avatar
                 try
                 {
                     AnimatorControllerParameter animatorControllerParameter =
-                        MainAnimator.parameters.First(x => x.name == parameterName);
+                        MainAnimatorParameters.First(x => x.name == parameterName);
                     switch (animatorControllerParameter.type)
                     {
                         case AnimatorControllerParameterType.Bool:
@@ -780,17 +795,26 @@ namespace Hypernex.Game.Avatar
             return null;
         }
         
-        internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.FixedUpdate());
+        internal void FixedUpdate() => localAvatarSandboxes.ForEach(x => x.InstanceContainer.Runtime.FixedUpdate());
 
         internal void Update()
         {
             SetParameter("Viseme", GetVisemeIndex(), null, true);
             foreach (KeyValuePair<string, float> viseme in GetVisemes())
                 SetParameter(viseme.Key, viseme.Value, null, true);
-            localAvatarSandboxes.ForEach(x => x.Runtime.Update());
+            localAvatarSandboxes.ForEach(x => x.InstanceContainer.Runtime.Update());
         }
         
-        internal void LateUpdate() => localAvatarSandboxes.ForEach(x => x.Runtime.LateUpdate());
+        internal void LateUpdate() => localAvatarSandboxes.ForEach(x => x.InstanceContainer.Runtime.LateUpdate());
+
+        protected void DisposeScripts()
+        {
+            foreach (Sandbox localAvatarSandbox in new List<Sandbox>(localAvatarSandboxes))
+            {
+                localAvatarSandboxes.Remove(localAvatarSandbox);
+                localAvatarSandbox.Dispose();
+            }
+        }
 
         public virtual void Dispose()
         {
@@ -800,11 +824,7 @@ namespace Hypernex.Game.Avatar
                     playableAnimator.PlayableGraph.Destroy();
                 }
                 catch(ArgumentException){}
-            foreach (Sandbox localAvatarSandbox in new List<Sandbox>(localAvatarSandboxes))
-            {
-                localAvatarSandboxes.Remove(localAvatarSandbox);
-                localAvatarSandbox.Dispose();
-            }
+            DisposeScripts();
             cachedTransforms.Clear();
             cachedSkinnedMeshRenderers.Clear();
             Object.Destroy(Avatar.gameObject);

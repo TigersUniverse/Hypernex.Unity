@@ -11,6 +11,7 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Nexport;
+using NUnit.Framework;
 using UnityEngine;
 
 namespace Hypernex.Game.Networking
@@ -73,6 +74,7 @@ namespace Hypernex.Game.Networking
         {
             while (!cts.IsCancellationRequested)
             {
+                PlayerDataUpdate playerDataUpdate = GetPlayerDataUpdate();
                 GameInstance gameInstance = GameInstance.FocusedInstance;
                 if(gameInstance != null && gameInstance.IsOpen)
                 {
@@ -107,7 +109,6 @@ namespace Hypernex.Game.Networking
                     if (!playerUpdate.Equals(lastPlayerUpdate) || forceUpdate)
                         gameInstance.SendMessage(typeof(PlayerUpdate).FullName, Msg.Serialize(playerUpdate),
                             MessageChannel.UnreliableSequenced);
-                    PlayerDataUpdate playerDataUpdate = GetPlayerDataUpdate();
                     if (!playerDataUpdate.Equals(lastPlayerDataUpdate) || forceUpdate)
                         gameInstance.SendMessage(typeof(PlayerDataUpdate).FullName,
                             Msg.Serialize(playerDataUpdate),
@@ -195,7 +196,7 @@ namespace Hypernex.Game.Networking
                 NetworkedObject networkedObject = handleCamera.transform.GetNetworkTransform();
                 networkedObject.IgnoreObjectLocation = true;
                 networkedObject.ObjectLocation = "*" + handleCamera.gameObject.name;
-                int id = i + 7;
+                int id = i + (int) CoreBone.Max + 1;
                 coreTransforms.Add(id, networkedObject);
             }
             return coreTransforms;
@@ -236,8 +237,25 @@ namespace Hypernex.Game.Networking
             return playerUpdate;
         }
 
+        public void UpdateTagsAndObjects(ref List<string> playerAssignedTags, ref Dictionary<string, object> extraneousData)
+        {
+            AddSystemTags(ref playerAssignedTags);
+            foreach (string s in new List<string>(LocalPlayer.MorePlayerAssignedTags))
+                if(!playerAssignedTags.Contains(s))
+                    playerAssignedTags.Add(s);
+            foreach (KeyValuePair<string,object> extraneousObject in new Dictionary<string, object>(LocalPlayer.MoreExtraneousObjects))
+                if(!extraneousData.ContainsKey(extraneousObject.Key))
+                    extraneousData.Add(extraneousObject.Key, extraneousObject.Value);
+            TagsCheck(ref playerAssignedTags);
+            LastPlayerAssignedTags = playerAssignedTags;
+            LastExtraneousObjects = extraneousData;
+        }
+
         private PlayerDataUpdate GetPlayerDataUpdate()
         {
+            List<string> playerAssignedTags = new List<string>();
+            Dictionary<string, object> extraneousData = new Dictionary<string, object>();
+            UpdateTagsAndObjects(ref playerAssignedTags, ref extraneousData);
             if (GameInstance.FocusedInstance == null || !GameInstance.FocusedInstance.IsOpen)
                 return null;
             PlayerDataUpdate playerDataUpdate = new PlayerDataUpdate
@@ -247,19 +265,9 @@ namespace Hypernex.Game.Networking
                     UserId = APIPlayer.APIUser.Id,
                     TempToken = GameInstance.FocusedInstance.userIdToken
                 },
-                PlayerAssignedTags = new List<string>(),
-                ExtraneousData = new Dictionary<string, object>()
+                PlayerAssignedTags = playerAssignedTags,
+                ExtraneousData = extraneousData
             };
-            AddSystemTags(ref playerDataUpdate.PlayerAssignedTags);
-            foreach (string s in new List<string>(LocalPlayer.MorePlayerAssignedTags))
-                if(!playerDataUpdate.PlayerAssignedTags.Contains(s))
-                    playerDataUpdate.PlayerAssignedTags.Add(s);
-            foreach (KeyValuePair<string,object> extraneousObject in new Dictionary<string, object>(LocalPlayer.MoreExtraneousObjects))
-                if(!playerDataUpdate.ExtraneousData.ContainsKey(extraneousObject.Key))
-                    playerDataUpdate.ExtraneousData.Add(extraneousObject.Key, extraneousObject.Value);
-            TagsCheck(ref playerDataUpdate.PlayerAssignedTags);
-            LastPlayerAssignedTags = new List<string>(playerDataUpdate.PlayerAssignedTags);
-            LastExtraneousObjects = new Dictionary<string, object>(playerDataUpdate.ExtraneousData);
             return playerDataUpdate;
         }
         

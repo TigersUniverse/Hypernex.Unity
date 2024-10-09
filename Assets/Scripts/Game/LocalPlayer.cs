@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Hypernex.CCK;
-using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Audio;
@@ -14,7 +12,6 @@ using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
-using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
@@ -36,11 +33,15 @@ using TrackedPoseDriver = UnityEngine.InputSystem.XR.TrackedPoseDriver;
 namespace Hypernex.Game
 {
     [RequireComponent(typeof(DontDestroyMe))]
-    public class LocalPlayer : MonoBehaviour, IDisposable
+    public class LocalPlayer : MonoBehaviour, IPlayer, IDisposable
     {
         public static LocalPlayer Instance;
         public static readonly List<string> MorePlayerAssignedTags = new();
         public static readonly Dictionary<string, object> MoreExtraneousObjects = new();
+
+        public bool IsLocal => true;
+        public string Id => APIPlayer.APIUser.Id;
+        public AvatarCreator AvatarCreator => avatar;
 
         public static bool IsVR { get; internal set; }
 
@@ -296,11 +297,6 @@ namespace Hypernex.Game
                 avatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
                 avatar = new LocalAvatarCreator(this, a, IsVR, am);
-                foreach (NexboxScript localAvatarScript in avatar.Avatar.LocalAvatarScripts)
-                    avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
-                        avatar.Avatar.gameObject));
-                foreach (LocalScript ls in avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                    avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
                 SavedTransforms.Clear();
@@ -682,15 +678,18 @@ namespace Hypernex.Game
 
         private void Update()
         {
+            // TODO: Reduce GC
             bool vr = IsVR;
             XROrigin.enabled = vr;
-            foreach (TrackedPoseDriver trackedPoseDriver in TrackedPoseDriver)
-                trackedPoseDriver.enabled = vr;
+            TrackedPoseDriver.ForEach(trackedPoseDriver => trackedPoseDriver.enabled = vr);
             XRBinding.GetControllerModel(LeftHandReference)?.SetActive(vr && avatar == null);
             XRBinding.GetControllerModel(RightHandReference)?.SetActive(vr && avatar == null);
-            if (vr) XRRays.ForEach(x => x.lineWidth = 0.01f);
-            foreach (XRInteractorLineVisual lineVisual in XRRays)
-                lineVisual.enabled = vr;
+            XRRays.ForEach(x =>
+            {
+                if(vr)
+                    x.lineWidth = 0.01f;
+                x.enabled = vr;
+            });
             CursorTools.ToggleMouseLock(vr || LockCamera);
             CursorTools.ToggleMouseVisibility(!vr);
             groundedPlayer = CharacterController.isGrounded;
@@ -706,7 +705,7 @@ namespace Hypernex.Game
             }
             (Vector3, bool, bool, Vector2)? left_m = null;
             (Vector3, bool, bool)? right_m = null;
-            foreach (IBinding binding in new List<IBinding>(Bindings))
+            foreach (IBinding binding in Bindings)
             {
                 binding.Update();
                 bool g = !binding.IsLook;
@@ -729,7 +728,7 @@ namespace Hypernex.Game
             bool isJumping = false;
             if (right_m != null)
             {
-                isJumping = right_m.Value.Item2 && (!avatar?.IsCrouched ?? false) && (!avatar?.IsCrawling ?? false);
+                isJumping = right_m.Value.Item2 && (!avatar?.IsCrouched ?? true) && (!avatar?.IsCrawling ?? true);
                 if (isJumping && groundedTimer > 0)
                 {
                     groundedTimer = 0;
@@ -745,7 +744,7 @@ namespace Hypernex.Game
             }
             if (!LockMovement)
             {
-                move = new Vector3(move.x, verticalVelocity, move.z);
+                move.y = verticalVelocity;
                 CharacterController.Move(move * Time.deltaTime);
                 avatar?.SetMove(left_m?.Item4 ?? Vector2.zero, isRunning);
                 avatar?.SetIsGrounded(groundedPlayer);

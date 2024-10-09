@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Hypernex.CCK.Unity;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
+using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
@@ -62,7 +64,7 @@ namespace Hypernex.Tools
                 if(!immediate)
                 {
                     Object.Destroy(child);
-                    return;
+                    break;
                 }
                 Object.DestroyImmediate(child);
             }
@@ -108,15 +110,63 @@ namespace Hypernex.Tools
             return videoPlayer;
         }
 
-        public static void SelectVolume(this Volume[] volumes)
+        internal static string CastIf24Hour(this string longDateTime, bool is24Hour)
+        {
+            char[] chars = longDateTime.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                if (c == 'h' || c == 'H')
+                    chars[i] = is24Hour ? 'H' : 'h';
+                if (c == 't')
+                    chars[i] = is24Hour ? ' ' : 't';
+            }
+            string format = new string(chars);
+            if (!is24Hour && !format.Contains("tt"))
+                format += " tt";
+            return format;
+        }
+
+        private static List<VolumeProfile> lastVolumeProfiles = new();
+
+        private static bool IsVolumeProfileCollectionEqual(this VolumeProfile[] b)
+        {
+            if (lastVolumeProfiles.Count != b.Length) return false;
+            for (int i = 0; i < lastVolumeProfiles.Count; i++)
+            {
+                VolumeProfile itemA = lastVolumeProfiles.ElementAt(i);
+                VolumeProfile itemB = b[i];
+                if (itemA != itemB) return false;
+            }
+            return true;
+        }
+
+        public static void SelectVolume(this Volume[] volumes, bool force = false)
         {
             if(volumes == null) return;
-            VolumeManager.instance.SetCustomDefaultProfiles(volumes.Where(x =>
+            VolumeProfile[] volumeProfilesArray = volumes.Where(x =>
             {
                 GameObject gameObject = x.gameObject;
-                if (gameObject == null) return false;
                 return gameObject.activeSelf && x.enabled;
-            }).Select(x => x.profile).ToList());
+            }).Select(x => x.profile).ToArray();
+            if(volumeProfilesArray.IsVolumeProfileCollectionEqual() && !force) return;
+            lastVolumeProfiles.Clear();
+            lastVolumeProfiles.AddRange(volumeProfilesArray);
+            VolumeManager.instance.SetCustomDefaultProfiles(lastVolumeProfiles);
+        }
+
+        internal class UserEqualityComparer : IEqualityComparer<User>
+        {
+            public static UserEqualityComparer Instance { get; } = new();
+
+            public bool Equals(User x, User y)
+            {
+                if (x == null && y == null) return true;
+                if (x == null || y == null) return false;
+                return x.Id == y.Id;
+            }
+
+            public int GetHashCode(User obj) => obj.GetHashCode();
         }
     }
 }

@@ -10,16 +10,13 @@ namespace Hypernex.Tools
     {
         public static string GetTime(DateTime dateTime)
         {
-            /*if (Is24H)
-                return DateTime.Now.ToString("HH:mm:ss");
-            return DateTime.Now.ToString("h:mm:ss tt");*/
-            return dateTime.ToString(DateTimeFormatInfo.CurrentInfo.ShortTimePattern);
+            if (DateTools.Is24H)
+                return dateTime.ToString("HH:mm:ss");
+            return dateTime.ToString("h:mm:ss tt");
         }
 
         public static string GetDate(DateTime dateTime) =>
-            dateTime.ToString(DateTimeFormatInfo.CurrentInfo.LongDatePattern);
-        
-        public static bool Is24H => DateTimeFormatInfo.CurrentInfo.ShortTimePattern.Contains("H");
+            dateTime.ToString(DateTimeFormatInfo.CurrentInfo.LongDatePattern.CastIf24Hour(DateTools.Is24H));
         
         private TMP_Text text;
 

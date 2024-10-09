@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 
@@ -7,14 +8,23 @@ namespace Hypernex.Sandboxing.SandboxedTypes
     public class Collision
     {
         private UnityEngine.Collision c;
+        private bool read;
+
+        public Collision()
+        {
+            throw new Exception("Cannot instantiate Collision!");
+        }
         
-        public Collision(){}
-        internal Collision(UnityEngine.Collision c) => this.c = c;
+        internal Collision(UnityEngine.Collision c, bool read)
+        {
+            this.c = c;
+            this.read = read;
+        }
         
         public float3 impulse => NetworkConversionTools.Vector3Tofloat3(c.impulse);
         public float3 relativeVelocity => NetworkConversionTools.Vector3Tofloat3(c.relativeVelocity);
-        public Collider collider => new Collider(c.collider);
-        public ReadonlyItem item => new ReadonlyItem(c.transform);
+        public Collider collider => new Collider(c.collider, read);
+        public Item item => new Item(c.transform, read);
         public ContactPoint[] contacts
         {
             get
@@ -23,7 +33,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 c.GetContacts(contactPoints);
                 List<ContactPoint> sandboxContactPoints = new List<ContactPoint>();
                 foreach (UnityEngine.ContactPoint contactPoint in contactPoints)
-                    sandboxContactPoints.Add(new ContactPoint(contactPoint));
+                    sandboxContactPoints.Add(new ContactPoint(contactPoint, read));
                 return sandboxContactPoints.ToArray();
             }
         }

@@ -13,7 +13,7 @@ namespace Hypernex.Sandboxing
     public class Sandbox : IDisposable
     {
         private IInterpreter interpreter;
-        internal Runtime Runtime;
+        internal InstanceContainer InstanceContainer;
 
         private void OnLog(bool avatar, NexboxScript script, object o)
         {
@@ -37,7 +37,7 @@ namespace Hypernex.Sandboxing
                     throw new Exception("Unknown NexboxScript language");
             }
             interpreter.StartSandbox(o => OnLog(false, script, o));
-            Runtime = SandboxForwarding.Forward(attached, interpreter, SandboxRestriction.Local, null, gameInstance);
+            InstanceContainer = SandboxForwarding.Forward(attached, interpreter, SandboxRestriction.Local, null, gameInstance);
             interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
         
@@ -55,13 +55,13 @@ namespace Hypernex.Sandboxing
                     throw new Exception("Unknown NexboxScript language");
             }
             interpreter.StartSandbox(o => OnLog(true, script, o));
-            Runtime = SandboxForwarding.Forward(attached, interpreter, SandboxRestriction.LocalAvatar, playerRoot, null);
+            InstanceContainer = SandboxForwarding.Forward(attached, interpreter, SandboxRestriction.LocalAvatar, playerRoot, GameInstance.FocusedInstance);
             interpreter.RunScript(script.Script, e => Logger.CurrentLogger.Error($"[{script.Name}{script.GetExtensionFromLanguage()}] {e}"));
         }
 
         public void Dispose()
         {
-            Runtime?.Dispose();
+            InstanceContainer?.Dispose();
             interpreter.Stop();
         }
     }

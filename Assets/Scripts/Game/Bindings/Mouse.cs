@@ -85,6 +85,12 @@ namespace Hypernex.Game.Bindings
                 customEvents[mouseAction].Add(a);
             return this;
         }
+        
+        public void RemoveCustomKeyDownEvent(int mouseAction, Action a)
+        {
+            if(!customEvents.ContainsKey(mouseAction)) return;
+            customEvents[mouseAction].RemoveAll(x => x == a);
+        }
 
         public void Dispose() => customEvents.Clear();
     }

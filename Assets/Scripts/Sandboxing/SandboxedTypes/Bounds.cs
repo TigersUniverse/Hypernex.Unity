@@ -1,56 +1,98 @@
-﻿using Hypernex.Networking.Messages.Data;
+﻿using System;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public class Bounds
     {
+        private const string WRITE_ERROR = "Cannot write when in readonly mode!";
+        
+        private readonly bool read;
         internal UnityEngine.Bounds b;
 
         public Bounds() => b = new UnityEngine.Bounds();
-        internal Bounds(UnityEngine.Bounds b) => this.b = b;
+
+        internal Bounds(UnityEngine.Bounds b, bool read)
+        {
+            this.read = read;
+            this.b = b;
+        }
 
         public float3 center
         {
             get => NetworkConversionTools.Vector3Tofloat3(b.center);
-            set => b.center = NetworkConversionTools.float3ToVector3(value);
+            set
+            {
+                if (read) if (read) throw new Exception(WRITE_ERROR);
+                b.center = NetworkConversionTools.float3ToVector3(value);
+            }
         }
         public float3 size
         {
             get => NetworkConversionTools.Vector3Tofloat3(b.size);
-            set => b.size = NetworkConversionTools.float3ToVector3(value);
+            set
+            {
+                if (read) if (read) throw new Exception(WRITE_ERROR);
+                b.size = NetworkConversionTools.float3ToVector3(value);
+            }
         }
         public float3 extents
         {
             get => NetworkConversionTools.Vector3Tofloat3(b.extents);
-            set => b.extents = NetworkConversionTools.float3ToVector3(value);
+            set
+            {
+                if (read) if (read) throw new Exception(WRITE_ERROR);
+                b.extents = NetworkConversionTools.float3ToVector3(value);
+            }
         }
         public float3 min
         {
             get => NetworkConversionTools.Vector3Tofloat3(b.min);
-            set => b.min = NetworkConversionTools.float3ToVector3(value);
+            set
+            {
+                if (read) if (read) throw new Exception(WRITE_ERROR);
+                b.min = NetworkConversionTools.float3ToVector3(value);
+            }
         }
         public float3 max
         {
             get => NetworkConversionTools.Vector3Tofloat3(b.max);
-            set => b.max = NetworkConversionTools.float3ToVector3(value);
+            set
+            {
+                if (read) if (read) throw new Exception(WRITE_ERROR);
+                b.max = NetworkConversionTools.float3ToVector3(value);
+            }
         }
 
-        public void SetMinMax(float3 _min, float3 _max) => b.SetMinMax(NetworkConversionTools.float3ToVector3(_min),
-            NetworkConversionTools.float3ToVector3(_max));
+        public void SetMinMax(float3 _min, float3 _max)
+        {
+            if (read) if (read) throw new Exception(WRITE_ERROR);
+            b.SetMinMax(NetworkConversionTools.float3ToVector3(_min), NetworkConversionTools.float3ToVector3(_max));
+        }
 
-        public void Encapsulate(float3 point) => b.Encapsulate(NetworkConversionTools.float3ToVector3(point));
+        public void Encapsulate(float3 point)
+        {
+            if (read) if (read) throw new Exception(WRITE_ERROR);
+            b.Encapsulate(NetworkConversionTools.float3ToVector3(point));
+        }
 
         public void Encapsulate(Bounds bounds)
         {
+            if (read) if (read) throw new Exception(WRITE_ERROR);
             Encapsulate(bounds.center - bounds.extents);
             Encapsulate(bounds.center + bounds.extents);
         }
 
-        public void Expand(float3 amount) => extents += amount * 0.5f;
+        public void Expand(float3 amount)
+        {
+            if (read) if (read) throw new Exception(WRITE_ERROR);
+            extents += amount * 0.5f;
+        }
 
         public void Expand(float amount)
         {
+            if (read) if (read) throw new Exception(WRITE_ERROR);
             float newAmount = amount * 0.5f;
             extents += new float3(newAmount, newAmount, newAmount);
         }

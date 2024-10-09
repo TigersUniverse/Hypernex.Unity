@@ -421,7 +421,7 @@ namespace kTools.Mirrors
         Vector4 GetMirrorPlane(Camera camera)
         {
             // Calculate mirror plane in camera space.
-            var pos = transform.position - Vector3.forward * 0.1f;
+            var pos = transform.position;
             var normal = transform.forward;
             var offsetPos = pos + normal * offest;
             var cpos = camera.worldToCameraMatrix.MultiplyPoint(offsetPos);

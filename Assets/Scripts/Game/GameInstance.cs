@@ -8,7 +8,7 @@ using Hypernex.Networking;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
-using Hypernex.Sandboxing.SandboxedTypes;
+using Hypernex.Sandboxing.SandboxedTypes.Handlers;
 using Hypernex.Tools;
 using Hypernex.Tools.Debug;
 using Hypernex.UI.Templates;
@@ -22,6 +22,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using Physics = UnityEngine.Physics;
 using Security = Hypernex.CCK.Unity.Security;
+using World = Hypernex.CCK.Unity.World;
 
 namespace Hypernex.Game
 {
@@ -29,8 +30,12 @@ namespace Hypernex.Game
     {
         public static GameInstance FocusedInstance { get; internal set; }
 
+        private static List<GameInstance> gameInstances = new();
+        public static GameInstance[] GameInstances => gameInstances.ToArray();
+
         public static Action<GameInstance, WorldMeta, Scene> OnGameInstanceLoaded { get; set; } =
             (instance, meta, scene) => { };
+        public static Action<GameInstance> OnGameInstanceDisconnect { get; set; } = instance => { };
 
         internal static void Init()
         {
@@ -51,6 +56,26 @@ namespace Hypernex.Game
                 GameInstance gameInstance = new GameInstance(opened, meta);
                 gameInstance.Load();
             };
+        }
+        
+        public static User[] GetConnectedUsers(GameInstance gameInstance, bool includeLocal = true)
+        {
+            User[] justLocal = {APIPlayer.APIUser};
+            if (gameInstance == null)
+                return includeLocal ? justLocal : Array.Empty<User>();
+            return includeLocal
+                ? gameInstance.ConnectedUsers.Union(justLocal, Extensions.UserEqualityComparer.Instance).ToArray()
+                : gameInstance.ConnectedUsers.ToArray();
+        }
+
+        public static GameInstance GetInstanceFromScene(Scene scene)
+        {
+            foreach (GameInstance gameInstance in GameInstances)
+            {
+                if(gameInstance.loadedScene != scene) continue;
+                return gameInstance;
+            }
+            return null;
         }
 
         public Action OnConnect { get; set; } = () => { };
@@ -122,7 +147,8 @@ namespace Hypernex.Game
         }
         private List<User> usersBeforeMe = new ();
         private bool isDisposed;
-        internal ScriptEvents ScriptEvents;
+        internal ScriptEvents LocalScriptEvents;
+        internal ScriptEvents AvatarScriptEvents;
         private Volume[] volumes;
 
         private GameInstance(JoinedInstance joinInstance, WorldMeta worldMeta)
@@ -164,7 +190,8 @@ namespace Hypernex.Game
         private void SetupClient(string ip, int port, InstanceProtocol instanceProtocol)
         {
             HandleCamera.DisposeAll();
-            ScriptEvents = new ScriptEvents(this);
+            LocalScriptEvents = new ScriptEvents(SandboxRestriction.Local);
+            AvatarScriptEvents = new ScriptEvents(SandboxRestriction.LocalAvatar);
             ClientSettings clientSettings = new ClientSettings(ip, port, instanceProtocol == InstanceProtocol.UDP, 1);
             client = new HypernexInstanceClient(APIPlayer.APIObject, APIPlayer.APIUser, instanceProtocol,
                 clientSettings);
@@ -184,7 +211,11 @@ namespace Hypernex.Game
                 SocketManager.LeaveInstance(gameServerId, instanceId);
                 QuickInvoke.InvokeActionOnMainThread(OnDisconnect);
             };
-            OnClientConnect += user => ScriptEvents?.OnUserJoin.Invoke(user.Id);
+            OnClientConnect += user =>
+            {
+                LocalScriptEvents?.OnUserJoin.Invoke(user.Id);
+                AvatarScriptEvents?.OnUserJoin.Invoke(user.Id);
+            };
             OnMessage += (meta, channel) => MessageHandler.HandleMessage(this, meta, channel);
             OnClientDisconnect += user => PlayerManagement.PlayerLeave(this, user);
             OnDisconnect += Dispose;
@@ -400,6 +431,7 @@ namespace Hypernex.Game
                 volumes = Object.FindObjectsOfType<Volume>(true).Where(x => x.gameObject.scene == currentScene)
                     .ToArray();
                 OnGameInstanceLoaded.Invoke(this, worldMeta, currentScene);
+                gameInstances.Add(this);
             }));
 
         private void Load(bool open = true)
@@ -452,7 +484,7 @@ namespace Hypernex.Game
             }
         }
 
-        internal void FixedUpdate() => sandboxes.ForEach(x => x.Runtime.FixedUpdate());
+        internal void FixedUpdate() => sandboxes.ForEach(x => x.InstanceContainer.Runtime.FixedUpdate());
 
         internal void Update()
         {
@@ -471,11 +503,11 @@ namespace Hypernex.Game
                 if(host != null)
                     DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             }
-            sandboxes.ForEach(x => x.Runtime.Update());
+            sandboxes.ForEach(x => x.InstanceContainer.Runtime.Update());
             volumes.SelectVolume();
         }
         
-        internal void LateUpdate() => sandboxes.ForEach(x => x.Runtime.LateUpdate());
+        internal void LateUpdate() => sandboxes.ForEach(x => x.InstanceContainer.Runtime.LateUpdate());
 
         public void Dispose()
         {
@@ -491,6 +523,9 @@ namespace Hypernex.Game
             DynamicGI.UpdateEnvironment();
             Array.Empty<Volume>().SelectVolume();
             VolumeManager.instance.SetGlobalDefaultProfile(global::Init.Instance.DefaultVolumeProfile);
+            if(gameInstances.Contains(this))
+                gameInstances.Remove(this);
+            OnGameInstanceDisconnect.Invoke(this);
         }
     }
 }

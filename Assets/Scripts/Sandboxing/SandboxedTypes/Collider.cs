@@ -1,41 +1,69 @@
-﻿using Hypernex.Networking.Messages.Data;
+﻿using System;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public class Collider
     {
+        private const string WRITE_ERROR = "Cannot write when in readonly mode!";
         internal UnityEngine.Collider c;
+        private bool read;
 
         public Collider() => c = new UnityEngine.Collider();
-        internal Collider(UnityEngine.Collider c) => this.c = c;
+        internal Collider(UnityEngine.Collider c, bool read)
+        {
+            this.c = c;
+            this.read = read;
+        }
 
-        public ReadonlyItem item => new ReadonlyItem(c.transform);
+        public bool IsReadOnly => read;
+        public Item item => new Item(c.transform, read);
         public bool isTrigger
         {
             get => c.isTrigger;
-            set => c.isTrigger = value;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                c.isTrigger = value;
+            }
         }
         public float contactOffset
         {
             get => c.contactOffset;
-            set => c.contactOffset = value;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                c.contactOffset = value;
+            }
         }
-        public Bounds bounds => new Bounds(c.bounds);
+        public Bounds bounds => new Bounds(c.bounds, read);
         public bool hasModifiableContacts
         {
             get => c.hasModifiableContacts;
-            set => c.hasModifiableContacts = value;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                c.hasModifiableContacts = value;
+            }
         }
         public bool providesContacts
         {
             get => c.providesContacts;
-            set => c.providesContacts = value;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                c.providesContacts = value;
+            }
         }
         public int layerOverridePriority
         {
             get => c.layerOverridePriority;
-            set => c.layerOverridePriority = value;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                c.layerOverridePriority = value;
+            }
         }
 
         public float3 ClosestPoint(float3 position) =>
@@ -51,7 +79,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             bool hit = c.Raycast(ray.r, out g, maxDistance);
             if (!hit)
                 return null;
-            return new RaycastHit(g);
+            return new RaycastHit(g, read);
         }
         
         public static bool operator ==(Collider x, Collider y) => x?.Equals(y) ?? false;

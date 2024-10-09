@@ -23,10 +23,11 @@ using HypernexSharp.Socketing.SocketMessages;
 using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = System.Object;
 
 namespace Hypernex.Game
 {
-    public class NetPlayer : MonoBehaviour
+    public class NetPlayer : MonoBehaviour, IPlayer
     {
         [HideInInspector] public string UserId;
         private GameInstance instance;
@@ -50,6 +51,10 @@ namespace Hypernex.Game
         private int elapsedFrames;
 
         internal Dictionary<CoreBone, SmoothTransform> smoothTransforms = new();
+
+        public string Id => UserId;
+        public bool IsLocal => false;
+        public AvatarCreator AvatarCreator => Avatar;
 
         public float volume
         {
@@ -400,8 +405,8 @@ namespace Hypernex.Game
                 return HandleCameras[index];
             GameObject c = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
                 .Find("NetHandleCamera").gameObject);
-            SceneManager.MoveGameObjectToScene(c, SceneManager.GetActiveScene());
-            c.name = "netcamera" + index;
+            DontDestroyOnLoad(c);
+            c.name = "netcamera-" + UserId + "_" + index;
             for (int i = 0; i < c.transform.childCount; i++)
             {
                 Transform child = c.transform.GetChild(i);

@@ -5,6 +5,7 @@ using System.Reflection;
 using Hypernex.CCK.Unity;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game;
+using Hypernex.Tools.Text;
 using kTools.Mirrors;
 using TMPro;
 using UnityEngine;
@@ -153,6 +154,12 @@ namespace Hypernex.Tools
                 AudioSource audioSource = (AudioSource) component;
                 audioSource.outputAudioMixerGroup = isWorld ? Init.Instance.WorldGroup : Init.Instance.AvatarGroup;
                 audioSource.spatialize = true;
+            });
+            Security.RegisterComponentRestriction<TextMeshProUGUI>((component, isWorld) =>
+            {
+                if(component.gameObject.GetComponent<TMP_Text>() == null) return;
+                if(component.gameObject.GetComponent<TMPEmojiSprite>() != null) return;
+                component.gameObject.AddComponent<TMPEmojiSprite>();
             });
         }
     }

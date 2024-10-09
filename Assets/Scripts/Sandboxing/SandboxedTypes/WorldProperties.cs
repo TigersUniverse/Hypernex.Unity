@@ -1,44 +1,94 @@
-﻿using Hypernex.CCK.Unity;
+﻿using System;
 using Hypernex.Game;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public class WorldProperties
     {
-        public bool AllowRespawn = true;
-        public float Gravity = -9.87f;
-        public float JumpHeight = 1.0f;
-        public float WalkSpeed = 5f;
-        public float RunSpeed = 10f;
-        public bool AllowRunning = true;
-        public bool AllowScaling = true;
-        public bool LockAvatarSwitching;
-
-        public WorldProperties()
+        private const string WRITE_ERROR = "Cannot write when in readonly mode!";
+        
+        private GameInstance gameInstance;
+        private bool read;
+        
+        public bool AllowRespawn
         {
-            if (GameInstance.FocusedInstance == null || GameInstance.FocusedInstance.World == null)
-                return;
-            World world = GameInstance.FocusedInstance.World;
-            AllowRespawn = world.AllowRespawn;
-            Gravity = world.Gravity;
-            JumpHeight = world.JumpHeight;
-            WalkSpeed = world.WalkSpeed;
-            RunSpeed = world.RunSpeed;
-            AllowRunning = world.AllowRunning;
-            AllowScaling = world.AllowScaling;
-            LockAvatarSwitching = world.LockAvatarSwitching;
+            get => gameInstance.World.AllowRespawn;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.AllowRespawn = value;
+            }
+        }
+        public float Gravity
+        {
+            get => gameInstance.World.Gravity;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.Gravity = value;
+            }
+        }
+        public float JumpHeight
+        {
+            get => gameInstance.World.JumpHeight;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.JumpHeight = value;
+            }
+        }
+        public float WalkSpeed
+        {
+            get => gameInstance.World.WalkSpeed;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.WalkSpeed = value;
+            }
+        }
+        public float RunSpeed
+        {
+            get => gameInstance.World.RunSpeed;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.RunSpeed = value;
+            }
+        }
+        public bool AllowRunning
+        {
+            get => gameInstance.World.AllowRunning;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.AllowRunning = value;
+            }
+        }
+        public bool AllowScaling
+        {
+            get => gameInstance.World.AllowScaling;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.AllowScaling = value;
+            }
+        }
+        public bool LockAvatarSwitching
+        {
+            get => gameInstance.World.LockAvatarSwitching;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                gameInstance.World.LockAvatarSwitching = value;
+            }
         }
         
-        internal WorldProperties(World world)
+        public WorldProperties(){ throw new Exception("Cannot instantiate WorldProperties!"); }
+        
+        internal WorldProperties(GameInstance gameInstance, bool read)
         {
-            AllowRespawn = world.AllowRespawn;
-            Gravity = world.Gravity;
-            JumpHeight = world.JumpHeight;
-            WalkSpeed = world.WalkSpeed;
-            RunSpeed = world.RunSpeed;
-            AllowRunning = world.AllowRunning;
-            AllowScaling = world.AllowScaling;
-            LockAvatarSwitching = world.LockAvatarSwitching;
+            this.gameInstance = gameInstance;
+            this.read = read;
         }
     }
 }

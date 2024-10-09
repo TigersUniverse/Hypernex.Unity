@@ -102,7 +102,7 @@ namespace Hypernex.Game
                 {
                     NetworkedEvent networkedEvent =
                         (NetworkedEvent) Convert.ChangeType(msgMeta.Data, typeof(NetworkedEvent));
-                    gameInstance.ScriptEvents.OnServerNetworkEvent.Invoke(networkedEvent.EventName,
+                    gameInstance.LocalScriptEvents.OnServerNetworkEvent.Invoke(networkedEvent.EventName,
                         networkedEvent.Data.ToArray());
                     break;
                 }
