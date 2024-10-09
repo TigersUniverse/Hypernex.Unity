@@ -112,8 +112,8 @@ namespace Hypernex.Game.Audio
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            if (!playing)
-                return;
+            // if (!playing)
+            //     return;
             if (TempRingBuffer.Length != data.Length / channels)
                 TempRingBuffer = new float[data.Length / channels];
             ReadCallback(TempRingBuffer);
@@ -244,7 +244,7 @@ namespace Hypernex.Game.Audio
             }
             emptyReads = 0;
             shouldStop = false;
-            if (mutex.WaitOne(1000))
+            if (mutex.WaitOne(0))
             {
                 int found = 0;
                 for (int i = 0; i < data.Length; i++)
@@ -275,7 +275,7 @@ namespace Hypernex.Game.Audio
         {
             // /*
             // queue ??= new Queue<float>();
-            if (mutex.WaitOne(1000))
+            if (mutex.WaitOne(0))
             {
                 foreach (var val in pcm)
                 {
@@ -294,7 +294,7 @@ namespace Hypernex.Game.Audio
                 maxEmptyReads = frequency * channels;
                 newClip = true;
             }
-            if (newClip && queue.Count > CLIP_SAMPLE_SIZE)
+            if (newClip /*&& queue.Count > CLIP_SAMPLE_SIZE*/)
             {
                 // Debug.Log("new clip");
                 startedQueue = false;
