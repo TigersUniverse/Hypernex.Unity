@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Game.Avatar;
+using Hypernex.Networking.Messages.Data;
+using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
@@ -167,6 +170,37 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 AssignedTags.Remove(tag);
             if (LocalPlayer.MorePlayerAssignedTags.Contains(tag))
                 LocalPlayer.MorePlayerAssignedTags.Remove(tag);
+        }
+        
+        public void Respawn()
+        {
+            if (localPlayer == null || gameInstance == null)
+                return;
+            if (!gameInstance.World.AllowRespawn && sandboxRestriction != SandboxRestriction.Local)
+                return;
+            localPlayer.Respawn();
+        }
+        
+        public void TeleportTo(float3 position)
+        {
+            if (localPlayer == null || sandboxRestriction != SandboxRestriction.Local)
+                return;
+            if(localPlayer.Dashboard.IsVisible)
+                localPlayer.Dashboard.PositionDashboard(LocalPlayer.Instance);
+            localPlayer.CharacterController.enabled = false;
+            localPlayer.transform.position = NetworkConversionTools.float3ToVector3(position);
+            localPlayer.CharacterController.enabled = true;
+        }
+
+        public void SetAvatar(string avatarId)
+        {
+            if (localPlayer == null || gameInstance == null)
+                return;
+            if(gameInstance.World.LockAvatarSwitching || sandboxRestriction != SandboxRestriction.Local)
+                return;
+            ConfigManager.SelectedConfigUser.CurrentAvatar = avatarId;
+            localPlayer.LoadAvatar();
+            ConfigManager.SaveConfigToFile();
         }
     }
 }

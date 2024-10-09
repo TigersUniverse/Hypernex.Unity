@@ -22,7 +22,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             this.sandboxRestriction = sandboxRestriction;
             this.avatarPlayer = avatarPlayer;
             Runtime = new Runtime();
-            bindings = new Bindings(avatarPlayer);
+            bindings = new Bindings(sandboxRestriction == SandboxRestriction.Local ? LocalPlayer.Instance : avatarPlayer);
             if(gameInstance != null)
             {
                 switch (sandboxRestriction)

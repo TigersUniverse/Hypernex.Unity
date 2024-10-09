@@ -5,6 +5,7 @@ using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Game.Avatar;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -139,26 +140,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             CurrentAvatar.Instance.SizeAvatar(scale);
             if(!LocalPlayer.Instance.Dashboard.IsVisible)
                 LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);
-        }
-
-        public void Respawn()
-        {
-            if (!isLocalAvatar || gameInstance == null)
-                return;
-            if (!gameInstance.World.AllowRespawn && sandboxRestriction != SandboxRestriction.Local)
-                return;
-            localPlayer.Respawn();
-        }
-
-        public void SetAvatar(string avatarId)
-        {
-            if (!isLocalAvatar || gameInstance == null)
-                return;
-            if(gameInstance.World.LockAvatarSwitching && sandboxRestriction != SandboxRestriction.Local)
-                return;
-            ConfigManager.SelectedConfigUser.CurrentAvatar = avatarId;
-            localPlayer.LoadAvatar();
-            ConfigManager.SaveConfigToFile();
         }
     }
 }

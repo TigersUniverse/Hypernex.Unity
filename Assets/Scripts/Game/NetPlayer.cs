@@ -46,6 +46,7 @@ namespace Hypernex.Game
         private AvatarMeta avatarMeta;
         private Builds avatarBuild;
         internal NameplateTemplate nameplateTemplate;
+        private AudioSource fallbackVoice;
 
         public float interpolationFramesCount = 0.1f;
         private int elapsedFrames;
@@ -268,6 +269,8 @@ namespace Hypernex.Game
         {
             GameObject g = new GameObject("VoicePosition");
             g.transform.SetParent(transform, false);
+            g.transform.localPosition = Vector3.up;
+            fallbackVoice = g.PrepareNetVoice();
             SocketManager.OnAvatarToken += token =>
             {
                 if (waitingForAvatarToken && token.fromUserId == UserId && token.avatarId == AvatarId)
@@ -348,6 +351,8 @@ namespace Hypernex.Game
                     if (Avatar.Calibrated)
                         CalibratedAvatarId = AvatarId;
                 }
+                if(Avatar == null)
+                    fallbackVoice.volume = lastPlayerUpdate.IsSpeaking ? volume : 0f;
                 lastVR = lastPlayerUpdate.IsPlayerVR;
                 lastVRIKjson = lastPlayerUpdate.VRIKJson;
             }
@@ -388,12 +393,11 @@ namespace Hypernex.Game
 
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
+            IAudioCodec codec = AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder);
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
-            {
-                //Avatar.opusHandler.DecodeFromVoice(playerVoice);
-                IAudioCodec codec = AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder);
                 codec.Decode(playerVoice, Avatar.audioSource);
-            }
+            else
+                codec.Decode(playerVoice, fallbackVoice);
         }
 
         private Dictionary<int, NetHandleCameraLife> HandleCameras => new(handleCameras);

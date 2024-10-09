@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Hypernex.CCK.Unity;
+using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
 using HypernexSharp.APIObjects;
@@ -94,6 +95,23 @@ namespace Hypernex.Tools
                 return false;
             float angle = Quaternion.Angle(current, last);
             return angle > value;
+        }
+
+        internal static AudioSource PrepareNetVoice(this GameObject gameObject)
+        {
+            AudioSource audioSource = gameObject.GetComponent<AudioSource>();
+            if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+            BufferAudioSource bufferAudioSource = gameObject.GetComponent<BufferAudioSource>();
+            if (bufferAudioSource == null) gameObject.AddComponent<BufferAudioSource>();
+            audioSource.spatialize = true;
+            audioSource.spatializePostEffects = true;
+            audioSource.spatialBlend = 1f;
+            audioSource.rolloffMode = AudioRolloffMode.Linear;
+            audioSource.minDistance = 0;
+            audioSource.maxDistance = 10;
+            audioSource.outputAudioMixerGroup = Init.Instance.VoiceGroup;
+            audioSource.dopplerLevel = 0;
+            return audioSource;
         }
 
         /// <summary>

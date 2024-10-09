@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Game;
 using Hypernex.Player;
-using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 
 namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
@@ -69,19 +68,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
             get
             {
                 UpdatePlayerCache();
-                if (!playerCache.ContainsKey(APIPlayer.APIUser.Id)) return null;
-                return playerCache[APIPlayer.APIUser.Id];
-            }
-        }
-
-        public Player AvatarOwner
-        {
-            get
-            {
-                UpdatePlayerCache();
-                if (avatarPlayer == null) return null;
-                if (!playerCache.ContainsKey(avatarPlayer.Id)) return null;
-                return playerCache[avatarPlayer.Id];
+                switch (sandboxRestriction)
+                {
+                    case SandboxRestriction.Local:
+                        if (!playerCache.ContainsKey(APIPlayer.APIUser.Id)) return null;
+                        return playerCache[APIPlayer.APIUser.Id];
+                    case SandboxRestriction.LocalAvatar:
+                        if (avatarPlayer == null) return null;
+                        if (!playerCache.ContainsKey(avatarPlayer.Id)) return null;
+                        return playerCache[avatarPlayer.Id];
+                }
+                return null;
             }
         }
 

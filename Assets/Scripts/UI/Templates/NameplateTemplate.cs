@@ -116,6 +116,9 @@ namespace Hypernex.UI.Templates
             }
             FollowTransform.transform.parent = head;
             FollowTransform.transform.localPosition = avatarCreator.headRotator.rootReference * head.up;
+            Vector3 newpos = FollowTransform.transform.localPosition;
+            newpos.y -= 0.1f;
+            FollowTransform.transform.localPosition = newpos;
             FollowTransform.transform.SetParent(avatarCreator.Avatar.transform, true);
         }
         

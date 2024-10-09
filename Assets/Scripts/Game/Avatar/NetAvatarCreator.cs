@@ -37,15 +37,7 @@ namespace Hypernex.Game.Avatar
             VoiceAlign = new GameObject("voicealign_" + Guid.NewGuid());
             VoiceAlign.transform.SetParent(a.SpeechPosition.transform);
             VoiceAlign.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-            audioSource = VoiceAlign.AddComponent<AudioSource>();
-            VoiceAlign.AddComponent<BufferAudioSource>();
-            audioSource.spatialize = true;
-            audioSource.spatializePostEffects = true;
-            audioSource.spatialBlend = 1f;
-            audioSource.rolloffMode = AudioRolloffMode.Linear;
-            audioSource.minDistance = 0;
-            audioSource.maxDistance = 10;
-            audioSource.outputAudioMixerGroup = Init.Instance.VoiceGroup;
+            audioSource = VoiceAlign.PrepareNetVoice();
             if(np.nameplateTemplate != null)
                 np.nameplateTemplate.OnNewAvatar(this);
             a.transform.SetParent(np.transform);
