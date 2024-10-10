@@ -21,6 +21,7 @@ using Physics = Hypernex.Sandboxing.SandboxedTypes.Handlers.Physics;
 using Ray = Hypernex.Sandboxing.SandboxedTypes.Ray;
 using RaycastHit = Hypernex.Sandboxing.SandboxedTypes.RaycastHit;
 using Time = Hypernex.Sandboxing.SandboxedTypes.Time;
+using Light = Hypernex.Sandboxing.SandboxedTypes.Components.Light;
 
 namespace Hypernex.Sandboxing
 {
@@ -74,6 +75,8 @@ namespace Hypernex.Sandboxing
             ["Colliders"] = typeof(Colliders),
             ["PenetrationResult"] = typeof(PenetrationResult),
             ["Physics"] = typeof(Physics),
+            ["Light"] = typeof(Light),
+            ["LightShadows"] = typeof(LightShadows),
         });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalAvatarTypes = new(
