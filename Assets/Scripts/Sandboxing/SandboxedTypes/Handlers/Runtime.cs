@@ -11,13 +11,10 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
 {
     public class Runtime
     {
-        internal Dictionary<object, SandboxFunc> OnFixedUpdates => new (onFixedUpdates);
         private Dictionary<object, SandboxFunc> onFixedUpdates = new ();
         
-        internal Dictionary<object, SandboxFunc> OnUpdates => new (onUpdates);
         private Dictionary<object, SandboxFunc> onUpdates = new ();
 
-        internal Dictionary<object, SandboxFunc> OnLateUpdates => new(onLateUpdates);
         private Dictionary<object, SandboxFunc> onLateUpdates = new();
         
         private Dictionary<object, SandboxFunc> onDisposals = new();
@@ -44,41 +41,50 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
         public void RunAfterSeconds(object s, float time) =>
             CoroutineRunner.Instance.StartCoroutine(_w(SandboxFuncTools.TryConvert(s), time));
 
-        internal void FixedUpdate() => OnFixedUpdates.Values.ToList().ForEach(x =>
+        internal void FixedUpdate()
         {
-            try
+            foreach (var x in onFixedUpdates.Values)
             {
-                SandboxFuncTools.InvokeSandboxFunc(x);
+                try
+                {
+                    SandboxFuncTools.InvokeSandboxFunc(x);
+                }
+                catch (Exception e)
+                {
+                    Logger.CurrentLogger.Error(e);
+                }
             }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
-        });
+        }
 
-        internal void Update() => OnUpdates.Values.ToList().ForEach(x =>
+        internal void Update()
         {
-            try
+            foreach (var x in onUpdates.Values)
             {
-                SandboxFuncTools.InvokeSandboxFunc(x);
+                try
+                {
+                    SandboxFuncTools.InvokeSandboxFunc(x);
+                }
+                catch (Exception e)
+                {
+                    Logger.CurrentLogger.Error(e);
+                }
             }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
-        });
+        }
         
-        internal void LateUpdate() => OnLateUpdates.Values.ToList().ForEach(x =>
+        internal void LateUpdate()
         {
-            try
+            foreach (var x in onLateUpdates.Values)
             {
-                SandboxFuncTools.InvokeSandboxFunc(x);
+                try
+                {
+                    SandboxFuncTools.InvokeSandboxFunc(x);
+                }
+                catch (Exception e)
+                {
+                    Logger.CurrentLogger.Error(e);
+                }
             }
-            catch (Exception e)
-            {
-                Logger.CurrentLogger.Error(e);
-            }
-        });
+        }
 
         private IEnumerator _w(SandboxFunc s, float t)
         {
