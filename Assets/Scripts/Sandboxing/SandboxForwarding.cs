@@ -77,6 +77,7 @@ namespace Hypernex.Sandboxing
             ["Physics"] = typeof(Physics),
             ["Light"] = typeof(Light),
             ["LightShadows"] = typeof(LightShadows),
+            ["LightType"] = typeof(LightType),
         });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalAvatarTypes = new(

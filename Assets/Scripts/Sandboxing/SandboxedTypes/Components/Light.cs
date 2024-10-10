@@ -38,6 +38,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             }
         }
 
+        public LightType Type
+        {
+            get => light.type;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.type = value;
+            }
+        }
+
         public float Range
         {
             get => light.range;
@@ -60,6 +71,28 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             }
         }
 
+        public float SpotAngle
+        {
+            get => light.spotAngle;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.spotAngle = value;
+            }
+        }
+
+        public float InnerSpotAngle
+        {
+            get => light.innerSpotAngle;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.innerSpotAngle = value;
+            }
+        }
+
         public Color Color
         {
             get => Color.FromUnityColor(light.color);
@@ -71,6 +104,28 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             }
         }
 
+        public float ColorTemperature
+        {
+            get => light.colorTemperature;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.colorTemperature = value;
+            }
+        }
+
+        public bool UseColorTemperature
+        {
+            get => light.useColorTemperature;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.useColorTemperature = value;
+            }
+        }
+
         public LightShadows Shadows
         {
             get => light.shadows;
@@ -79,6 +134,17 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 if (read || light == null)
                     return;
                 light.shadows = value;
+            }
+        }
+
+        public float ShadowStrength
+        {
+            get => light.shadowStrength;
+            set
+            {
+                if (read || light == null)
+                    return;
+                light.shadowStrength = value;
             }
         }
     }
