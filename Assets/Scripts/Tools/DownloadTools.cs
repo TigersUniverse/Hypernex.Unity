@@ -118,11 +118,7 @@ namespace Hypernex.Tools
                             QuickInvoke.InvokeActionOnMainThread(OnDownload, fileOutput);
                         } catch(Exception e){Logger.CurrentLogger.Critical(e);}
                     },
-                    progress = p =>
-                    {
-                        if (DownloadProgress != null)
-                            QuickInvoke.InvokeActionOnMainThread(DownloadProgress, p);
-                    },
+                    progress = p => DownloadProgress?.Invoke(p),
                     skipCache = true
                 };
                 Queue.Enqueue(meta);
@@ -159,7 +155,8 @@ namespace Hypernex.Tools
                         using WebClient wc = new WebClient();
                         if (downloadMeta.progress != null)
                             wc.DownloadProgressChanged += (sender, args) =>
-                                QuickInvoke.InvokeActionOnMainThread(downloadMeta.progress, args);
+                                QuickInvoke.InvokeActionOnMainThread(
+                                    new Action(() => downloadMeta.progress?.Invoke(args)));
                         wc.DownloadDataCompleted += (sender, args) =>
                         {
                             Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);

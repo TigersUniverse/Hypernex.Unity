@@ -56,6 +56,8 @@ namespace Hypernex.Game
         public string Id => UserId;
         public bool IsLocal => false;
         public AvatarCreator AvatarCreator => Avatar;
+        public bool IsLoadingAvatar => Avatar == null;
+        public float AvatarDownloadPercentage { get; private set; }
 
         public float volume
         {
@@ -132,10 +134,10 @@ namespace Hypernex.Game
             if (stream == Stream.Null)
             {
                 if (avatarFileToken == null)
-                    APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId);
+                    APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId, i => AvatarDownloadPercentage = i/100f);
                 else
                     APIPlayer.APIObject.GetFile(OnAvatarDownload, avatarMeta.OwnerId, avatarBuild.FileId,
-                        avatarFileToken.avatarToken);
+                        avatarFileToken.avatarToken, i => AvatarDownloadPercentage = i/100f);
                 return;
             }
 
@@ -241,7 +243,8 @@ namespace Hypernex.Game
                             else
                             {
                                 DownloadTools.DownloadFile(file, $"{result.result.Meta.Id}.hna",
-                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash,
+                                    i => AvatarDownloadPercentage = i.ProgressPercentage / 100f);
                             }
                         }, result.result.Meta.OwnerId, b.FileId);
                     }
@@ -256,7 +259,8 @@ namespace Hypernex.Game
                             else
                             {
                                 DownloadTools.DownloadFile(file, $"{result.result.Meta.Id}.hna",
-                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                                    f => OnAvatarDownload(f), fmr.result.FileMeta.Hash,
+                                    i => AvatarDownloadPercentage = i.ProgressPercentage / 100f);
                             }
                         }, result.result.Meta.OwnerId, b.FileId);
                     }
@@ -275,9 +279,9 @@ namespace Hypernex.Game
             {
                 if (waitingForAvatarToken && token.fromUserId == UserId && token.avatarId == AvatarId)
                 {
-                    waitingForAvatarToken = false;
                     avatarFileToken = token;
-                    string file = $"{APIPlayer.APIObject.Settings.APIURL}file/{avatarMeta.OwnerId}/{avatarBuild.FileId}";
+                    waitingForAvatarToken = false;
+                    string file = $"{APIPlayer.APIObject.Settings.APIURL}file/{avatarMeta.OwnerId}/{avatarBuild.FileId}/{token.avatarToken}";
                     APIPlayer.APIObject.GetFileMeta(fmr =>
                     {
                         if (!fmr.success)
@@ -285,8 +289,8 @@ namespace Hypernex.Game
                                 avatarFileToken.avatarToken);
                         else
                         {
-                            DownloadTools.DownloadFile(file, $"{avatarMeta.Id}.hna",
-                                f => OnAvatarDownload(f), fmr.result.FileMeta.Hash);
+                            DownloadTools.DownloadFile(file, $"{avatarMeta.Id}.hna", f => OnAvatarDownload(f),
+                                fmr.result.FileMeta.Hash, i => AvatarDownloadPercentage = i.ProgressPercentage / 100f);
                         }
                     }, avatarMeta.OwnerId, avatarBuild.FileId);
                 }
@@ -324,9 +328,14 @@ namespace Hypernex.Game
                                                                          lastPlayerUpdate.AvatarId != AvatarId))
                 {
                     AvatarId = lastPlayerUpdate.AvatarId;
-                    APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
                     Avatar?.Dispose();
                     Avatar = null;
+                    avatarFileToken = null;
+                    avatarMeta = null;
+                    avatarBuild = null;
+                    waitingForAvatarToken = false;
+                    AvatarDownloadPercentage = 0;
+                    APIPlayer.APIObject.GetAvatarMeta(OnAvatar, AvatarId);
                 }
                 if (Avatar != null && Avatar.Avatar.transform.parent == transform)
                 {

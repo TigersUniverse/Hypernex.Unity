@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Hypernex.Game;
 using Hypernex.Game.Avatar;
 using Hypernex.Tools;
@@ -18,6 +19,8 @@ namespace Hypernex.UI.Templates
         public Image Status;
         public TMP_Text Username;
         public GameObject PronounContainer;
+        public Slider DownloadProgress;
+        public TMP_Text DownloadProgressText;
 
         public Texture2D DefaultPfp;
         public Texture2D DefaultBanner;
@@ -121,8 +124,21 @@ namespace Hypernex.UI.Templates
             FollowTransform.transform.localPosition = newpos;
             FollowTransform.transform.SetParent(avatarCreator.Avatar.transform, true);
         }
-        
-        private void Update() => transform.localScale = new Vector3(0.003f, 0.003f, 0.003f);
+
+        private void Update()
+        {
+            transform.localScale = new Vector3(0.003f, 0.003f, 0.003f);
+            if (np == null || !np.IsLoadingAvatar)
+            {
+                DownloadProgress.gameObject.SetActive(false);
+                return;
+            }
+            DownloadProgress.gameObject.SetActive(true);
+            DownloadProgress.value = np.AvatarDownloadPercentage;
+            DownloadProgressText.text = np.AvatarDownloadPercentage <= 0
+                ? "0%"
+                : np.AvatarDownloadPercentage.ToString("P0", CultureInfo.CurrentCulture);
+        }
 
         private void FixedUpdate()
         {

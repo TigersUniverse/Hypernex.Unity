@@ -31,7 +31,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if (audioSource == null) throw new Exception("No AudioSource found on Item at " + i.Path);
         }
 
-        public bool IsValid() => audioSource != null;
         public bool IsPlaying() => audioSource.isPlaying;
         public bool IsMuted() => audioSource.mute;
         public bool IsLooping() => audioSource.loop;

@@ -34,9 +34,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
         {
             CoroutineHolder c = new CoroutineHolder();
             SandboxFunc sandboxFunc = SandboxFuncTools.TryConvert(s);
-            repeats.Add(sandboxFunc, c);
+            repeats.Add(s, c);
             c.Start(sandboxFunc, waitTime);
         }
+
+        public void RemoveRepeatSeconds(object s) => repeats.Remove(s);
 
         public void RunAfterSeconds(object s, float time) =>
             CoroutineRunner.Instance.StartCoroutine(_w(SandboxFuncTools.TryConvert(s), time));
@@ -107,13 +109,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
             onUpdates.Clear();
             onLateUpdates.Clear();
             onDisposals.Clear();
-            List<CoroutineHolder> coroutineHolders = new List<CoroutineHolder>(repeats.Values);
-            for (int i = 0; i < coroutineHolders.Count; i++)
-            {
-                CoroutineHolder coroutineHolder = coroutineHolders[i];
+            foreach (CoroutineHolder coroutineHolder in repeats.Values)
                 coroutineHolder.Dispose();
-                repeats.Remove(repeats.ElementAt(i).Key);
-            }
+            repeats.Clear();
         }
 
         private class CoroutineHolder : IDisposable

@@ -90,5 +90,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
                 return playerCache.Values.ToArray();
             }
         }
+
+        public Player GetPlayerFromUserId(string userId)
+        {
+            UpdatePlayerCache();
+            foreach (KeyValuePair<string,Player> keyValuePair in playerCache)
+            {
+                if(keyValuePair.Key != userId) continue;
+                return keyValuePair.Value;
+            }
+            return null;
+        }
     }
 }

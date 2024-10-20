@@ -9,5 +9,7 @@ namespace Hypernex.Game
         public string Id { get; }
         public AvatarCreator AvatarCreator { get; }
         public Transform transform { get; }
+        public bool IsLoadingAvatar { get; }
+        public float AvatarDownloadPercentage { get; }
     }
 }

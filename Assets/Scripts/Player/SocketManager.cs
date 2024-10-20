@@ -142,13 +142,14 @@ namespace Hypernex.Player
                     knownHash = fileMetaResult.result.FileMeta.Hash;
                 DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                 {
+                    GameInstance.FinishDownload(worldMeta);
                     if (DownloadedWorlds.ContainsKey(worldMeta.Id))
                         DownloadedWorlds.Remove(worldMeta.Id);
                     DownloadedWorlds.Add(worldMeta.Id, o);
                     if (APIPlayer.IsFullReady)
                         APIPlayer.UserSocket.RequestNewInstance(worldMeta, instancePublicity, instanceProtocol,
                             gameServer);
-                }, knownHash);
+                }, knownHash, args => GameInstance.HandleDownloadProgress(worldMeta, args.ProgressPercentage / 100f));
             }, worldMeta.OwnerId, targetBuild.FileId);
         }
 
@@ -210,12 +211,13 @@ namespace Hypernex.Player
                     knownHash = fileMetaResult.result.FileMeta.Hash;
                 DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                 {
+                    GameInstance.FinishDownload(worldMeta);
                     if (DownloadedWorlds.ContainsKey(worldMeta.Id))
                         DownloadedWorlds.Remove(worldMeta.Id);
                     DownloadedWorlds.Add(worldMeta.Id, o);
                     if (APIPlayer.IsFullReady)
                         APIPlayer.UserSocket.JoinInstance(instance.GameServerId, instance.InstanceId);
-                }, knownHash);
+                }, knownHash, args => GameInstance.HandleDownloadProgress(worldMeta, args.ProgressPercentage / 100f));
             }, worldMeta.OwnerId, targetBuild.FileId);
         }
         

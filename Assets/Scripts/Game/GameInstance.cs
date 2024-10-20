@@ -36,6 +36,7 @@ namespace Hypernex.Game
         public static Action<GameInstance, WorldMeta, Scene> OnGameInstanceLoaded { get; set; } =
             (instance, meta, scene) => { };
         public static Action<GameInstance> OnGameInstanceDisconnect { get; set; } = instance => { };
+        public static Dictionary<WorldMeta, float> WorldDownloadProgress = new();
 
         internal static void Init()
         {
@@ -57,6 +58,47 @@ namespace Hypernex.Game
                 gameInstance.Load();
             };
         }
+
+        internal static void HandleDownloadProgress(WorldMeta worldMeta, float progress)
+        {
+            if (WorldDownloadProgress.Count(x => x.Key.Id == worldMeta.Id) <= 0)
+            {
+                WorldDownloadProgress.Add(worldMeta, progress);
+                return;
+            }
+            for (int i = 0; i < WorldDownloadProgress.Count; i++)
+            {
+                WorldMeta w = WorldDownloadProgress.ElementAt(i).Key;
+                if(w.Id != worldMeta.Id) continue;
+                WorldDownloadProgress[w] = progress;
+            }
+        }
+
+        public static bool IsDownloading(string worldId) => WorldDownloadProgress.Count(x => x.Key.Id == worldId) > 0;
+        public static bool IsDownloading(WorldMeta worldMeta) => IsDownloading(worldMeta.Id);
+        
+        public static float? GetDownloadProgress(string worldId)
+        {
+            for (int i = 0; i < WorldDownloadProgress.Count; i++)
+            {
+                KeyValuePair<WorldMeta, float> pair = WorldDownloadProgress.ElementAt(i);
+                WorldMeta w = pair.Key;
+                if(w.Id != worldId) continue;
+                return pair.Value;
+            }
+            return null;
+        }
+        public static float? GetDownloadProgress(WorldMeta worldMeta) => GetDownloadProgress(worldMeta.Id);
+
+        public static (WorldMeta, float)[] GetAllDownloads()
+        {
+            int count = WorldDownloadProgress.Count;
+            if (count <= 0) return Array.Empty< (WorldMeta, float)>();
+            return WorldDownloadProgress.Select(x => (x.Key, x.Value)).ToArray();
+        }
+
+        internal static void FinishDownload(WorldMeta worldMeta) => WorldDownloadProgress =
+            WorldDownloadProgress.Where(x => x.Key.Id != worldMeta.Id).ToDictionary(x => x.Key, y => y.Value);
         
         public static User[] GetConnectedUsers(GameInstance gameInstance, bool includeLocal = true)
         {
@@ -184,6 +226,7 @@ namespace Hypernex.Game
             string ip = s[0];
             int port = Convert.ToInt32(s[1]);
             InstanceProtocol instanceProtocol = instanceOpened.InstanceProtocol;
+            host = APIPlayer.APIUser;
             SetupClient(ip, port, instanceProtocol);
         }
 
@@ -472,6 +515,7 @@ namespace Hypernex.Game
                         knownHash = fileMetaResult.result.FileMeta.Hash;
                     DownloadTools.DownloadFile(fileURL, $"{worldMeta.Id}.hnw", o =>
                     {
+                        FinishDownload(worldMeta);
                         CoroutineRunner.Instance.Run(AssetBundleTools.LoadSceneFromFile(o, s =>
                         {
                             if (!string.IsNullOrEmpty(s))
@@ -479,7 +523,7 @@ namespace Hypernex.Game
                             else
                                 Dispose();
                         }, this));
-                    }, knownHash);
+                    }, knownHash, args => HandleDownloadProgress(worldMeta, args.ProgressPercentage / 100f));
                 }, worldMeta.OwnerId, fileId);
             }
         }

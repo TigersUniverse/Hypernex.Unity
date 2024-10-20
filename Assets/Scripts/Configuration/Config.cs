@@ -24,15 +24,21 @@ namespace Hypernex.Configuration
         [TomlProperty("UseTrustedURLs")]
         public bool UseTrustedURLs { get; set; } = true;
         
-        [TomlProperty("TrustedURLs")]
-        public List<string> TrustedURLs { get; set; } = new()
+        public static List<string> DefaultURLs = new()
         {
             "https://discordapp.com",
             "https://discord.com",
             "https://cdn.discordapp.com",
             "https://vrcdn.live",
-            "https://stream.vrcdn.live"
+            "https://stream.vrcdn.live",
+            "https://youtube.com",
+            "https://www.youtube.com",
+            "https://m.youtube.com",
+            "https://youtu.be/"
         };
+
+        [TomlProperty("TrustedURLs")]
+        public List<string> TrustedURLs { get; set; } = DefaultURLs;
 
         public ConfigUser GetConfigUserFromUserId(string userid)
         {

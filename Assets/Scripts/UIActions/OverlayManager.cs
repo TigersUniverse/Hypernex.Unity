@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Hypernex.CCK.Unity;
 using Hypernex.Game;
 using Hypernex.UI.Templates;
 using Hypernex.UIActions.Data;
+using HypernexSharp.APIObjects;
+using TMPro;
 using UnityEngine;
-using Logger = Hypernex.CCK.Logger;
+using UnityEngine.UI;
 
 namespace Hypernex.UIActions
 {
@@ -36,7 +39,11 @@ namespace Hypernex.UIActions
         public List<MessagePanelTemplate> Panels = new();
         public Transform OverlayAlign;
         public Transform OverlayVRAlign;
+        public Slider DownloadProgress;
+        public TMP_Text DownloadName;
+        public TMP_Text DownloadProgressText;
 
+        internal AvatarMeta CurrentLoadingAvatarMeta;
         private CancellationTokenSource cts;
         private Coroutine coroutine;
         private readonly Queue<MessageMeta> MessagesToDisplay = new();
@@ -76,10 +83,42 @@ namespace Hypernex.UIActions
             }
         }
 
+        private void CheckForDownloading()
+        {
+            (WorldMeta, float)[] e = GameInstance.GetAllDownloads();
+            float[] playerClone;
+            if (LocalPlayer.IsLoadingAvatar)
+            {
+                playerClone = new float[e.Length + 1];
+                for (int i = 0; i < e.Length; i++)
+                    playerClone[i] = e[i].Item2;
+                playerClone[playerClone.Length - 1] = LocalPlayer.AvatarDownloadPercentage;
+            }
+            else
+                playerClone = e.Select(x => x.Item2).ToArray();
+            if (playerClone.Length <= 0)
+            {
+                DownloadProgress.gameObject.SetActive(false);
+                return;
+            }
+            DownloadProgress.gameObject.SetActive(true);
+            float avg = playerClone.Sum();
+            avg /= playerClone.Length;
+            DownloadProgress.value = avg;
+            DownloadProgressText.text = avg.ToString("P0", CultureInfo.CurrentCulture);
+            string assetName;
+            if (playerClone.Length == 1)
+                assetName = e.Length > 0 ? e[0].Item1.Name : CurrentLoadingAvatarMeta.Name;
+            else
+                assetName = $"{playerClone.Length} assets";
+            DownloadName.text = "Downloading " + assetName;
+        }
+
         private void Update()
         {
             transform.localPosition = LocalPlayer.IsVR ? OverlayVRAlign.localPosition : OverlayAlign.localPosition;
             MicrophoneIcon.SetActive(LocalPlayer.MicrophoneEnabled);
+            CheckForDownloading();
         }
 
         public void Dispose()

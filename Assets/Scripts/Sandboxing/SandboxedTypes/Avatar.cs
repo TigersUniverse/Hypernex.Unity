@@ -71,7 +71,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 
         public bool IsLocalAvatar => isLocalAvatar;
         public string OwnerId => isLocalAvatar ? netPlayer.UserId : APIPlayer.APIUser.Id;
-        public bool IsHost => gameInstance != null && gameInstance.host.Id == OwnerId;
 
         public Item GetAvatarObject(HumanBodyBones humanBodyBones)
         {

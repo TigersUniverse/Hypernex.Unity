@@ -25,7 +25,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if (videoPlayerDescriptor == null) throw new Exception("No VideoPlayerDescriptor found on Item at " + i.Path);
         }
 
-        public bool IsValid() => GetVideoPlayer() != null;
         public bool IsPlaying() => GetVideoPlayer()?.IsPlaying ?? false;
         public bool IsMuted() => GetVideoPlayer()?.Muted ?? false;
         public bool IsLooping() => GetVideoPlayer()?.Looping ?? false;

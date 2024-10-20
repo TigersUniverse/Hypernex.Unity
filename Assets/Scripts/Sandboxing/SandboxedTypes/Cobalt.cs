@@ -26,7 +26,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 MediaResponse mediaResponse = c.GetMedia(getMedia);
                 QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                 {
-                    if (mediaResponse.status == Status.Stream)
+                    if (mediaResponse.status == Status.Stream || mediaResponse.status == Status.Redirect)
                         options.Add(new CobaltOption(mediaResponse));
                     else if(mediaResponse.status == Status.Picker)
                     {
@@ -82,7 +82,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 bool trusted = !ConfigManager.LoadedConfig.UseTrustedURLs;
                 if(!trusted)
                 {
-                    foreach (Uri trustedUri in ConfigManager.LoadedConfig.TrustedURLs.Select(x => new Uri(x)))
+                    foreach (Uri trustedUri in ConfigManager.LoadedConfig.TrustedURLs.Union(Config.DefaultURLs).Select(x => new Uri(x)))
                     {
                         if (uri.Host != trustedUri.Host) continue;
                         trusted = true;
@@ -92,7 +92,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 if (!trusted)
                 {
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone), null)));
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone))));
                     return;
                 }
                 if (VideoPlayerManager.IsStream(uri))
@@ -123,13 +123,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 else
                 {
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone), null)));
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone))));
                     return;
                 }
                 if (streamResponse.status != Status.Success)
                 {
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone), null)));
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone))));
                     return;
                 }
 

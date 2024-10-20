@@ -15,6 +15,7 @@ using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI;
 using Hypernex.UI.Templates;
+using Hypernex.UIActions;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
@@ -42,6 +43,8 @@ namespace Hypernex.Game
         public bool IsLocal => true;
         public string Id => APIPlayer.APIUser.Id;
         public AvatarCreator AvatarCreator => avatar;
+        public bool IsLoadingAvatar { get; private set; }
+        public float AvatarDownloadPercentage { get; private set; }
 
         public static bool IsVR { get; internal set; }
 
@@ -296,6 +299,7 @@ namespace Hypernex.Game
                 avatarMeta = am;
                 avatar?.Dispose();
                 CurrentAvatarDisplay.SizeAvatar(1f);
+                IsLoadingAvatar = false;
                 avatar = new LocalAvatarCreator(this, a, IsVR, am);
                 avatarFile = file;
                 // Why this doesn't clear old transforms? I don't know.
@@ -334,6 +338,9 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
                 return;
             }
+            OverlayManager.Instance.CurrentLoadingAvatarMeta = r.result.Meta;
+            IsLoadingAvatar = true;
+            AvatarDownloadPercentage = 0;
             Builds build = r.result.Meta.Builds.FirstOrDefault(x => x.BuildPlatform == AssetBundleTools.Platform);
             if (build == null)
                 return;
@@ -354,7 +361,8 @@ namespace Hypernex.Game
                         if (fileMetaResult.success)
                             knownHash = fileMetaResult.result.FileMeta.Hash;
                         DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna",
-                            f => OnAvatarDownload(f, r.result.Meta), knownHash);
+                            f => OnAvatarDownload(f, r.result.Meta), knownHash,
+                            args => AvatarDownloadPercentage = args.ProgressPercentage / 100f);
                     }, r.result.Meta.OwnerId, build.FileId);
                 });
                 return;
@@ -364,8 +372,8 @@ namespace Hypernex.Game
                 string knownHash = String.Empty;
                 if (fileMetaResult.success)
                     knownHash = fileMetaResult.result.FileMeta.Hash;
-                DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna",
-                    f => OnAvatarDownload(f, r.result.Meta), knownHash);
+                DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta),
+                    knownHash, args => AvatarDownloadPercentage = args.ProgressPercentage / 100f);
             }, r.result.Meta.OwnerId, build.FileId);
         }
 
