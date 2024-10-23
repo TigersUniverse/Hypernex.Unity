@@ -26,6 +26,7 @@ namespace Hypernex.UIActions
         public TMP_Dropdown AudioDeviceSelection;
         public TMP_InputField DownloadThreadsInput;
         public TMP_InputField MMSCInput;
+        public Toggle TrustedURLsToggle;
 
         public GameObject AudioPanel;
         public Slider VoicesBoostSlider;
@@ -90,6 +91,8 @@ namespace Hypernex.UIActions
             DownloadThreadsInput.text = ConfigManager.LoadedConfig.DownloadThreads.ToString();
             // MMSC
             MMSCInput.text = ConfigManager.LoadedConfig.MaxMemoryStorageCache.ToString();
+            // TrustedURLs
+            TrustedURLsToggle.isOn = ConfigManager.LoadedConfig.UseTrustedURLs;
             AllPanels.ForEach(x => x.SetActive(false));
             GeneralPanel.SetActive(true);
             lastVisiblePanel = OnGeneralSettings;
@@ -321,6 +324,13 @@ namespace Hypernex.UIActions
                 LocalPlayer.Instance.MicrophoneEnabled = true;
                 if(!v)
                     LocalPlayer.Instance.MicrophoneEnabled = false;
+            });
+            TrustedURLsToggle.onValueChanged.RemoveAllListeners();
+            TrustedURLsToggle.onValueChanged.AddListener(v =>
+            {
+                if (ConfigManager.LoadedConfig == null)
+                    return;
+                ConfigManager.LoadedConfig.UseTrustedURLs = v;
             });
             ThemeSelection.onValueChanged.RemoveAllListeners();
             ThemeSelection.onValueChanged.AddListener(i =>
