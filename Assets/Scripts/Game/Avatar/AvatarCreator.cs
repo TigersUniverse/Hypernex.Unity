@@ -63,20 +63,9 @@ namespace Hypernex.Game.Avatar
             }
         }
 
-        private AnimatorControllerParameter[] _mainParameters;
-
-        public AnimatorControllerParameter[] MainAnimatorParameters
-        {
-            get
-            {
-                if (_mainParameters == null)
-                {
-                    if (MainAnimator == null) return Array.Empty<AnimatorControllerParameter>();
-                    _mainParameters = MainAnimator.parameters;
-                }
-                return _mainParameters;
-            }
-        }
+        public AnimatorControllerParameter[] MainAnimatorParameters => MainAnimator == null
+            ? Array.Empty<AnimatorControllerParameter>()
+            : MainAnimator.parameters;
         
         protected GameObject HeadAlign;
         internal GameObject VoiceAlign;
@@ -391,7 +380,7 @@ namespace Hypernex.Game.Avatar
         public void SetParameter<T>(string parameterName, T value, CustomPlayableAnimator target = null, 
             bool force = false, bool mainAnimator = false)
         {
-            if (mainAnimator)
+            if (mainAnimator && MainAnimator != null)
             {
                 try
                 {
