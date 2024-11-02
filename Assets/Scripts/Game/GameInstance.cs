@@ -544,9 +544,9 @@ namespace Hypernex.Game
                             host = connectedUser;
                         }
                     }
-                if(host != null)
-                    DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             }
+            if(host != null)
+                DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             sandboxes.ForEach(x => x.InstanceContainer.Runtime.Update());
             volumes.SelectVolume();
         }
