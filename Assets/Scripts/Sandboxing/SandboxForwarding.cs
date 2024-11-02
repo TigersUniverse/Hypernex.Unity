@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using CobaltSharp;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing.SandboxedTypes;
@@ -13,7 +12,6 @@ using Nexbox;
 using UnityEngine;
 using Avatar = Hypernex.Sandboxing.SandboxedTypes.Avatar;
 using Bounds = Hypernex.Sandboxing.SandboxedTypes.Bounds;
-using Cobalt = Hypernex.Sandboxing.SandboxedTypes.Cobalt;
 using Collider = Hypernex.Sandboxing.SandboxedTypes.Collider;
 using Collision = Hypernex.Sandboxing.SandboxedTypes.Collision;
 using Color = Hypernex.Sandboxing.SandboxedTypes.Color;
@@ -88,14 +86,9 @@ namespace Hypernex.Sandboxing
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalTypes = new(new Dictionary<string, Type>
         {
             ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
-            ["GetMedia"] = typeof(GetMedia),
-            ["VideoCodec"] = typeof(VideoCodec),
-            ["AudioFormat"] = typeof(AudioFormat),
-            ["VideoQuality"] = typeof(VideoQuality),
-            ["Cobalt"] = typeof(Cobalt),
-            ["CobaltOption"] = typeof(CobaltOption),
-            ["CobaltOptions"] = typeof(CobaltOptions),
-            ["CobaltDownload"] = typeof(CobaltDownload),
+            ["Streaming"] = typeof(Streaming),
+            ["StreamDownloadOptions"] = typeof(Streaming.StreamDownloadOptions),
+            ["StreamDownload"] = typeof(Streaming.StreamDownload),
             ["PhysicsBody"] = typeof(PhysicsBody)
         }.Union(BaseForwardingTypes).ToDictionary(pair => pair.Key, pair => pair.Value));
 
