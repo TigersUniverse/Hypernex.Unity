@@ -176,8 +176,7 @@ namespace Hypernex.Game.Avatar
         {
             Quaternion saved = avatar.transform.rotation;
             avatar.transform.rotation = Quaternion.identity;
-            Transform head = GetBoneFromHumanoid(HumanBodyBones.Head);
-            headRot = head.rotation;
+            headRot = GetBoneRestRotation(HumanBodyBones.Head);
             leftHandRot = GetBoneRestRotation(HumanBodyBones.LeftHand);
             rightHandRot = GetBoneRestRotation(HumanBodyBones.RightHand);
             avatar.transform.rotation = saved;
@@ -196,7 +195,9 @@ namespace Hypernex.Game.Avatar
             vrik.transform.rotation = saved;
 
             vrik.solver.spine.headTarget.localRotation = headRot;
+            vrik.solver.leftArm.target.localPosition = Vector3.zero;
             vrik.solver.leftArm.target.localRotation = leftHandRot;
+            vrik.solver.rightArm.target.localPosition = Vector3.zero;
             vrik.solver.rightArm.target.localRotation = rightHandRot;
 
             SetCalibrationMeta();
