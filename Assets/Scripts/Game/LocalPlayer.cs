@@ -384,8 +384,6 @@ namespace Hypernex.Game
             APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
         }
 
-        private List<Coroutine> lastCoroutine = new();
-
         private void Start()
         {
             if (Instance != null)
@@ -395,7 +393,7 @@ namespace Hypernex.Game
                 return;
             }
             Instance = this;
-            LocalPlayerSyncController = new LocalPlayerSyncController(this, i => lastCoroutine.Add(StartCoroutine(i)));
+            LocalPlayerSyncController = new LocalPlayerSyncController(this, i => StartCoroutine(i));
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
@@ -449,10 +447,6 @@ namespace Hypernex.Game
                 {
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                         ShareAvatarTokenToUserId(user, avatarMeta);
-                };
-                instance.OnDisconnect += () =>
-                {
-                    lastCoroutine.ForEach(StopCoroutine);
                 };
                 if (avatarMeta == null) return;
                 if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
@@ -807,7 +801,6 @@ namespace Hypernex.Game
                 if(binding.GetType() == typeof(Bindings.Mouse))
                     ((Bindings.Mouse)binding).Dispose();
             }
-            lastCoroutine.ForEach(StopCoroutine);
             denoiser?.Dispose();
             LocalPlayerSyncController?.Dispose();
         }
