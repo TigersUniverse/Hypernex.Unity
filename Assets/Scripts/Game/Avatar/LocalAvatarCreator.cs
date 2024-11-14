@@ -63,7 +63,6 @@ namespace Hypernex.Game.Avatar
             a.gameObject.name = "avatar";
             a.transform.SetParent(localPlayer.transform, true);
             AlignAvatar(isVR);
-            a.transform.localScale = Vector3.one;
             if (isVR)
             {
                 for (int i = 0; i < LocalPlayer.Instance.Camera.transform.childCount; i++)
