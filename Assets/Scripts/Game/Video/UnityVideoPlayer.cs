@@ -19,6 +19,7 @@ namespace Hypernex.Game.Video
             if (videoPlayer == null)
                 videoPlayer = attachedObject.AddComponent<VideoPlayer>();
             videoPlayer.source = VideoSource.Url;
+            videoPlayer.aspectRatio = VideoAspectRatio.FitVertically;
             audioSource = descriptor.AudioOutput;
             if (audioSource == null) audioSource = attachedObject.GetComponent<AudioSource>();
             if (audioSource == null) audioSource = attachedObject.AddComponent<AudioSource>();
