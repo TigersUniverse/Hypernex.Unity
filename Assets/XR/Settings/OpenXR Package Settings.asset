@@ -296,7 +296,7 @@ MonoBehaviour:
   - {fileID: -2381662415778565500}
   - {fileID: -2909345612091275091}
   - {fileID: -327800753894012252}
-  - {fileID: 4061009708214013721}
+  - {fileID: 8850522641351791371}
   - {fileID: -2305726410776208538}
   - {fileID: -3311335836742788555}
   - {fileID: -6623616368993060432}
@@ -433,26 +433,6 @@ MonoBehaviour:
   featureIdInternal: com.unity.openxr.feature.input.oculustouch
   openxrExtensionStrings: 
   company: Unity
-  priority: 0
-  required: 0
---- !u!114 &-467675962081126775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e4ceef08e09cd184f8b789f9cb5116a9, type: 3}
-  m_Name: HTCViveTrackerProfile Standalone
-  m_EditorClassIdentifier: 
-  m_enabled: 0
-  nameUi: HTC Vive Tracker Profile
-  version: 0.0.1
-  featureIdInternal: com.massive.openxr.feature.input.htcvivetracker
-  openxrExtensionStrings: XR_HTCX_vive_tracker_interaction
-  company: MASSIVE
   priority: 0
   required: 0
 --- !u!114 &-459259106422500135
@@ -788,26 +768,6 @@ MonoBehaviour:
   company: Unity
   priority: 0
   required: 0
---- !u!114 &4061009708214013721
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57f38318ae252ab4394c743fdbdaf505, type: 3}
-  m_Name: HandTrackingFeature Android
-  m_EditorClassIdentifier: 
-  m_enabled: 0
-  nameUi: Hand tracking Extension
-  version: 0.0.1
-  featureIdInternal: com.joemarshall.handtracking
-  openxrExtensionStrings: XR_EXT_hand_tracking
-  company: Joe M
-  priority: 0
-  required: 0
 --- !u!114 &4273876659868171427
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -888,10 +848,10 @@ MonoBehaviour:
   - {fileID: 567262737449457601}
   - {fileID: 6820308673033940846}
   - {fileID: -5394086307700296372}
-  - {fileID: 6041928811386881207}
+  - {fileID: 316146212815733621}
   - {fileID: 7991810782710275651}
   - {fileID: 5964443854557396641}
-  - {fileID: -467675962081126775}
+  - {fileID: 8653927858112267962}
   - {fileID: 8543693274254203091}
   - {fileID: -459259106422500135}
   - {fileID: -4543447458113971936}
@@ -926,26 +886,6 @@ MonoBehaviour:
   featureIdInternal: com.unity.openxr.feature.input.htcvive
   openxrExtensionStrings: 
   company: Unity
-  priority: 0
-  required: 0
---- !u!114 &6041928811386881207
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57f38318ae252ab4394c743fdbdaf505, type: 3}
-  m_Name: HandTrackingFeature Standalone
-  m_EditorClassIdentifier: 
-  m_enabled: 0
-  nameUi: Hand tracking Extension
-  version: 0.0.1
-  featureIdInternal: com.joemarshall.handtracking
-  openxrExtensionStrings: XR_EXT_hand_tracking
-  company: Joe M
   priority: 0
   required: 0
 --- !u!114 &6820308673033940846
