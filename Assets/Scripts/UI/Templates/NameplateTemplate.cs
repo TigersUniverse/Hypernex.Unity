@@ -14,16 +14,16 @@ namespace Hypernex.UI.Templates
     public class NameplateTemplate : MonoBehaviour
     {
         public NetPlayer np;
-        public RawImage Banner;
-        public RawImage Pfp;
+        public Image Banner;
+        public Image Pfp;
         public Image Status;
         public TMP_Text Username;
         public GameObject PronounContainer;
         public Slider DownloadProgress;
         public TMP_Text DownloadProgressText;
 
-        public Texture2D DefaultPfp;
-        public Texture2D DefaultBanner;
+        public Sprite DefaultPfp;
+        public Sprite DefaultBanner;
 
         public Camera MainCamera;
         private Transform FollowTransform;
@@ -71,28 +71,32 @@ namespace Hypernex.UI.Templates
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            GifRenderer gifRenderer = Pfp.gameObject.AddComponent<GifRenderer>();
-                            gifRenderer.LoadGif(bytes);
+                            Logger.CurrentLogger.Warn("GIFs would normally go here but I swapped it out for the image component which doesn't support GIFs.");
                         }
                         else
-                            Pfp.texture = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes);
+                        {
+                            Texture2D texture = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes);
+                            Pfp.sprite = TextureToSprite(texture);
+                        }
                     });
             else
-                Pfp.texture = DefaultPfp;
+                Pfp.sprite = DefaultPfp;
             if (!string.IsNullOrEmpty(user.Bio.BannerURL))
                 DownloadTools.DownloadBytes(user.Bio.BannerURL,
                     bytes =>
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            GifRenderer gifRenderer = Banner.gameObject.AddComponent<GifRenderer>();
-                            gifRenderer.LoadGif(bytes);
+                            Logger.CurrentLogger.Warn("GIFs would normally go here but I swapped it out for the image component which doesn't support GIFs.");
                         }
                         else
-                            Banner.texture = ImageTools.BytesToTexture2D(user.Bio.BannerURL, bytes);
+                        {
+                            Texture2D texture = ImageTools.BytesToTexture2D(user.Bio.BannerURL, bytes);
+                            Banner.sprite = TextureToSprite(texture);
+                        }
                     });
             else
-                Banner.texture = DefaultBanner;
+                Banner.sprite = DefaultBanner;
             if (user.Badges == null)
             {
                 Logger.CurrentLogger.Warn("User " + user.Id + " has null Badges! This is usually an API fault. Please report this to system administrators!");
@@ -100,6 +104,11 @@ namespace Hypernex.UI.Templates
             }
             user.Badges.ForEach(x => BadgeRankHandler.GetBadgeHandlerByName(x)?.ApplyToNameplate(this, user));
             BadgeRankHandler.GetRankHandlersByRank(user.Rank).ForEach(x => x.ApplyToNameplate(this, user));
+        }
+
+        private Sprite TextureToSprite(Texture2D texture)
+        {
+            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
         }
 
         public void OnNewAvatar(AvatarCreator avatarCreator)
