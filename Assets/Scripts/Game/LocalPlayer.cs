@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Audio;
@@ -228,6 +229,8 @@ namespace Hypernex.Game
                     searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "spawn");
                 if (searchSpawn != null)
                     spawnPosition = searchSpawn.transform.position;
+                else if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    spawnPosition = GameInstance.FocusedInstance.World.transform.position;
             }
             CharacterController.enabled = false;
             transform.position = spawnPosition;

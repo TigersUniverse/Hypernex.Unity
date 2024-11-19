@@ -40,7 +40,9 @@ namespace Hypernex.Game.Avatar
             audioSource = VoiceAlign.PrepareNetVoice();
             if(np.nameplateTemplate != null)
                 np.nameplateTemplate.OnNewAvatar(this);
+            Vector3 beforeScale = a.transform.localScale;
             a.transform.SetParent(np.transform);
+            a.transform.localScale = beforeScale;
             a.gameObject.name = "avatar";
             AlignAvatar(isVR);
             if (isVR)
