@@ -33,5 +33,8 @@ namespace Hypernex.Tools
             CachedImages.Add(id, t);
             return t;
         }
+
+        public static Sprite ToSprite(this Texture2D texture2D) => Sprite.Create(texture2D,
+            new Rect(0, 0, texture2D.width, texture2D.height), new Vector2(texture2D.width / 2, texture2D.height / 2));
     }
 }

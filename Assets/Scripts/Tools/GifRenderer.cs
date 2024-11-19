@@ -58,8 +58,7 @@ namespace Hypernex.Tools
                 {
                     frames.Add(gifTexture);
                     Texture2D texture2D = gifTexture.m_texture2d;
-                    Sprite sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height),
-                        new Vector2(texture2D.width / 2, texture2D.height / 2));
+                    Sprite sprite = texture2D.ToSprite();
                     sprites.Add(texture2D, sprite);
                 }
 
@@ -110,8 +109,7 @@ namespace Hypernex.Tools
             while (img != null)
             {
                 Texture2D texture2D = img.CreateTexture();
-                Sprite sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height),
-                    new Vector2(texture2D.width / 2, texture2D.height / 2));
+                Sprite sprite = texture2D.ToSprite();
                 frames.Add(texture2D);
                 sprites.Add(texture2D, sprite);
                 frameDelays.Add(img.Delay / 1000.0f);
