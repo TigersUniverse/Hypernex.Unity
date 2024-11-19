@@ -13,12 +13,14 @@ namespace Hypernex.UI.Templates
     {
         public LoginPageTopBarButton Page;
         public TMP_Text WorldName;
-        public RawImage Banner;
+        public Image Banner;
         public TMP_Text WorldCreator;
         public TMP_Text DescriptionText;
-        public DynamicScroll Users;
+        public RectTransform Users;
+        public TMP_Text UserCount;
+        public TMP_Text PublicityText;
 
-        public Texture2D DefaultBanner;
+        public Sprite DefaultBanner;
 
         private GameInstance g;
         private LoginPageTopBarButton lastPage;
@@ -27,10 +29,9 @@ namespace Hypernex.UI.Templates
         {
             GameObject instanceCard = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("CurrentInstanceUserCard").gameObject;
-            GameObject newInstanceCard = Instantiate(instanceCard);
+            GameObject newInstanceCard = Instantiate(instanceCard, Users, true);
             RectTransform c = newInstanceCard.GetComponent<RectTransform>();
             newInstanceCard.GetComponent<UserInstanceCardTemplate>().Render(user);
-            Users.AddItem(c);
         }
 
         public void Render(GameInstance gameInstance, byte[] banner, List<User> connectedUsers)
@@ -53,10 +54,13 @@ namespace Hypernex.UI.Templates
                     gifRenderer.LoadGif(banner);
                 }
                 else
-                    Banner.texture = ImageTools.BytesToTexture2D(gameInstance.worldMeta.ThumbnailURL, banner);
+                    Banner.sprite = ImageTools.BytesToTexture2D(gameInstance.worldMeta.ThumbnailURL, banner).ToSprite();
             else
-                Banner.texture = DefaultBanner;
-            Users.Clear();
+                Banner.sprite = DefaultBanner;
+            UserCount.text = $"{gameInstance.ConnectedUsers.Count + 1} Users";
+            PublicityText.text = gameInstance.Publicity.ToString();
+            for (int i = 1; i < Users.childCount; i++)
+                Destroy(Users.GetChild(i).gameObject);
             Page.Show();
             foreach (User connectedUser in connectedUsers)
                 CreateCurrentInstanceUserCard(connectedUser);

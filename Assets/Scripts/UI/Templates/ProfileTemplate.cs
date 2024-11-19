@@ -20,15 +20,18 @@ namespace Hypernex.UI.Templates
         public LoginPageTopBarButton ProfilePage;
         public MessageOverlayTemplate MessageOverlayTemplate;
     
-        public RawImage Banner;
-        public RawImage Pfp;
+        public Image Banner;
+        public Image Pfp;
         public Image Status;
         public GameObject PronounContainer;
+        public GameObject UsernameContainer;
+        public TMP_Text DisplayName;
         public TMP_Text Username;
-        public TMP_Text StatusText;
+        public TMP_Text StatusTextDefault;
+        public TMP_Text StatusTextActual;
         public TMP_Text DescriptionText;
-        public Texture2D DefaultPfp;
-        public Texture2D DefaultBanner;
+        public Sprite DefaultPfp;
+        public Sprite DefaultBanner;
         public Button AddFriendButton;
         public Button RemoveFriendButton;
         public Button BlockButton;
@@ -253,10 +256,18 @@ namespace Hypernex.UI.Templates
             RegisterButtonEvents(user);
             SetButtonVisibility(user);
             if (!string.IsNullOrEmpty(user.Bio.DisplayName))
-                Username.text = user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
-            else
+            {
+                DisplayName.text = user.Bio.DisplayName;
                 Username.text = "@" + user.Username;
-            StatusText.text = !string.IsNullOrEmpty(user.Bio.StatusText) ? user.Bio.StatusText : user.Bio.Status.ToString();
+                UsernameContainer.SetActive(true);
+            }
+            else
+            {
+                DisplayName.text = "@" + user.Username;
+                UsernameContainer.SetActive(false);
+            }
+            StatusTextDefault.text = user.Bio.Status.ToString();
+            StatusTextActual.text = user.Bio.StatusText;
             DescriptionText.text = user.Bio.Description;
             switch (user.Bio.Status)
             {
@@ -278,7 +289,7 @@ namespace Hypernex.UI.Templates
             }
             if (user.Bio.Pronouns != null)
             {
-                (pronounText == null ? pronounText = PronounContainer.transform.GetChild(0).GetComponent<TMP_Text>() : pronounText)!.text =
+                (pronounText == null ? pronounText = PronounContainer.transform.GetChild(1).GetComponent<TMP_Text>() : pronounText)!.text =
                     user.Bio.Pronouns.ToString();
                 PronounContainer.SetActive(true);
             }
@@ -298,10 +309,10 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            Pfp.texture = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes);
+                            Pfp.sprite = ImageTools.BytesToTexture2D(user.Bio.PfpURL, bytes).ToSprite();
                     });
             else
-                Pfp.texture = DefaultPfp;
+                Pfp.sprite = DefaultPfp;
             if (!string.IsNullOrEmpty(user.Bio.BannerURL))
                 DownloadTools.DownloadBytes(user.Bio.BannerURL,
                     bytes =>
@@ -312,10 +323,10 @@ namespace Hypernex.UI.Templates
                             gifRenderer.LoadGif(bytes);
                         }
                         else
-                            Banner.texture = ImageTools.BytesToTexture2D(user.Bio.BannerURL, bytes);
+                            Banner.sprite = ImageTools.BytesToTexture2D(user.Bio.BannerURL, bytes).ToSprite();
                     });
             else
-                Banner.texture = DefaultBanner;
+                Banner.sprite = DefaultBanner;
             if(!skipShow)
                 ProfilePage.Show();
             lastUser = user;

@@ -13,9 +13,6 @@ namespace Hypernex.UI.Templates
         public GameObject CurrentInstanceBannerObject;
         public CurrentInstance CurrentInstancePage;
         public TMP_Text WorldName;
-        public RawImage Banner;
-
-        public Texture2D DefaultBanner;
 
         private GameInstance g;
         private byte[] b;
@@ -27,21 +24,6 @@ namespace Hypernex.UI.Templates
             g = gameInstance;
             b = banner;
             WorldName.text = gameInstance.worldMeta.Name;
-            if (banner.Length > 0)
-                if (GifRenderer.IsGif(banner))
-                {
-                    GifRenderer gifRenderer = Banner.GetComponent<GifRenderer>();
-                    if (gifRenderer != null)
-                    {
-                        Destroy(gifRenderer);
-                        gifRenderer = Banner.gameObject.AddComponent<GifRenderer>();
-                    }
-                    gifRenderer.LoadGif(banner);
-                }
-                else
-                    Banner.texture = ImageTools.BytesToTexture2D(gameInstance.worldMeta.ThumbnailURL, banner);
-            else
-                Banner.texture = DefaultBanner;
             CurrentInstanceBannerObject.SetActive(true);
         }
 
