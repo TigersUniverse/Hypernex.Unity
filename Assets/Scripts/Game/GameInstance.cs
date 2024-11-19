@@ -143,11 +143,11 @@ namespace Hypernex.Game
                     case InstancePublicity.Acquaintances:
                     case InstancePublicity.Friends:
                     case InstancePublicity.OpenRequest:
-                        if (host == null)
-                            return false;
-                        return host.Friends.Contains(APIPlayer.APIUser.Id);
+                        return true;
                     case InstancePublicity.ModeratorRequest:
                         return Moderators.Contains(APIPlayer.APIUser.Id);
+                    case InstancePublicity.ClosedRequest:
+                        return false;
                 }
                 return false;
             }
@@ -544,9 +544,9 @@ namespace Hypernex.Game
                             host = connectedUser;
                         }
                     }
-                if(host != null)
-                    DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             }
+            if(host != null)
+                DiscordTools.FocusInstance(worldMeta, gameServerId + "/" + instanceId, host);
             sandboxes.ForEach(x => x.InstanceContainer.Runtime.Update());
             volumes.SelectVolume();
         }

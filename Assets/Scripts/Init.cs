@@ -60,6 +60,7 @@ public class Init : MonoBehaviour
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
+    public string GetYTDLLocation() => Path.Combine(Application.streamingAssetsPath, "ytdl");
 
     internal void StartVR()
     {
@@ -155,6 +156,20 @@ public class Init : MonoBehaviour
         audioMixers.Add(VoiceGroup, VoiceGroup.audioMixer);
         audioMixers.Add(WorldGroup, WorldGroup.audioMixer);
         audioMixers.Add(AvatarGroup, AvatarGroup.audioMixer);
+        if (!Directory.Exists(GetYTDLLocation()))
+            Directory.CreateDirectory(GetYTDLLocation());
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp.exe");
+        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg.exe");
+#elif UNITY_MAC
+        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp_macos");
+        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
+#else
+        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp");
+        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
+#endif
+        Streaming.ytdl.OutputFolder = Path.Combine(GetYTDLLocation(), "Downloads");
+        YoutubeDLSharp.Utils.DownloadBinaries(true, GetYTDLLocation());
 
         int pluginsLoaded;
         try

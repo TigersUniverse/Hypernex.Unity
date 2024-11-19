@@ -112,24 +112,24 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             return videoPlayer.Length;
         }
 
-        public void LoadFromCobalt(CobaltDownload cobaltDownload)
+        public void LoadFromStream(Streaming.StreamDownload streamDownload)
         {
             if(read || videoPlayerDescriptor == null)
                 return;
-            if (cobaltDownload.isStream)
+            if (streamDownload.isStream)
             {
                 IVideoPlayer videoPlayer = videoPlayerDescriptor.Replace(
-                    VideoPlayerManager.GetVideoPlayerType(new Uri(cobaltDownload.PathToFile)) ??
+                    VideoPlayerManager.GetVideoPlayerType(new Uri(streamDownload.pathToFile)) ??
                     VideoPlayerManager.DefaultVideoPlayerType);
                 if (videoPlayer == null)
                     return;
-                videoPlayer.Source = cobaltDownload.PathToFile;
+                videoPlayer.Source = streamDownload.pathToFile;
             }
             else
             {
-                if (!File.Exists(cobaltDownload.PathToFile))
+                if (!File.Exists(streamDownload.pathToFile))
                     return;
-                string filePath = "file:///" + cobaltDownload.PathToFile;
+                string filePath = "file:///" + streamDownload.pathToFile;
                 IVideoPlayer videoPlayer = videoPlayerDescriptor.Replace(
                     VideoPlayerManager.GetVideoPlayerType(new Uri(filePath)) ??
                     VideoPlayerManager.DefaultVideoPlayerType);

@@ -22,7 +22,7 @@ namespace Hypernex.Tools
         public static Action<float[], AudioClip, bool> OnClipReady { get; set; } = (data, clip, isEmpty) => { };
         public static int Frequency { get; private set; }
         public static int NumChannels => Clip.channels;
-        public static int FrameSizeMs { get; set; } = 40;
+        public static int FrameSizeMs { get; set; } = 120;
         public static int SampleBufferSize => Mathf.RoundToInt(FrameSizeMs / 1000f * Frequency * NumChannels);
 
         private int lastPosition;

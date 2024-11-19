@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Hypernex.CCK.Unity;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Audio;
@@ -228,6 +229,8 @@ namespace Hypernex.Game
                     searchSpawn = s.Value.GetRootGameObjects().FirstOrDefault(x => x.name.ToLower() == "spawn");
                 if (searchSpawn != null)
                     spawnPosition = searchSpawn.transform.position;
+                else if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.World != null)
+                    spawnPosition = GameInstance.FocusedInstance.World.transform.position;
             }
             CharacterController.enabled = false;
             transform.position = spawnPosition;
@@ -384,8 +387,6 @@ namespace Hypernex.Game
             APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
         }
 
-        private List<Coroutine> lastCoroutine = new();
-
         private void Start()
         {
             if (Instance != null)
@@ -395,7 +396,7 @@ namespace Hypernex.Game
                 return;
             }
             Instance = this;
-            LocalPlayerSyncController = new LocalPlayerSyncController(this, i => lastCoroutine.Add(StartCoroutine(i)));
+            LocalPlayerSyncController = new LocalPlayerSyncController(this, i => StartCoroutine(i));
             APIPlayer.OnUser += _ => LoadAvatar();
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
@@ -449,10 +450,6 @@ namespace Hypernex.Game
                 {
                     if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
                         ShareAvatarTokenToUserId(user, avatarMeta);
-                };
-                instance.OnDisconnect += () =>
-                {
-                    lastCoroutine.ForEach(StopCoroutine);
                 };
                 if (avatarMeta == null) return;
                 if (avatarMeta.Publicity == AvatarPublicity.OwnerOnly)
@@ -807,7 +804,6 @@ namespace Hypernex.Game
                 if(binding.GetType() == typeof(Bindings.Mouse))
                     ((Bindings.Mouse)binding).Dispose();
             }
-            lastCoroutine.ForEach(StopCoroutine);
             denoiser?.Dispose();
             LocalPlayerSyncController?.Dispose();
         }

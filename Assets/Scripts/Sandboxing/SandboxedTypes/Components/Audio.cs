@@ -130,13 +130,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             }
         }
 
-        public void LoadFromCobalt(CobaltDownload cobaltDownload, object onLoad)
+        public void LoadFromStream(Streaming.StreamDownload streamDownload, object onLoad)
         {
             if(read || audioSource == null)
                 return;
-            if (!File.Exists(cobaltDownload.PathToFile))
+            if (streamDownload.isStream || !File.Exists(streamDownload.pathToFile))
                 return;
-            CoroutineRunner.Instance.StartCoroutine(WaitForAudio("file://" + cobaltDownload.PathToFile, audioSource,
+            CoroutineRunner.Instance.StartCoroutine(WaitForAudio("file://" + streamDownload.pathToFile, audioSource,
                 onLoad));
         }
     }
