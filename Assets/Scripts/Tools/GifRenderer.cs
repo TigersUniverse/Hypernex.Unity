@@ -2,7 +2,6 @@
 //#define uni
 //#define none
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -12,7 +11,6 @@ using Image = MG.GIF.Image;
 
 namespace Hypernex.Tools
 {
-    [RequireComponent(typeof(RawImage))]
     public class GifRenderer : MonoBehaviour
     {
         //public static bool IsGif(byte[] data) => new Bitmap(new MemoryStream(data)).RawFormat.Equals(ImageFormat.Gif);
@@ -31,8 +29,10 @@ namespace Hypernex.Tools
         }
         
         private RawImage rawImage;
+        private UnityEngine.UIElements.Image image;
         private byte[] d = Array.Empty<byte>();
         private bool loaded;
+        private Dictionary<Texture2D, Sprite> sprites = new();
 
 #if uni
         public int CurrentFrame => currentFrame;
@@ -57,6 +57,10 @@ namespace Hypernex.Tools
                 foreach (UniGif.GifTexture gifTexture in textures)
                 {
                     frames.Add(gifTexture);
+                    Texture2D texture2D = gifTexture.m_texture2d;
+                    Sprite sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height),
+                        new Vector2(texture2D.width / 2, texture2D.height / 2));
+                    sprites.Add(texture2D, sprite);
                 }
 
                 loaded = true;
@@ -73,7 +77,7 @@ namespace Hypernex.Tools
             {
                 currentFrame = (currentFrame + 1) % frames.Count;
                 time = 0.0f;
-                rawImage.texture = frames[currentFrame].m_texture2d;
+                SetTexture(frames[currentFrame].m_texture2d);
             }
         }
         
@@ -102,14 +106,18 @@ namespace Hypernex.Tools
             if(decoder != null)
                 decoder.Dispose();
             decoder = new Decoder(data);
-            Image image = decoder.NextImage();
-            while (image != null)
+            Image img = decoder.NextImage();
+            while (img != null)
             {
-                frames.Add(image.CreateTexture());
-                frameDelays.Add(image.Delay / 1000.0f);
-                image = decoder.NextImage();
+                Texture2D texture2D = img.CreateTexture();
+                Sprite sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height),
+                    new Vector2(texture2D.width / 2, texture2D.height / 2));
+                frames.Add(texture2D);
+                sprites.Add(texture2D, sprite);
+                frameDelays.Add(img.Delay / 1000.0f);
+                img = decoder.NextImage();
             }
-            rawImage.texture = frames[0];
+            SetTexture(frames[0]);
             loaded = true;
         }
 
@@ -122,7 +130,7 @@ namespace Hypernex.Tools
             {
                 currentFrame = (currentFrame + 1) % frames.Count;
                 time = 0.0f;
-                rawImage.texture = frames[currentFrame];
+                SetTexture(frames[currentFrame]);
             }
         }
 
@@ -137,9 +145,18 @@ namespace Hypernex.Tools
 #if none
         public void LoadGif(byte[] data){}
 #else
+        private void SetTexture(Texture2D texture2D)
+        {
+            if (rawImage != null)
+                rawImage.texture = texture2D;
+            if (image != null)
+                image.sprite = sprites[texture2D];
+        }
+        
         void OnEnable()
         {
             rawImage = GetComponent<RawImage>();
+            image = GetComponent<UnityEngine.UIElements.Image>();
             if (!loaded && d.Length > 0)
                 LoadGif(d);
         }
