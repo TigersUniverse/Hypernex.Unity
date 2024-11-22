@@ -38,7 +38,7 @@ VertexOutput Vertex(Attributes input) {
 #endif
 
     // Extrude the object space position along a normal vector
-    float3 posOS = input.positionOS.xyz + normalOS * _Thickness;
+    float3 posOS = input.positionOS.xyz + TransformWorldToObjectDir(TransformObjectToWorldDir(normalOS, true), false) * _Thickness;
     // Convert this position to world and clip space
     output.positionCS = GetVertexPositionInputs(posOS).positionCS;
 
