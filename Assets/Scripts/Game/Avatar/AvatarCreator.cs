@@ -170,7 +170,9 @@ namespace Hypernex.Game.Avatar
         
         private Quaternion headRot;
         private Quaternion leftHandRot;
+        private Vector3 leftHandPos;
         private Quaternion rightHandRot;
+        private Vector3 rightHandPos;
 
         protected VRIK AddVRIK(GameObject avatar)
         {
@@ -178,7 +180,9 @@ namespace Hypernex.Game.Avatar
             avatar.transform.rotation = Quaternion.identity;
             headRot = GetBoneRestRotation(HumanBodyBones.Head);
             leftHandRot = GetBoneRestRotation(HumanBodyBones.LeftHand);
+            leftHandPos = new Vector3(0f, 0f, -0.05f);
             rightHandRot = GetBoneRestRotation(HumanBodyBones.RightHand);
+            rightHandPos = new Vector3(0f, 0f, -0.05f);
             avatar.transform.rotation = saved;
             VRIK v = avatar.AddComponent<VRIK>();
             return v;
@@ -195,10 +199,10 @@ namespace Hypernex.Game.Avatar
             vrik.transform.rotation = saved;
 
             vrik.solver.spine.headTarget.localRotation = headRot;
-            vrik.solver.leftArm.target.localPosition = Vector3.zero;
             vrik.solver.leftArm.target.localRotation = leftHandRot;
-            vrik.solver.rightArm.target.localPosition = Vector3.zero;
+            vrik.solver.leftArm.target.localPosition = Quaternion.Inverse(leftHandRot) * leftHandPos;
             vrik.solver.rightArm.target.localRotation = rightHandRot;
+            vrik.solver.rightArm.target.localPosition = Quaternion.Inverse(rightHandRot) * rightHandPos;
 
             SetCalibrationMeta();
             return calibrationData;
@@ -673,6 +677,30 @@ namespace Hypernex.Game.Avatar
             if (MainAnimator == null)
                 return null;
             return MainAnimator.GetBoneTransform(humanBodyBones);
+        }
+
+        public Matrix4x4 GetBoneRestPosition(HumanBodyBones humanBodyBones)
+        {
+            if (MainAnimator == null)
+                return Matrix4x4.identity;
+            Matrix4x4 rot = Matrix4x4.identity;
+            List<Matrix4x4> rots = new List<Matrix4x4>();
+            Transform xform = MainAnimator.GetBoneTransform(humanBodyBones);
+            while (xform != null && xform != MainAnimator.avatarRoot)
+            {
+                if (MainAnimator.avatar.humanDescription.skeleton.Any(x => x.name == xform.name))
+                {
+                    var bone = MainAnimator.avatar.humanDescription.skeleton.First(x => x.name == xform.name);
+                    rot = Matrix4x4.TRS(bone.position, bone.rotation, bone.scale) * rot;
+                }
+                else
+                {
+                    Debug.LogWarning($"Transform Bone not found: {xform.name}", xform);
+                    break;
+                }
+                xform = xform.parent;
+            }
+            return rot;
         }
 
         public Quaternion GetBoneRestRotation(HumanBodyBones humanBodyBones)

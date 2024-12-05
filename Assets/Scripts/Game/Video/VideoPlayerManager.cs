@@ -68,6 +68,7 @@ namespace Hypernex.Game.Video
             switch (ext)
             {
                 case ".m3u8":
+                case ".mpd":
                 case ".flv":
                     isStream = true;
                     break;
