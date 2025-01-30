@@ -78,19 +78,58 @@ namespace Hypernex.Game.Video
 
         public bool Muted
         {
-	        get => mediaPlayer.Mute;
-	        set => mediaPlayer.Mute = value;
+	        get
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+			        return vlcAudioSource.audioSource.mute;
+		        return mediaPlayer.Mute;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+		        {
+			        vlcAudioSource.audioSource.mute = value;
+			        mediaPlayer.Mute = false;
+			        return;
+		        }
+		        mediaPlayer.Mute = value;
+	        }
         }
 
         public bool Looping { get; set; }
 
-        // TODO: Hook into AudioComponent
-        public float Pitch { get; set; }
+        public float Pitch
+        {
+	        get
+	        {
+		        if (vlcAudioSource == null || vlcAudioSource.audioSource == null) return 1;
+		        return vlcAudioSource.audioSource.pitch;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource == null || vlcAudioSource.audioSource == null) return;
+		        vlcAudioSource.audioSource.pitch = value;
+	        }
+        }
 
         public float Volume
         {
-	        get => mediaPlayer.Volume / 100f;
-	        set => mediaPlayer.SetVolume(Mathf.RoundToInt(value * 100f));
+	        get
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+			        return vlcAudioSource.audioSource.volume;
+		        return mediaPlayer.Volume / 100f;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+		        {
+			        vlcAudioSource.audioSource.volume = value;
+			        mediaPlayer.SetVolume(100);
+			        return;
+		        }
+		        mediaPlayer.SetVolume(Mathf.RoundToInt(value * 100f));
+	        }
         }
 
         public double Position
@@ -112,8 +151,6 @@ namespace Hypernex.Game.Video
 		        lastUri = new Uri(trimmedPath);
 		        IsStream = VideoPlayerManager.IsStream(lastUri);
 		        mediaPlayer.Media = new Media(lastUri);
-		        if(vlcAudioSource != null)
-			        vlcAudioSource.SetDelay();
 		        c = CoroutineRunner.Instance.StartCoroutine(PauseEnum());
 	        }
         }
@@ -283,10 +320,9 @@ namespace Hypernex.Game.Video
 	public class VLCAudioSource : MonoBehaviour
 	{
 	    private const int SAMPLE_RATE = 48000;
-	    private const int CHANNELS = 1;
-	    private const int BUFFER_SIZE = SAMPLE_RATE * 1;
-	    
-	    private AudioSource audioSource;
+	    private const int CHANNELS = 2; // Change to 2 for stereo, or dynamically set based on the media
+	    private const int BUFFER_SIZE = SAMPLE_RATE * 1; // Adjust based on your needs
+	    internal AudioSource audioSource;
 	    private AudioClip audioClip;
 	    private ConcurrentQueue<float> audioDataQueue = new();
 	    private readonly object bufferLock = new();
@@ -294,7 +330,7 @@ namespace Hypernex.Game.Video
 
 	    public void Create(MediaPlayer m)
 	    {
-		    mediaPlayer = m;
+	        mediaPlayer = m;
 	        audioSource = GetComponent<AudioSource>();
 	        audioClip = AudioClip.Create("VLCAudioClip", BUFFER_SIZE, CHANNELS, SAMPLE_RATE, true, OnAudioRead);
 	        audioSource.clip = audioClip;
@@ -302,10 +338,7 @@ namespace Hypernex.Game.Video
 	        audioSource.Play();
 	        mediaPlayer.SetAudioFormatCallback(AudioSetup, AudioCleanup);
 	        mediaPlayer.SetAudioCallbacks(PlayAudio, PauseAudio, ResumeAudio, FlushAudio, DrainAudio);
-	        SetDelay();
 	    }
-	    
-	    internal void SetDelay() => mediaPlayer.SetAudioDelay(1000000);
 
 	    private void OnAudioRead(float[] data)
 	    {
@@ -332,26 +365,28 @@ namespace Hypernex.Game.Video
 
 	    private void PlayAudio(IntPtr data, IntPtr samples, uint count, long pts)
 	    {
-		    int bytes = (int)count * 2;
-		    byte[] buffer = new byte[bytes];
-		    Marshal.Copy(samples, buffer, 0, bytes);
-		    float[] pcmData = new float[bytes / 2];
-		    for (int i = 0; i < pcmData.Length; i++)
-		    {
-			    short sample = BitConverter.ToInt16(buffer, i * 2);
-			    pcmData[i] = sample / 32768.0f;
-		    }
-		    lock (bufferLock)
-		    {
-			    foreach (float sample in pcmData)
-			    {
-				    audioDataQueue.Enqueue(sample);
-			    }
-			    while (audioDataQueue.Count > BUFFER_SIZE)
-			    {
-				    audioDataQueue.TryDequeue(out _);
-			    }
-		    }
+	        int bytes = (int)count * 2 * CHANNELS;
+	        byte[] buffer = new byte[bytes];
+	        Marshal.Copy(samples, buffer, 0, bytes);
+	        float[] pcmData = new float[bytes / 2];
+
+	        for (int i = 0; i < pcmData.Length; i++)
+	        {
+	            short sample = BitConverter.ToInt16(buffer, i * 2);
+	            pcmData[i] = sample / 32768.0f;
+	        }
+
+	        lock (bufferLock)
+	        {
+	            foreach (float sample in pcmData)
+	            {
+	                audioDataQueue.Enqueue(sample);
+	            }
+	            while (audioDataQueue.Count > BUFFER_SIZE)
+	            {
+	                audioDataQueue.TryDequeue(out _);
+	            }
+	        }
 	    }
 
 	    private int AudioSetup(ref IntPtr opaque, ref IntPtr format, ref uint rate, ref uint channels)
@@ -364,10 +399,10 @@ namespace Hypernex.Game.Video
 	    private void AudioCleanup(IntPtr opaque) { }
 
 	    private void PauseAudio(IntPtr data, long pts) =>
-		    QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.Pause()));
+	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.Pause()));
 
 	    private void ResumeAudio(IntPtr data, long pts) =>
-		    QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.UnPause()));
+	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.UnPause()));
 
 	    private void FlushAudio(IntPtr data, long pts)
 	    {
