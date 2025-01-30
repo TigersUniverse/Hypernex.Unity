@@ -163,9 +163,13 @@ namespace Hypernex.Game.Avatar
 
         private void SetCalibrationMeta()
         {
-            vrik.solver.locomotion.stepThreshold = 0.01f;
-            vrik.solver.locomotion.angleThreshold = 20;
-            vrik.solver.plantFeet = false;
+            vrik.solver.scale = Avatar.transform.localScale.y;
+            vrik.solver.spine.maintainPelvisPosition = 0f;
+            vrik.solver.spine.headClampWeight = 0f;
+            vrik.solver.locomotion.footDistance = 0.15f;
+            vrik.solver.locomotion.stepThreshold = 0.1f;
+            vrik.solver.locomotion.angleThreshold = 5f;
+            vrik.solver.plantFeet = true;
         }
         
         private Quaternion headRot;
@@ -227,18 +231,6 @@ namespace Hypernex.Game.Avatar
 
         protected void UpdateVRIK(bool fbt, bool isMoving, float scale)
         {
-            if(fbt)
-            {
-                vrik.solver.spine.pelvisPositionWeight = 1f;
-                vrik.solver.spine.pelvisRotationWeight = 1f;
-            }
-            else
-            {
-                vrik.solver.locomotion.footDistance = 0.1f * scale * CHARACTER_HEIGHT;
-                vrik.solver.locomotion.stepThreshold = 0.2f * scale * CHARACTER_HEIGHT;
-                vrik.solver.spine.pelvisPositionWeight = 0f;
-                vrik.solver.spine.pelvisRotationWeight = 0f;
-            }
             vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
         }
         
