@@ -161,10 +161,14 @@ namespace Hypernex.Game.Avatar
             Avatar.transform.localRotation = Quaternion.identity;
         }
 
-        private void SetCalibrationMeta(VRIK v)
+        private void SetCalibrationMeta(VRIK v, bool isFBT)
         {
             v.solver.scale = Avatar.transform.localScale.y;
+            v.solver.spine.pelvisPositionWeight = isFBT ? 0.5f : 0;
+            v.solver.spine.pelvisRotationWeight = isFBT ? 1 : 0;
             v.solver.spine.maintainPelvisPosition = 0f;
+            v.solver.spine.chestGoalWeight = 0.1f;
+            v.solver.spine.chestClampWeight = 0.38f;
             v.solver.spine.headClampWeight = 0f;
             v.solver.locomotion.footDistance = 0.15f;
             v.solver.locomotion.stepThreshold = 0.1f;
@@ -185,7 +189,6 @@ namespace Hypernex.Game.Avatar
             rightHandRot = GetBoneRestRotation(HumanBodyBones.RightHand);
             avatar.transform.rotation = saved;
             VRIK v = avatar.AddComponent<VRIK>();
-            SetCalibrationMeta(v);
             return v;
         }
 
@@ -200,6 +203,7 @@ namespace Hypernex.Game.Avatar
         {
             VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
                 cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
+            SetCalibrationMeta(vrik, false);
             LocalCalibrate();
             return calibrationData;
         }
@@ -210,19 +214,26 @@ namespace Hypernex.Game.Avatar
         {
             VRIKCalibrator.CalibrationData data = VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform,
                 bodyTracker, LeftHandReference, RightHandReference, leftFootTracker, rightFootTracker);
+            SetCalibrationMeta(vrik, true);
             LocalCalibrate();
             return data;
         }
 
         protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
-            Transform leftHandReference, Transform rightHandReference) => VRIKCalibrator.Calibrate(vrik,
-            calibrationData, headReference, null, leftHandReference,
-            rightHandReference);
+            Transform leftHandReference, Transform rightHandReference)
+        {
+            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference, rightHandReference);
+            SetCalibrationMeta(vrik, false);
+        }
 
         protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
             Transform body, Transform leftHandReference, Transform rightHandReference, Transform leftFootTracker,
-            Transform rightFootTracker) => VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body,
-            leftHandReference, rightHandReference, leftFootTracker, rightFootTracker);
+            Transform rightFootTracker)
+        {
+            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference, rightHandReference,
+                leftFootTracker, rightFootTracker);
+            SetCalibrationMeta(vrik, true);
+        }
 
         protected void UpdateVRIK(bool fbt, bool isMoving, float scale)
         {
