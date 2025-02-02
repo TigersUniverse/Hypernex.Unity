@@ -54,13 +54,11 @@ namespace Hypernex.Game.Video
 	            if (screen.material == null)
 		            screen.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             }
-            AudioSource audioSource = descriptor.AudioOutput;
-            if (audioSource == null) audioSource = attachedObject.GetComponent<AudioSource>();
-            if (audioSource == null) audioSource = attachedObject.AddComponent<AudioSource>();
+            if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.GetComponent<AudioSource>();
+            if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.AddComponent<AudioSource>();
             if (libVLC == null)
 	            CreateLibVLC();
-            vlcAudioSource = audioSource.gameObject.AddComponent<VLCAudioSource>();
-	        vlcAudioSource.Create(CreateMediaPlayer());
+            CreateMediaPlayer();
             descriptor.CurrentVideoPlayer = this;
         }
 
@@ -155,6 +153,15 @@ namespace Hypernex.Game.Video
 	        }
         }
 
+        private void CreateAudio()
+        {
+	        if(vlcAudioSource != null) return;
+	        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.GetComponent<VLCAudioSource>();
+	        if(vlcAudioSource == null)
+				vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
+	        vlcAudioSource.Create(mediaPlayer);
+        }
+
         public override void Update()
         {
             uint height = 0;
@@ -208,7 +215,11 @@ namespace Hypernex.Game.Video
 	        }
         }
 
-        public async void Play() => await mediaPlayer.PlayAsync();
+        public async void Play()
+        {
+	        CreateAudio();
+	        await mediaPlayer.PlayAsync();
+        }
 
         public async void Pause() => await mediaPlayer.PauseAsync();
 
@@ -281,6 +292,8 @@ namespace Hypernex.Game.Video
 			}
 			mediaPlayer.Dispose();
 			mediaPlayer = null;
+			if(vlcAudioSource != null)
+				Object.Destroy(vlcAudioSource);
 		}
 
 		private void DestroyRenderTexture()
