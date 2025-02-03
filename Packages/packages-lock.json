@@ -356,6 +356,13 @@
       },
       "url": "https://packages.unity.com"
     },
+    "net.virtualwebsite.ffmpegunity": {
+      "version": "https://github.com/VirtualBrightPlayz/FFmpeg.Unity.git?path=/Packages/FFmpeg.Unity#dynload",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "5a87f04a9c812610e03dbf3770eb337201105c5d"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
