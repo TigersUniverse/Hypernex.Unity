@@ -12,7 +12,7 @@ namespace Hypernex.Game.Video
         private FFPlayUnity videoPlayer;
         private FFTexturePlayer texture;
         private FFAudioPlayer audio;
-        private global::BufferAudioSource buffer;
+        private BufferAudioSource buffer;
         private AudioSource audioSource;
         private Material material;
 
@@ -119,6 +119,8 @@ namespace Hypernex.Game.Video
         public void Play() => videoPlayer.Resume();
         public void Pause() => videoPlayer.Pause();
         public void Stop() => videoPlayer.Pause();
+        
+        public string GetFileHeader() => String.Empty;
         
         public void Dispose()
         {

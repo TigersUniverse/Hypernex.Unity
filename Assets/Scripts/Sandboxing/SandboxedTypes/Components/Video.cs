@@ -129,12 +129,12 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             {
                 if (!File.Exists(streamDownload.pathToFile))
                     return;
-                string filePath = "file:///" + streamDownload.pathToFile;
                 IVideoPlayer videoPlayer = videoPlayerDescriptor.Replace(
-                    VideoPlayerManager.GetVideoPlayerType(new Uri(filePath)) ??
+                    VideoPlayerManager.GetVideoPlayerType(new Uri(streamDownload.pathToFile)) ??
                     VideoPlayerManager.DefaultVideoPlayerType);
                 if (videoPlayer == null)
                     return;
+                string filePath = videoPlayer.GetFileHeader() + streamDownload.pathToFile;
                 videoPlayer.Source = filePath;
             }
         }

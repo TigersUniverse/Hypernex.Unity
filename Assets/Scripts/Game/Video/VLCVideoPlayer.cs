@@ -172,6 +172,8 @@ namespace Hypernex.Game.Video
             DestroyRenderTexture();
         }
 
+        public string GetFileHeader() => "file:///";
+
         public bool IsStream { get; private set; }
         
         public VideoOrientation? GetVideoOrientation()
