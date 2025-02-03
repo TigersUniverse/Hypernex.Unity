@@ -10,6 +10,7 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
+using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
@@ -147,15 +148,15 @@ namespace Hypernex.Game.Avatar
         /// Sorts Trackers from 0 by how close they are to the Body, LeftFoot, and RightFoot
         /// </summary>
         /// <returns>Sorted Tracker Transforms</returns>
-        private Transform[] FindClosestTrackers(Transform body, Transform leftFoot, Transform rightFoot, GameObject[] ts)
+        private Transform[] FindClosestTrackers(Transform body, Transform leftFoot, Transform rightFoot, XRTracker[] ts)
         {
-            Dictionary<Transform, (float, GameObject)?> distances = new Dictionary<Transform, (float, GameObject)?>
+            Dictionary<Transform, (float, XRTracker)?> distances = new Dictionary<Transform, (float, XRTracker)?>
             {
                 [body] = null,
                 [leftFoot] = null,
                 [rightFoot] = null
             };
-            foreach (GameObject tracker in ts)
+            foreach (XRTracker tracker in ts)
             {
                 Vector3 p = tracker.transform.position;
                 float bodyDistance = Vector3.Distance(body.position, p);
@@ -172,15 +173,24 @@ namespace Hypernex.Game.Avatar
             if(distances[body] == null)
                 newTs.Add(null);
             else
+            {
+                distances[body].Value.Item2.CalibratedTo = CoreBone.Hip;
                 newTs.Add(distances[body].Value.Item2.transform.GetChild(0));
+            }
             if(distances[leftFoot] == null)
                 newTs.Add(null);
             else
+            {
+                distances[leftFoot].Value.Item2.CalibratedTo = CoreBone.LeftFoot;
                 newTs.Add(distances[leftFoot].Value.Item2.transform.GetChild(0));
+            }
             if(distances[rightFoot] == null)
                 newTs.Add(null);
             else
+            {
+                distances[rightFoot].Value.Item2.CalibratedTo = CoreBone.RightFoot;
                 newTs.Add(distances[rightFoot].Value.Item2.transform.GetChild(0));
+            }
             return newTs.ToArray();
         }
 
@@ -220,12 +230,12 @@ namespace Hypernex.Game.Avatar
             {
                 if (areTwoTriggersClicked)
                 {
-                    GameObject[] ts = new GameObject[3];
+                    XRTracker[] ts = new XRTracker[3];
                     int i = 0;
                     foreach (XRTracker tracker in XRTracker.Trackers)
                     {
                         if(tracker.TrackerRole == XRTrackerRole.Camera) continue;
-                        ts[i] = tracker.gameObject;
+                        ts[i] = tracker;
                         i++;
                     }
                     if (ts[0] != null && ts[1] != null && ts[2] != null)
@@ -248,8 +258,8 @@ namespace Hypernex.Game.Avatar
                                 newTs[2].rotation = rightFoot.rotation;
                                 LocalPlayerSyncController.calibratedFBT = true;
                                 LocalPlayerSyncController.CalibrationData = JsonUtility.ToJson(
-                                    CalibrateVRIK(cameraTransform, newTs[0], LeftHandReference, RightHandReference,
-                                        newTs[1], newTs[2]));
+                                    CalibrateVRIK(cameraTransform, newTs[0].transform, LeftHandReference, RightHandReference,
+                                        newTs[1].transform, newTs[2].transform));
                                 RelaxWrists(GetBoneFromHumanoid(HumanBodyBones.LeftLowerArm),
                                     GetBoneFromHumanoid(HumanBodyBones.RightLowerArm), GetBoneFromHumanoid(HumanBodyBones.LeftHand),
                                     GetBoneFromHumanoid(HumanBodyBones.RightHand));
