@@ -26,6 +26,7 @@ namespace Hypernex.Game.Video
         {
             // Register Built-In VideoPlayers
             Register<UnityVideoPlayer>(UnityVideoPlayer.CanBeUsed, UnityVideoPlayer.CanBeUsed);
+            Register<FFVideoPlayer>(FFVideoPlayer.CanBeUsed, FFVideoPlayer.CanBeUsed);
 #if VLC
             Register<VLCVideoPlayer>(VLCVideoPlayer.CanBeUsed, VLCVideoPlayer.CanBeUsed);
 #endif
