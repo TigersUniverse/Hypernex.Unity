@@ -224,6 +224,7 @@ namespace Hypernex.Game.Avatar
         {
             VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference, rightHandReference);
             SetCalibrationMeta(vrik, false);
+            LocalCalibrate();
         }
 
         protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
@@ -233,6 +234,7 @@ namespace Hypernex.Game.Avatar
             VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference, rightHandReference,
                 leftFootTracker, rightFootTracker);
             SetCalibrationMeta(vrik, true);
+            LocalCalibrate();
         }
 
         protected void UpdateVRIK(bool fbt, bool isMoving, float scale)
