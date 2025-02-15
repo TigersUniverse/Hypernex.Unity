@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using Hypernex.CCK.Unity;
-using UnityEngine;
 
 namespace Hypernex.Game.Video
 {
@@ -48,6 +47,8 @@ namespace Hypernex.Game.Video
             return DefaultVideoPlayerType;
         }
 #nullable restore
+
+        public static bool IsRegistered(Type videoPlayerType) => videoPlayerTypes.ContainsKey(videoPlayerType);
 
         public static bool IsStream(Uri uri)
         {
