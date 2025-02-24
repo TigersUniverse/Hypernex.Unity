@@ -264,6 +264,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         private static readonly IReadOnlyDictionary<string, Type> ComponentTypes = new ReadOnlyDictionary<string, Type>(
             new Dictionary<string, Type>
             {
+                ["animator"] = typeof(Components.Animator),
                 ["audio"] = typeof(Audio),
                 ["button"] = typeof(Button),
                 ["dropdown"] = typeof(Dropdown),
