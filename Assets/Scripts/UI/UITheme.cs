@@ -36,11 +36,14 @@ namespace Hypernex.UI
         public Color BackgroundColor5;
         [FormerlySerializedAs("PrimaryVectorColor")] public Color PrimaryColorTheme;
 
-        public Color PrimaryLabelColor;
-        public TMP_FontAsset PrimaryFont;
-
-        public Color SecondaryLabelColor;
-        public TMP_FontAsset SecondaryFont;
+        [FormerlySerializedAs("PrimaryLabelColor")] public Color FirstLabelColor;
+        [FormerlySerializedAs("PrimaryFont")] public TMP_FontAsset FirstLabelFont;
+        [FormerlySerializedAs("SecondaryLabelColor")] public Color SecondLabelColor;
+        [FormerlySerializedAs("SecondaryFont")] public TMP_FontAsset SecondaryLabelFont;
+        public Color ThirdLabelColor;
+        public TMP_FontAsset ThirdLabelFont;
+        public Color LinkLabelColor;
+        public TMP_FontAsset LinkLabelFont;
 
         public Sprite InfoSprite;
         public Sprite WarningSprite;

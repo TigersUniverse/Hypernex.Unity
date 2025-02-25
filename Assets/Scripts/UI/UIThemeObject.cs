@@ -53,13 +53,30 @@ namespace Hypernex.UI
                 if(rawimg != null)
                     rawimg.color = theme.PrimaryColorTheme;
             }
-            else if (ThemeType is UIThemeObjectType.PrimaryText or UIThemeObjectType.SecondaryText)
+            else if (ThemeType is UIThemeObjectType.FirstText or UIThemeObjectType.SecondText or UIThemeObjectType.ThirdText or UIThemeObjectType.LinkText)
             {
                 TMP_Text textMeshPro = GetComponent<TMP_Text>();
                 if (textMeshPro != null)
                 {
-                    textMeshPro.color = ThemeType == UIThemeObjectType.PrimaryText ? theme.PrimaryLabelColor : theme.SecondaryLabelColor;
-                    textMeshPro.font = ThemeType == UIThemeObjectType.PrimaryText ? theme.PrimaryFont : theme.SecondaryFont;
+                    Color color = theme.FirstLabelColor;
+                    TMP_FontAsset font = theme.FirstLabelFont;
+                    if (ThemeType == UIThemeObjectType.SecondText)
+                    {
+                        color = theme.SecondLabelColor;
+                        font = theme.SecondaryLabelFont;
+                    }
+                    if (ThemeType == UIThemeObjectType.ThirdText)
+                    {
+                        color = theme.ThirdLabelColor;
+                        font = theme.ThirdLabelFont;
+                    }
+                    if (ThemeType == UIThemeObjectType.LinkText)
+                    {
+                        color = theme.LinkLabelColor;
+                        font = theme.LinkLabelFont;
+                    }
+                    textMeshPro.color = color;
+                    textMeshPro.font = font;
                 }
             }
             else if (ThemeType == UIThemeObjectType.ButtonText)
@@ -75,6 +92,7 @@ namespace Hypernex.UI
                     }
                     foreach (Image image in GetComponentsInChildren<Image>())
                     {
+                        if(img == image) continue;
                         image.color = theme.GetButtonThemeFromButtonType(ButtonType).ButtonLabelColor;
                     }
                 }
@@ -147,16 +165,18 @@ namespace Hypernex.UI
 
     public enum UIThemeObjectType
     {
-        BackgroundColor1,
-        BackgroundColor2,
-        BackgroundColor3,
-        BackgroundColor4,
-        BackgroundColor5,
-        PrimaryText,
-        SecondaryText,
-        ButtonText,
-        PrimaryColorVector,
-        BackgroundImage,
-        LineRenderer
+        BackgroundColor1 = 0,
+        BackgroundColor2 = 1,
+        BackgroundColor3 = 2,
+        BackgroundColor4 = 3,
+        BackgroundColor5 = 4,
+        FirstText = 5,
+        SecondText = 6,
+        ThirdText = 11,
+        LinkText = 12,
+        ButtonText = 7,
+        PrimaryColorVector = 8,
+        BackgroundImage = 9,
+        LineRenderer = 10
     }
 }

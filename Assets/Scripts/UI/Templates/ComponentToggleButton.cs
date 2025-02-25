@@ -70,7 +70,7 @@ namespace Hypernex.UI.Templates
                 default:
                     throw new Exception("Invalid SafetyType");
             }
-            Label.font = UITheme.SelectedTheme.PrimaryFont;
+            Label.font = UITheme.SelectedTheme.FirstLabelFont;
             Label.color = value ? ActiveColor : DisabledColor;
             Icon.color = value ? ActiveColor : DisabledColor;
         }
