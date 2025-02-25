@@ -107,7 +107,7 @@ namespace Hypernex.Game
         public void ToggleGrabbable()
         {
             grabbable.enabled = !IsGrabbable;
-            GrabbableButton.UIThemeObject.ButtonType = IsGrabbable ? ButtonType.Primary : ButtonType.Secondary;
+            GrabbableButton.UIThemeObject.ButtonType = IsGrabbable ? ButtonType.Blue : ButtonType.Grey;
             GrabbableButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 
@@ -136,7 +136,7 @@ namespace Hypernex.Game
                     LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
                     break;
             }
-            OutputButton.UIThemeObject.ButtonType = IsOutputting ? ButtonType.Primary : ButtonType.Secondary;
+            OutputButton.UIThemeObject.ButtonType = IsOutputting ? ButtonType.Blue : ButtonType.Grey;
             OutputButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 
@@ -152,7 +152,7 @@ namespace Hypernex.Game
                 dontDestroyMe.MoveToScene(SceneManager.GetActiveScene());
                 transform.parent = LocalPlayer.Instance.transform;
             }
-            AnchorButton.UIThemeObject.ButtonType = IsAnchored ? ButtonType.Primary : ButtonType.Secondary;
+            AnchorButton.UIThemeObject.ButtonType = IsAnchored ? ButtonType.Blue : ButtonType.Grey;
             AnchorButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 
@@ -162,7 +162,7 @@ namespace Hypernex.Game
                 attachedTracker = null;
             else
                 attachedTracker = FindCameraTracker();
-            TrackerAttachmentButton.UIThemeObject.ButtonType = AttachedToTracker ? ButtonType.Primary : ButtonType.Secondary;
+            TrackerAttachmentButton.UIThemeObject.ButtonType = AttachedToTracker ? ButtonType.Blue : ButtonType.Grey;
             TrackerAttachmentButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 
@@ -174,7 +174,7 @@ namespace Hypernex.Game
                 LinkedCamera.transform.localPosition = OriginalPosition;
                 LinkedCamera.transform.localRotation = OriginalRotation;
             }
-            LookAtAvatarButton.UIThemeObject.ButtonType = LookingAtAvatar ? ButtonType.Primary : ButtonType.Secondary;
+            LookAtAvatarButton.UIThemeObject.ButtonType = LookingAtAvatar ? ButtonType.Blue : ButtonType.Grey;
             LookAtAvatarButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 

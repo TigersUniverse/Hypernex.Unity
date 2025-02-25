@@ -4,6 +4,7 @@ using Hypernex.Game;
 using Hypernex.Tools;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Hypernex.UI
 {
@@ -28,15 +29,12 @@ namespace Hypernex.UI
 
         public Sprite BackgroundImage;
         
-        public Color PrimaryColor;
-        public Color SecondaryColor;
-        public Color PrimaryVectorColor;
-    
-        public Color BackgroundColor1;
-        public Color BackgroundColor2;
+        [FormerlySerializedAs("PrimaryColor")] public Color BackgroundColor1;
+        [FormerlySerializedAs("SecondaryColor")] public Color BackgroundColor2;
         public Color BackgroundColor3;
         public Color BackgroundColor4;
         public Color BackgroundColor5;
+        [FormerlySerializedAs("PrimaryVectorColor")] public Color PrimaryColorTheme;
 
         public Color PrimaryLabelColor;
         public TMP_FontAsset PrimaryFont;
@@ -44,28 +42,22 @@ namespace Hypernex.UI
         public Color SecondaryLabelColor;
         public TMP_FontAsset SecondaryFont;
 
-        public Color PrimaryInputColor;
-        public Color PrimaryInputTextColor;
-        public TMP_FontAsset PrimaryInputFont;
-        public Color SecondaryInputColor;
-        public Color SecondaryInputTextColor;
-        public TMP_FontAsset SecondaryInputFont;
-
         public Sprite InfoSprite;
         public Sprite WarningSprite;
         public Sprite ErrorSprite;
 
         public List<UIButtonTheme> ButtonThemes;
 
-        public void ApplyThemeToUI()
+        public void ApplyThemeToUI(bool fromDebug = false)
         {
             SelectedTheme = this;
-            foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>(true))
+            foreach (UIThemeObject uiThemeObject in FindObjectsByType<UIThemeObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                UIThemeObject.ApplyTheme(this);
+                uiThemeObject.ApplyTheme(this);
             }
-            CursorTools.UpdateMouseIcon(!LocalPlayer.Instance.Dashboard.IsVisible, PrimaryVectorColor);
-            Init.Instance.OutlineMaterial.color = PrimaryVectorColor;
+            if (fromDebug) return;
+            CursorTools.UpdateMouseIcon(!LocalPlayer.Instance.Dashboard.IsVisible, PrimaryColorTheme);
+            Init.Instance.OutlineMaterial.color = PrimaryColorTheme;
         }
 
         public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>

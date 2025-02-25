@@ -15,7 +15,7 @@ namespace Hypernex.UI.Templates
         public TMP_Text Label;
         public Image Icon;
 
-        public Color ActiveColor => UITheme.SelectedTheme.PrimaryVectorColor;
+        public Color ActiveColor => UITheme.SelectedTheme.PrimaryColorTheme;
         public Color DisabledColor => new(0.2f, 0.2f, 0.2f, 1f);
 
         public void OnToggle()

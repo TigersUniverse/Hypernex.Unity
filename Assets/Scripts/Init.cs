@@ -89,7 +89,7 @@ public class Init : MonoBehaviour
         Instance = this;
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
-        CursorTools.UpdateMouseIcon(true, DefaultTheme.PrimaryVectorColor);
+        CursorTools.UpdateMouseIcon(true, DefaultTheme.PrimaryColorTheme);
         OverlayManager.Begin();
         Application.wantsToQuit += () =>
         {
