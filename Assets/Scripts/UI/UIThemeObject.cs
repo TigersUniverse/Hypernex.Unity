@@ -318,6 +318,11 @@ namespace Hypernex.UI
         SecondaryInput,
         PrimaryColorVector,
         BackgroundImage,
-        LineRenderer
+        LineRenderer,
+        BackgroundColor1,
+        BackgroundColor2,
+        BackgroundColor3,
+        BackgroundColor4,
+        BackgroundColor5
     }
 }

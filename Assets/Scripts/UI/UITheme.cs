@@ -32,6 +32,12 @@ namespace Hypernex.UI
         public Color SecondaryColor;
         public Color PrimaryVectorColor;
     
+        public Color BackgroundColor1;
+        public Color BackgroundColor2;
+        public Color BackgroundColor3;
+        public Color BackgroundColor4;
+        public Color BackgroundColor5;
+
         public Color PrimaryLabelColor;
         public TMP_FontAsset PrimaryFont;
 
