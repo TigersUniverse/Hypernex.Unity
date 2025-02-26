@@ -34,6 +34,7 @@ namespace Hypernex.UI
         public Color BackgroundColor3;
         public Color BackgroundColor4;
         public Color BackgroundColor5;
+        public Color BackgroundColor6;
         [FormerlySerializedAs("PrimaryVectorColor")] public Color PrimaryColorTheme;
 
         [FormerlySerializedAs("PrimaryLabelColor")] public Color FirstLabelColor;

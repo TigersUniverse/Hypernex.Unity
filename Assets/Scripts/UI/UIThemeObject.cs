@@ -26,6 +26,8 @@ namespace Hypernex.UI
                     color = theme.BackgroundColor4;
                 if (ThemeType == UIThemeObjectType.BackgroundColor5)
                     color = theme.BackgroundColor5;
+                if (ThemeType == UIThemeObjectType.BackgroundColor6)
+                    color = theme.BackgroundColor6;
                 Image img = GetComponent<Image>();
                 if (img != null)
                     img.color = color;
@@ -176,6 +178,7 @@ namespace Hypernex.UI
         BackgroundColor3 = 2,
         BackgroundColor4 = 3,
         BackgroundColor5 = 4,
+        BackgroundColor6 = 13,
         FirstText = 5,
         SecondText = 6,
         ThirdText = 11,
