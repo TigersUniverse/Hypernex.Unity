@@ -55,29 +55,35 @@ namespace Hypernex.UI
             }
             else if (ThemeType is UIThemeObjectType.FirstText or UIThemeObjectType.SecondText or UIThemeObjectType.ThirdText or UIThemeObjectType.LinkText)
             {
+                Color color = theme.FirstLabelColor;
+                TMP_FontAsset font = theme.FirstLabelFont;
+                if (ThemeType == UIThemeObjectType.SecondText)
+                {
+                    color = theme.SecondLabelColor;
+                    font = theme.SecondaryLabelFont;
+                }
+                if (ThemeType == UIThemeObjectType.ThirdText)
+                {
+                    color = theme.ThirdLabelColor;
+                    font = theme.ThirdLabelFont;
+                }
+                if (ThemeType == UIThemeObjectType.LinkText)
+                {
+                    color = theme.LinkLabelColor;
+                    font = theme.LinkLabelFont;
+                }
                 TMP_Text textMeshPro = GetComponent<TMP_Text>();
+                Image image = GetComponent<Image>();
+                RawImage rawimg = GetComponent<RawImage>();
                 if (textMeshPro != null)
                 {
-                    Color color = theme.FirstLabelColor;
-                    TMP_FontAsset font = theme.FirstLabelFont;
-                    if (ThemeType == UIThemeObjectType.SecondText)
-                    {
-                        color = theme.SecondLabelColor;
-                        font = theme.SecondaryLabelFont;
-                    }
-                    if (ThemeType == UIThemeObjectType.ThirdText)
-                    {
-                        color = theme.ThirdLabelColor;
-                        font = theme.ThirdLabelFont;
-                    }
-                    if (ThemeType == UIThemeObjectType.LinkText)
-                    {
-                        color = theme.LinkLabelColor;
-                        font = theme.LinkLabelFont;
-                    }
                     textMeshPro.color = color;
                     textMeshPro.font = font;
                 }
+                if (image != null)
+                    image.color = color;
+                if (rawimg != null)
+                    rawimg.color = color;
             }
             else if (ThemeType == UIThemeObjectType.ButtonText)
             {
