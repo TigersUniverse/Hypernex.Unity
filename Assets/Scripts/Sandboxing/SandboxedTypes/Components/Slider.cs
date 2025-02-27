@@ -17,6 +17,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 throw new Exception("No Slider found on Item at " + i.Path);
         }
         
+        public bool Enabled
+        {
+            get => slider == null ? false : slider.enabled;
+            set
+            {
+                if(read || slider == null) return;
+                slider.enabled = value;
+            }
+        }
+        
         public float GetValue()
         {
             if (slider != null)

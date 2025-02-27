@@ -256,6 +256,13 @@ namespace Hypernex.Game
                         Deregister(true);
                 }
             }
+            else if (NetworkSync != null && !NetworkSync.IsOwned())
+            {
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                }
+            }
             else if (CurrentGrabbed == null)
             {
                 //if (cd != null)

@@ -46,6 +46,7 @@ namespace Hypernex.Sandboxing
             ["ScriptEvents"] = typeof(ScriptEvents),
             ["ScriptEvent"] = typeof(ScriptEvent),
             ["Interactables"] = typeof(Interactables),
+            ["Animator"] = typeof(SandboxedTypes.Components.Animator),
             ["Audio"] = typeof(Audio),
             ["Video"] = typeof(Video),
             ["Button"] = typeof(Button),

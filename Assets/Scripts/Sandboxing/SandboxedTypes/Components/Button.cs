@@ -16,6 +16,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 throw new Exception("No Button found on Item at " + i.Path);
         }
         
+        public bool Enabled
+        {
+            get => b == null ? false : b.enabled;
+            set
+            {
+                if(read || b == null) return;
+                b.enabled = value;
+            }
+        }
+        
         public void RegisterClick(object o)
         {
             if(read)

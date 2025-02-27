@@ -16,6 +16,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 return null;
             return a;
         }
+        
+        public bool Enabled
+        {
+            get => light == null ? false : light.enabled;
+            set
+            {
+                if(read || light == null) return;
+                light.enabled = value;
+            }
+        }
 
         public Light(Item i)
         {
