@@ -113,14 +113,11 @@ namespace Hypernex.Tools
             Security.RegisterComponentRestriction<Canvas>((component, isWorld) =>
             {
                 Canvas canvas = (Canvas) component;
-                if (!isWorld) canvas.renderMode = RenderMode.WorldSpace;
-                if (canvas.renderMode == RenderMode.WorldSpace)
-                {
-                    TrackedDeviceGraphicRaycaster trackedDeviceGraphicRaycaster =
-                        canvas.gameObject.GetComponent<TrackedDeviceGraphicRaycaster>();
-                    if (trackedDeviceGraphicRaycaster == null)
-                        canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
-                }
+                canvas.renderMode = RenderMode.WorldSpace;
+                TrackedDeviceGraphicRaycaster trackedDeviceGraphicRaycaster =
+                    canvas.gameObject.GetComponent<TrackedDeviceGraphicRaycaster>();
+                if (trackedDeviceGraphicRaycaster == null)
+                    canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
             });
             Security.RegisterComponentRestriction<NetworkSyncDescriptor>((component, _) =>
             {
@@ -154,7 +151,6 @@ namespace Hypernex.Tools
             {
                 AudioSource audioSource = (AudioSource) component;
                 audioSource.outputAudioMixerGroup = isWorld ? Init.Instance.WorldGroup : Init.Instance.AvatarGroup;
-                audioSource.spatialize = true;
             });
             Security.RegisterComponentRestriction<TextMeshProUGUI>(HandleEmoji);
             Security.RegisterComponentRestriction<TMP_Text>(HandleEmoji);
