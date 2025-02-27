@@ -15,7 +15,7 @@ namespace Hypernex.UI
     
         public void ApplyTheme(UITheme theme)
         {
-            if (ThemeType is UIThemeObjectType.BackgroundColor1 or UIThemeObjectType.BackgroundColor2 or UIThemeObjectType.BackgroundColor3 or UIThemeObjectType.BackgroundColor4 or UIThemeObjectType.BackgroundColor5)
+            if (ThemeType is UIThemeObjectType.BackgroundColor1 or UIThemeObjectType.BackgroundColor2 or UIThemeObjectType.BackgroundColor3 or UIThemeObjectType.BackgroundColor4 or UIThemeObjectType.BackgroundColor5 or UIThemeObjectType.BackgroundColor6)
             {
                 Color color = theme.BackgroundColor1;
                 if (ThemeType == UIThemeObjectType.BackgroundColor2)
