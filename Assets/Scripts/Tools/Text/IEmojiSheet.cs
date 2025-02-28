@@ -5,7 +5,8 @@ namespace Hypernex.Tools.Text
 {
     public interface IEmojiSheet
     {
-        public List<string> GetUnicodeCharacters(TMP_SpriteAsset spriteAsset);
+        public List<string> UnicodeCharacters { get; }
+        public void InitializeUnicodeCharacters(TMP_SpriteAsset spriteAsset);
         public bool IsMatch(string unicode, string spriteAssetName);
     }
 }

@@ -6,7 +6,19 @@ namespace Hypernex.Tools.Text
 {
     public class Twemoji : IEmojiSheet
     {
-        public List<string> GetUnicodeCharacters(TMP_SpriteAsset spriteAsset)
+        private List<string> unicode;
+
+        public List<string> UnicodeCharacters
+        {
+            get
+            {
+                if (unicode == null)
+                    InitializeUnicodeCharacters(Init.Instance.EmojiSprites[0]);
+                return unicode;
+            }
+        }
+
+        public void InitializeUnicodeCharacters(TMP_SpriteAsset spriteAsset)
         {
             List<string> unicodeCharacters = new List<string>();
             foreach (TMP_SpriteGlyph tmpSpriteGlyph in spriteAsset.spriteGlyphTable)
@@ -16,7 +28,7 @@ namespace Hypernex.Tools.Text
             }
             foreach (TMP_SpriteCharacter spriteCharacter in spriteAsset.spriteCharacterTable)
                 unicodeCharacters.Add(@"\U000" + spriteCharacter.name.Split('/')[1].Replace("-", @"\U000").ToUpper());
-            return unicodeCharacters;
+            unicode =  unicodeCharacters;
         }
 
         public bool IsMatch(string unicode, string spriteAssetName)

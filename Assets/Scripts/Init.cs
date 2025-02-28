@@ -231,6 +231,7 @@ public class Init : MonoBehaviour
             audioMixers[WorldGroup].SetFloat("volume", ConfigManager.SelectedConfigUser.WorldAudioVolume);
         }
         GameInstance.FocusedInstance?.Update();
+        DownloadTools.Check();
     }
     
     private void LateUpdate() => GameInstance.FocusedInstance?.LateUpdate();
