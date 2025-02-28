@@ -1,14 +1,23 @@
-﻿#define mg
+﻿#define gifloader
+//#define mg
 //#define uni
 //#define none
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+#if gifloader
+using System.Threading;
+using System.Threading.Tasks;
+using B83.Image.GIF;
+#endif
+#if mg
 using Decoder = MG.GIF.Decoder;
 using Image = MG.GIF.Image;
+#endif
 
 namespace Hypernex.Tools
 {
@@ -133,6 +142,38 @@ namespace Hypernex.Tools
             frames.Clear();
         }
 #endif
+
+#if gifloader
+        private MemoryStream memoryStream;
+        private GIFImage gifImage;
+        private Coroutine coroutine;
+
+        public void LoadGif(byte[] data) => StartCoroutine(LoadGifCoroutine(data));
+        
+        private void StartAnimator() => coroutine = StartCoroutine(gifImage.RunAnimation(OnUpdateTexture));
+
+        private IEnumerator LoadGifCoroutine(byte[] data)
+        {
+            Thread t = new Thread(() =>
+            {
+                memoryStream = new MemoryStream(data);
+                GIFLoader gifLoader = new GIFLoader();
+                gifImage = gifLoader.Load(memoryStream);
+            });
+            t.Start();
+            yield return new WaitUntil(() => !t.IsAlive);
+            loaded = true;
+            StartAnimator();
+        }
+
+        private void OnUpdateTexture(Texture2D texture2D) => rawImage.texture = texture2D;
+
+        private void OnDestroy()
+        {
+            StopCoroutine(coroutine);
+            memoryStream.Dispose();
+        }
+#endif
       
 #if none
         public void LoadGif(byte[] data){}
@@ -142,6 +183,17 @@ namespace Hypernex.Tools
             rawImage = GetComponent<RawImage>();
             if (!loaded && d.Length > 0)
                 LoadGif(d);
+#if gifloader
+            else if (loaded)
+            {
+                if (coroutine != null)
+                {
+                    StopCoroutine(coroutine);
+                    coroutine = null;
+                }
+                StartAnimator();
+            }
+#endif
         }
 #endif
     }
