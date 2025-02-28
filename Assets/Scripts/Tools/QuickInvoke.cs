@@ -6,6 +6,7 @@ using UnityEngine.Events;
 
 namespace Hypernex.Tools
 {
+    [RequireComponent(typeof(DontDestroyMe))]
     public class QuickInvoke : MonoBehaviour
     {
         public static void InvokeActionOnMainThread(Delegate action, params object[] args) => queue.Enqueue((action, args));
@@ -24,7 +25,7 @@ namespace Hypernex.Tools
             u.AddListener(newAction.Invoke);
         }
 
-        public static QuickInvoke Instance;
+        public static QuickInvoke Instance { get; private set; }
         public static ConcurrentQueue<(Delegate, object[])> queue = new ConcurrentQueue<(Delegate, object[])>();
         private Stopwatch sw = new Stopwatch();
         public int maxInvokes = 1000;
@@ -32,7 +33,6 @@ namespace Hypernex.Tools
         private void Awake()
         {
             Instance = this;
-            DontDestroyOnLoad(this);
         }
 
         private void Update()

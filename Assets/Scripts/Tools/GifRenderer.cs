@@ -1,5 +1,5 @@
-﻿#define gifloader
-//#define mg
+﻿//#define gifloader
+#define mg
 //#define uni
 //#define none
 using System;
@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using B83.Image.GIF;
 #endif
 #if mg
+using System.Threading;
 using Decoder = MG.GIF.Decoder;
 using Image = MG.GIF.Image;
 #endif
@@ -101,25 +102,41 @@ namespace Hypernex.Tools
         private List<float> frameDelays = new ();
         private int currentFrame = 0;
         private float time = 0.0f;
+        private List<Image> rawImages = new List<Image>();
         
-        public void LoadGif(byte[] data) => renderGif(data);
+        public void LoadGif(byte[] data) => StartCoroutine(renderGif(data));
         
-        private void renderGif(byte[] data)
+        private IEnumerator renderGif(byte[] data)
         {
             d = data;
             loaded = false;
-            if(decoder != null)
-                decoder.Dispose();
-            decoder = new Decoder(data);
-            Image image = decoder.NextImage();
-            while (image != null)
+            Thread t = new Thread(() =>
             {
-                frames.Add(image.CreateTexture());
-                frameDelays.Add(image.Delay / 1000.0f);
-                image = decoder.NextImage();
+                if (decoder != null)
+                    decoder.Dispose();
+                decoder = new Decoder(data);
+                Image image = decoder.NextImage();
+                while (image != null)
+                {
+                    rawImages.Add((Image) image.Clone());
+                    image = decoder.NextImage();
+                }
+            });
+            t.Start();
+            yield return new WaitUntil(() => !t.IsAlive);
+            foreach (Image image in rawImages)
+            {
+                QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                {
+                    frames.Add(image.CreateTexture());
+                    frameDelays.Add(image.Delay / 1000.0f);
+                    if (rawImages.Count == frames.Count)
+                    {
+                        rawImage.texture = frames[0];
+                        loaded = true;
+                    }
+                }));
             }
-            rawImage.texture = frames[0];
-            loaded = true;
         }
 
         private void Update()
