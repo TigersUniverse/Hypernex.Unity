@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Game.Avatar;
+using Hypernex.Networking.Messages.Data;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -20,6 +21,7 @@ namespace Hypernex.Game.Bindings
         public bool IsTracked { get; private set; }
         public Vector3 Position { get; private set; }
         public Quaternion Rotation { get; private set; }
+        public CoreBone? CalibratedTo { get; set; }
 
         private bool lookedForR;
         private Renderer r;

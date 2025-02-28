@@ -161,80 +161,84 @@ namespace Hypernex.Game.Avatar
             Avatar.transform.localRotation = Quaternion.identity;
         }
 
-        private void SetCalibrationMeta()
+        private void SetCalibrationMeta(VRIK v, bool isFBT)
         {
-            vrik.solver.locomotion.stepThreshold = 0.01f;
-            vrik.solver.locomotion.angleThreshold = 20;
-            vrik.solver.plantFeet = false;
+            v.solver.scale = Avatar.transform.localScale.y;
+            v.solver.spine.pelvisPositionWeight = isFBT ? 0.5f : 0;
+            v.solver.spine.pelvisRotationWeight = isFBT ? 1 : 0;
+            v.solver.spine.maintainPelvisPosition = 0f;
+            v.solver.spine.chestGoalWeight = 0.1f;
+            v.solver.spine.chestClampWeight = 0.38f;
+            v.solver.spine.headClampWeight = 0f;
+            v.solver.locomotion.footDistance = 0.15f;
+            v.solver.locomotion.stepThreshold = 0.1f;
+            v.solver.locomotion.angleThreshold = 5f;
+            v.solver.plantFeet = true;
         }
         
-        /*private Quaternion leftHandRot;
-        private Quaternion rightHandRot;*/
+        private Quaternion headRot;
+        private Quaternion leftHandRot;
+        private Quaternion rightHandRot;
 
         protected VRIK AddVRIK(GameObject avatar)
         {
-            /*Transform leftHand = GetBoneFromHumanoid(HumanBodyBones.LeftHand);
-            Transform rightHand = GetBoneFromHumanoid(HumanBodyBones.RightHand);
-            Transform leftHandTemp = new GameObject("templefthandalign_" + Guid.NewGuid()).transform;
-            Transform rightHandTemp = new GameObject("temprighthandalign_" + Guid.NewGuid()).transform;
-            leftHandTemp.SetParent(leftHand);
-            leftHandTemp.localPosition = Vector3.zero;
-            leftHandTemp.localRotation = Quaternion.identity;
-            rightHandTemp.SetParent(rightHand);
-            rightHandTemp.localPosition = Vector3.zero;
-            rightHandTemp.localRotation = Quaternion.identity;
-            leftHandRot = leftHandTemp.rotation;
-            rightHandRot = rightHandTemp.rotation;
-            Object.Destroy(leftHandTemp.gameObject);
-            Object.Destroy(rightHandTemp.gameObject);*/
+            Quaternion saved = avatar.transform.rotation;
+            avatar.transform.rotation = Quaternion.identity;
+            headRot = GetBoneRestRotation(HumanBodyBones.Head);
+            leftHandRot = GetBoneRestRotation(HumanBodyBones.LeftHand);
+            rightHandRot = GetBoneRestRotation(HumanBodyBones.RightHand);
+            avatar.transform.rotation = saved;
             VRIK v = avatar.AddComponent<VRIK>();
             return v;
+        }
+
+        private void LocalCalibrate()
+        {
+            vrik.solver.spine.headTarget.localRotation = headRot;
+            vrik.solver.leftArm.target.localRotation = leftHandRot;
+            vrik.solver.rightArm.target.localRotation = rightHandRot;
         }
 
         protected VRIKCalibrator.CalibrationData CalibrateVRIK(Transform cameraTransform, Transform LeftHandReference, Transform RightHandReference)
         {
             VRIKCalibrator.CalibrationData calibrationData = VRIKCalibrator.Calibrate(vrik, vrikSettings,
                 cameraTransform, null, LeftHandReference.transform, RightHandReference.transform);
-            // TODO: Rotate Correctly
-            /*LeftHandReference.GetComponent<RotationConstraint>().rotationOffset = leftHandRot.eulerAngles;
-            RightHandReference.GetComponent<RotationConstraint>().rotationOffset = rightHandRot.eulerAngles;
-            vrik.solver.leftArm.target = LeftHandReference;
-            vrik.solver.rightArm.target = RightHandReference;*/
-            SetCalibrationMeta();
+            SetCalibrationMeta(vrik, false);
+            LocalCalibrate();
             return calibrationData;
         }
 
         protected VRIKCalibrator.CalibrationData CalibrateVRIK(Transform cameraTransform, Transform bodyTracker,
             Transform LeftHandReference, Transform RightHandReference, Transform leftFootTracker,
-            Transform rightFootTracker) => VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform, bodyTracker,
-            LeftHandReference, RightHandReference, leftFootTracker, rightFootTracker);
-
-        protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference, Transform leftHandReference, Transform rightHandReference)
+            Transform rightFootTracker)
         {
-            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference,
-                rightHandReference);
-            SetCalibrationMeta();
+            VRIKCalibrator.CalibrationData data = VRIKCalibrator.Calibrate(vrik, vrikSettings, cameraTransform,
+                bodyTracker, LeftHandReference, RightHandReference, leftFootTracker, rightFootTracker);
+            SetCalibrationMeta(vrik, true);
+            LocalCalibrate();
+            return data;
+        }
+
+        protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
+            Transform leftHandReference, Transform rightHandReference)
+        {
+            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, null, leftHandReference, rightHandReference);
+            SetCalibrationMeta(vrik, false);
+            LocalCalibrate();
         }
 
         protected void CalibrateVRIK(VRIKCalibrator.CalibrationData calibrationData, Transform headReference,
             Transform body, Transform leftHandReference, Transform rightHandReference, Transform leftFootTracker,
-            Transform rightFootTracker) => VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body,
-            leftHandReference, rightHandReference, leftFootTracker, rightFootTracker);
+            Transform rightFootTracker)
+        {
+            VRIKCalibrator.Calibrate(vrik, calibrationData, headReference, body, leftHandReference, rightHandReference,
+                leftFootTracker, rightFootTracker);
+            SetCalibrationMeta(vrik, true);
+            LocalCalibrate();
+        }
 
         protected void UpdateVRIK(bool fbt, bool isMoving, float scale)
         {
-            if(fbt)
-            {
-                vrik.solver.spine.pelvisPositionWeight = 1f;
-                vrik.solver.spine.pelvisRotationWeight = 1f;
-            }
-            else
-            {
-                vrik.solver.locomotion.footDistance = 0.1f * scale * CHARACTER_HEIGHT;
-                vrik.solver.locomotion.stepThreshold = 0.2f * scale * CHARACTER_HEIGHT;
-                vrik.solver.spine.pelvisPositionWeight = 0f;
-                vrik.solver.spine.pelvisRotationWeight = 0f;
-            }
             vrik.solver.locomotion.weight = isMoving || fbt ? 0f : 1f;
         }
         
@@ -673,6 +677,30 @@ namespace Hypernex.Game.Avatar
             if (MainAnimator == null)
                 return null;
             return MainAnimator.GetBoneTransform(humanBodyBones);
+        }
+
+        public Quaternion GetBoneRestRotation(HumanBodyBones humanBodyBones)
+        {
+            if (MainAnimator == null)
+                return Quaternion.identity;
+            Quaternion rot = Quaternion.identity;
+            Transform xform = MainAnimator.GetBoneTransform(humanBodyBones);
+            if (xform == null)
+                return Quaternion.identity;
+            while (xform != null && xform != MainAnimator.avatarRoot)
+            {
+                if (MainAnimator.avatar.humanDescription.skeleton.Any(x => x.name == xform.name))
+                {
+                    rot = MainAnimator.avatar.humanDescription.skeleton.First(x => x.name == xform.name).rotation * rot;
+                }
+                else
+                {
+                    CCK.Logger.CurrentLogger.Warn($"Transform Bone not found: {xform.name}");
+                    break;
+                }
+                xform = xform.parent;
+            }
+            return rot;
         }
         
         internal void ApplyAudioClipToLipSync(float[] data)

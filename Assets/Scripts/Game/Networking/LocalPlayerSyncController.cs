@@ -164,7 +164,7 @@ namespace Hypernex.Game.Networking
                     {
                         XRTrackerRole xrTrackerRole = tracker.TrackerRole;
                         if(xrTrackerRole == XRTrackerRole.Camera) continue;
-                        CoreBone? coreBone = TrackerRoleToCoreBone(xrTrackerRole);
+                        CoreBone? coreBone = tracker.CalibratedTo;
                         if (coreBone == null) continue;
                         coreTransforms.Add((int) coreBone.Value, tracker.transform.GetNetworkTransform(localPlayer.transform));
                         Transform vriktarget = localPlayer.avatar.GetTargetChild(tracker.transform);
