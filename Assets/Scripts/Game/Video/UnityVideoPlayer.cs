@@ -100,6 +100,7 @@ namespace Hypernex.Game.Video
         public void Play() => videoPlayer.Play();
         public void Pause() => videoPlayer.Pause();
         public void Stop() => videoPlayer.Stop();
+        public string GetFileHeader() => "file:///";
         
         public void Dispose()
         {

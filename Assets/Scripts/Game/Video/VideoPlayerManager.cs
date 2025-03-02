@@ -29,6 +29,7 @@ namespace Hypernex.Game.Video
 #if VLC
             Register<VLCVideoPlayer>(VLCVideoPlayer.CanBeUsed, VLCVideoPlayer.CanBeUsed);
 #endif
+            Register<FFVideoPlayer>(FFVideoPlayer.CanBeUsed, FFVideoPlayer.CanBeUsed);
         }
 
         public static void Register<T>(Func<bool> canBeUsed, Func<Uri, bool> fileCanBePlayed) where T : IVideoPlayer
