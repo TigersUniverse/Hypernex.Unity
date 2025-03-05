@@ -9,6 +9,7 @@ using Hypernex.Networking.Messages.Data;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Tools
@@ -171,6 +172,33 @@ namespace Hypernex.Tools
             lastVolumeProfiles.Clear();
             lastVolumeProfiles.AddRange(volumeProfilesArray);
             VolumeManager.instance.SetCustomDefaultProfiles(lastVolumeProfiles);
+        }
+
+        public static string GetUserDisplayName(this User user)
+        {
+            if (!string.IsNullOrEmpty(user.Bio.DisplayName))
+                return user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
+            return "@" + user.Username;
+        }
+
+        public static void RenderNetImage(this RawImage rawImage, string url, Texture2D fallback = null)
+        {
+            if (!string.IsNullOrEmpty(url))
+                DownloadTools.DownloadBytes(url,
+                    bytes =>
+                    {
+                        if (GifRenderer.IsGif(bytes))
+                        {
+                            if(ComponentTools.HasComponent<GifRenderer>(rawImage.gameObject))
+                                Object.Destroy(rawImage.GetComponent<GifRenderer>());
+                            GifRenderer gifRenderer = rawImage.gameObject.AddComponent<GifRenderer>();
+                            gifRenderer.LoadGif(bytes);
+                        }
+                        else
+                            rawImage.texture = ImageTools.BytesToTexture2D(url, bytes);
+                    });
+            else
+                rawImage.texture = fallback;
         }
 
         internal class UserEqualityComparer : IEqualityComparer<User>
