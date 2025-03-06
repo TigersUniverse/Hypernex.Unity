@@ -3,12 +3,11 @@ using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction
 {
-    public class AvatarRender : MonoBehaviour, IUIRenderer<AvatarMeta>
+    public class AvatarRender : UIRender, IRender<AvatarMeta>
     {
         public TMP_Text AvatarName;
         public RawImage Banner;

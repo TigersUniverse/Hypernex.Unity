@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction
 {
-    public class WorldRender : MonoBehaviour, IUIRenderer<WorldMeta>
+    public class WorldRender : UIRender, IRender<WorldMeta>
     {
         public TMP_Text WorldName;
         public RawImage Banner;

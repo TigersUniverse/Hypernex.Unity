@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Hypernex.UI.Abstraction
 {
-    public class PronounRender : MonoBehaviour, IUIRenderer<Pronouns>
+    public class PronounRender : UIRender, IRender<Pronouns>
     {
         public GameObject PronounContainer;
         public TMP_Text PronounText;

@@ -1,12 +1,11 @@
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction
 {
-    public abstract class UserRender : MonoBehaviour, IUIRenderer<User>
+    public abstract class UserRender : UIRender, IRender<User>
     {
         public RawImage ProfileIcon;
         public RawImage ProfileBanner;

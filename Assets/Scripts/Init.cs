@@ -31,6 +31,9 @@ using Object = UnityEngine.Object;
 
 public class Init : MonoBehaviour
 {
+    internal const string DEFAULT_DOMAIN = "play.hypernex.dev";
+    internal const string DEFAULT_WEB_URL = "https://" + DEFAULT_DOMAIN;
+    
     public string Version => Application.version;
 
     public static Init Instance;
