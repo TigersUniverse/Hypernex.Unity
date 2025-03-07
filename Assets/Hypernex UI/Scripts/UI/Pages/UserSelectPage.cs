@@ -36,12 +36,18 @@ namespace Hypernex.UI.Pages
         public TMP_InputField Password;
         public GameObject TwoFAContainer;
         public TMP_InputField TwoFACode;
+        public GameObject GameMenuObject;
 
         private ServerSelectPage serverSelectPage;
 
         public void OnLogin()
         {
-            
+            HypernexSettings settings = new HypernexSettings(User.UserId, User.TokenContent)
+            {
+                TargetDomain = serverSelectPage.Server,
+                IsHTTP = Init.Instance != null && Init.Instance.UseHTTP
+            };
+            HandleSetUser(settings, User);
         }
 
         public void LinkButton() => Application.OpenURL(Init.DEFAULT_WEB_URL);
@@ -51,16 +57,17 @@ namespace Hypernex.UI.Pages
             HypernexSettings settings = new HypernexSettings(Username.text, Password.text, TwoFACode.text)
             {
                 TargetDomain = serverSelectPage.Server,
-                IsHTTP = Init.Instance.UseHTTP
+                IsHTTP = Init.Instance != null && Init.Instance.UseHTTP
             };
+            HandleSetUser(settings);
         }
 
         public void Cancel2FA() => TwoFAContainer.SetActive(false);
         
-        private void HandleSetUser(HypernexSettings settings)
+        private void HandleSetUser(HypernexSettings settings, ConfigUser configUser = null)
         {
             APIPlayer.Create(settings);
-            APIPlayer.Login((lr, u) => HandleSetUser(lr, u));
+            APIPlayer.Login((lr, u) => HandleSetUser(lr, u, configUser));
         }
         
         private void HandleSetUser(HypernexSharp.API.APIResults.LoginResult loginResult, User user, ConfigUser c = null)
@@ -104,6 +111,8 @@ namespace Hypernex.UI.Pages
                     }
                     ConfigManager.SelectedConfigUser = c;
                     ConfigManager.SaveConfigToFile();
+                    GameMenuObject.SetActive(true);
+                    GetPage<HomePage>().Show();
                     break;
             }
         }

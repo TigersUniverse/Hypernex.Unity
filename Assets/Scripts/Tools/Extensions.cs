@@ -66,7 +66,7 @@ namespace Hypernex.Tools
                 if(!immediate)
                 {
                     Object.Destroy(child);
-                    break;
+                    continue;
                 }
                 Object.DestroyImmediate(child);
             }

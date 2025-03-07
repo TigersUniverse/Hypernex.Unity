@@ -10763,6 +10763,7 @@ GameObject:
   - component: {fileID: 144027161}
   - component: {fileID: 144027162}
   - component: {fileID: 144027159}
+  - component: {fileID: 144027163}
   m_Layer: 0
   m_Name: UITemplates
   m_TagString: Untagged
@@ -10827,6 +10828,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3656026c7e1c54c4586743e6c210e3bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &144027163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 144027157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ec7223b7b6a1af4f995037271f1cc8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &149965235
@@ -11999,6 +12012,7 @@ GameObject:
   m_Component:
   - component: {fileID: 169449483}
   - component: {fileID: 169449485}
+  - component: {fileID: 169449486}
   - component: {fileID: 169449484}
   m_Layer: 5
   m_Name: LinkButton
@@ -12090,6 +12104,36 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 169449482}
   m_CullTransparentMesh: 1
+--- !u!114 &169449486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 169449482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &170260886
 GameObject:
   m_ObjectHideFlags: 0
@@ -42041,10 +42085,11 @@ MonoBehaviour:
   PreviousPage: {fileID: 1356068849}
   Items: {fileID: 883076918}
   UserText: {fileID: 1971917467}
-  Username: {fileID: 0}
-  Password: {fileID: 0}
-  TwoFAContainer: {fileID: 0}
-  TwoFACode: {fileID: 0}
+  Username: {fileID: 72169474}
+  Password: {fileID: 1304490529}
+  TwoFAContainer: {fileID: 589935534}
+  TwoFACode: {fileID: 1585331850}
+  GameMenuObject: {fileID: 466621175}
 --- !u!1 &605750449
 GameObject:
   m_ObjectHideFlags: 0
@@ -105124,14 +105169,14 @@ MonoBehaviour:
   m_VerticalScrollbarEventHandler: {fileID: 0}
   m_LayoutGroup: {fileID: 0}
   m_ScrollSensitivity: 1
-  m_ContentType: 7
-  m_InputType: 2
+  m_ContentType: 2
+  m_InputType: 0
   m_AsteriskChar: 42
-  m_KeyboardType: 0
+  m_KeyboardType: 4
   m_LineType: 0
   m_HideMobileInput: 0
   m_HideSoftKeyboard: 0
-  m_CharacterValidation: 0
+  m_CharacterValidation: 2
   m_RegexValue: 
   m_GlobalPointSize: 14
   m_CharacterLimit: 6
@@ -114524,6 +114569,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1706985787}
+  - component: {fileID: 1706985788}
   m_Layer: 0
   m_Name: Home
   m_TagString: Untagged
@@ -114549,6 +114595,20 @@ Transform:
   - {fileID: 1182616006}
   m_Father: {fileID: 218684876}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1706985788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706985786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04fd21e07ce24689b1e74d4f433dcfe2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PageToShow: {fileID: 1706985786}
+  PreviousPage: {fileID: 0}
 --- !u!1 &1708025641
 GameObject:
   m_ObjectHideFlags: 0
@@ -135166,6 +135226,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2000059170}
   - component: {fileID: 2000059172}
+  - component: {fileID: 2000059173}
   - component: {fileID: 2000059171}
   m_Layer: 5
   m_Name: LinkButton
@@ -135257,6 +135318,36 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000059169}
   m_CullTransparentMesh: 1
+--- !u!114 &2000059173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000059169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &2001798728
 GameObject:
   m_ObjectHideFlags: 0
