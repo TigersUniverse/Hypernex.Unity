@@ -45,11 +45,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
 
         internal void FixedUpdate()
         {
-            foreach (var x in onFixedUpdates.Values)
+            foreach (var x in onFixedUpdates)
             {
                 try
                 {
-                    SandboxFuncTools.InvokeSandboxFunc(x);
+                    SandboxFuncTools.InvokeSandboxFunc(x.Value);
                 }
                 catch (Exception e)
                 {
@@ -60,11 +60,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
 
         internal void Update()
         {
-            foreach (var x in onUpdates.Values)
+            foreach (var x in onUpdates)
             {
                 try
                 {
-                    SandboxFuncTools.InvokeSandboxFunc(x);
+                    SandboxFuncTools.InvokeSandboxFunc(x.Value);
                 }
                 catch (Exception e)
                 {
@@ -75,11 +75,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
         
         internal void LateUpdate()
         {
-            foreach (var x in onLateUpdates.Values)
+            foreach (var x in onLateUpdates)
             {
                 try
                 {
-                    SandboxFuncTools.InvokeSandboxFunc(x);
+                    SandboxFuncTools.InvokeSandboxFunc(x.Value);
                 }
                 catch (Exception e)
                 {
@@ -96,10 +96,10 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
         
         internal void Dispose()
         {
-            foreach (SandboxFunc onDisposalsFunc in onDisposals.Values)
+            foreach (var onDisposalsFunc in onDisposals)
                 try
                 {
-                    SandboxFuncTools.InvokeSandboxFunc(onDisposalsFunc);
+                    SandboxFuncTools.InvokeSandboxFunc(onDisposalsFunc.Value);
                 }
                 catch (Exception e)
                 {

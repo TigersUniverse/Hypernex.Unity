@@ -17,6 +17,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 throw new Exception("No Dropdown found on Item at " + i.Path + ". Are you using TextMeshPro?");
         }
         
+        public bool Enabled
+        {
+            get => tdd == null ? false : tdd.enabled;
+            set
+            {
+                if(read || tdd == null) return;
+                tdd.enabled = value;
+            }
+        }
+        
         public int GetValue()
         {
             if (tdd != null)

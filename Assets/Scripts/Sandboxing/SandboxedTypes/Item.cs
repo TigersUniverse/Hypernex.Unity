@@ -264,6 +264,8 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         private static readonly IReadOnlyDictionary<string, Type> ComponentTypes = new ReadOnlyDictionary<string, Type>(
             new Dictionary<string, Type>
             {
+                ["animator"] = typeof(Components.Animator),
+                ["animation"] = typeof(Components.Animation),
                 ["audio"] = typeof(Audio),
                 ["button"] = typeof(Button),
                 ["dropdown"] = typeof(Dropdown),
@@ -276,7 +278,10 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 ["video"] = typeof(Video),
                 ["physicsbody"] = typeof(PhysicsBody),
                 ["interactables"] = typeof(Interactables),
-                ["light"] = typeof(Light)
+                ["light"] = typeof(Light),
+                ["navagent"] = typeof(NavAgent),
+                ["navsurface"] = typeof(NavSurface),
+                ["renderer"] = typeof(Components.Renderer),
             });
 
         public object GetComponent(string componentName)

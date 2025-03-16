@@ -16,6 +16,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 throw new Exception("No Toggle found on Item at " + i.Path);
         }
         
+        public bool Enabled
+        {
+            get => t == null ? false : t.enabled;
+            set
+            {
+                if(read || t == null) return;
+                t.enabled = value;
+            }
+        }
+        
         public bool GetToggle()
         {
             if (t != null)

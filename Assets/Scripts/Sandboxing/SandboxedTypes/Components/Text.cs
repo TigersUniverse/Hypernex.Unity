@@ -15,6 +15,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if(tmpt == null)
                 throw new Exception("No Text found on Item at " + i.Path + ". Are you using TextMeshPro?");
         }
+
+        public bool Enabled
+        {
+            get => tmpt == null ? false : tmpt.enabled;
+            set
+            {
+                if(read || tmpt == null) return;
+                tmpt.enabled = value;
+            }
+        }
         
         public string GetText()
         {
