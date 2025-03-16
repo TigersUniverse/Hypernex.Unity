@@ -265,6 +265,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             new Dictionary<string, Type>
             {
                 ["animator"] = typeof(Components.Animator),
+                ["animation"] = typeof(Components.Animation),
                 ["audio"] = typeof(Audio),
                 ["button"] = typeof(Button),
                 ["dropdown"] = typeof(Dropdown),
@@ -277,7 +278,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 ["video"] = typeof(Video),
                 ["physicsbody"] = typeof(PhysicsBody),
                 ["interactables"] = typeof(Interactables),
-                ["light"] = typeof(Light)
+                ["light"] = typeof(Light),
+                ["navagent"] = typeof(NavAgent),
+                ["navsurface"] = typeof(NavSurface),
             });
 
         public object GetComponent(string componentName)
