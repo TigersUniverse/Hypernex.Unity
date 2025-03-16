@@ -281,6 +281,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 ["light"] = typeof(Light),
                 ["navagent"] = typeof(NavAgent),
                 ["navsurface"] = typeof(NavSurface),
+                ["renderer"] = typeof(Components.Renderer),
             });
 
         public object GetComponent(string componentName)

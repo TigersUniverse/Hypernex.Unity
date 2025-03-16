@@ -99,6 +99,8 @@ namespace Hypernex.Sandboxing
             ["StreamDownloadOptions"] = typeof(Streaming.StreamDownloadOptions),
             ["StreamDownload"] = typeof(Streaming.StreamDownload),
             ["PhysicsBody"] = typeof(PhysicsBody),
+            ["Mesh"] = typeof(SandboxedTypes.Mesh),
+            ["Renderer"] = typeof(SandboxedTypes.Components.Renderer),
         }.Union(BaseForwardingTypes).ToDictionary(pair => pair.Key, pair => pair.Value));
 
         public static InstanceContainer Forward(GameObject attached, IInterpreter interpreter, SandboxRestriction restriction,
