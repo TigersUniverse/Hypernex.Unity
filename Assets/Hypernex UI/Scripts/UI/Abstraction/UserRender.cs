@@ -1,15 +1,18 @@
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction
 {
-    public abstract class UserRender : UIRender, IRender<User>
+    public class UserRender : UIRender, IRender<User>
     {
         public RawImage ProfileIcon;
         public RawImage ProfileBanner;
         public Image StatusIcon;
+        [Tooltip("Can be null. If null, this assumes the Username field and will show the display.")]
+        public TMP_Text DisplayName;
         public TMP_Text Username;
         public TMP_Text StatusText;
         public TMP_Text DescriptionText;
@@ -17,7 +20,12 @@ namespace Hypernex.UI.Abstraction
 
         public void Render(User user)
         {
-            if (Username != null)
+            if (DisplayName != null && !string.IsNullOrEmpty(user.Bio.DisplayName))
+            {
+                DisplayName.text = user.Bio.DisplayName;
+                Username.text = user.Username;
+            }
+            else if (Username != null)
                 Username.text = user.GetUserDisplayName();
             if(StatusText != null)
                 StatusText.text = !string.IsNullOrEmpty(user.Bio.StatusText) ? user.Bio.StatusText : user.Bio.Status.ToString();

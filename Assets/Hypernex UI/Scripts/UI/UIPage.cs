@@ -37,6 +37,7 @@ namespace Hypernex.UI
         protected bool HasInitialized { get; private set; }
         public GameObject PageToShow;
         public UIPage PreviousPage;
+        public GameObject[] SubPageContainers;
 
         public virtual void Show(bool hideAll = true)
         {
@@ -51,6 +52,28 @@ namespace Hypernex.UI
             if(PreviousPage != null)
                 LastPage = PreviousPage;
             Return();
+        }
+
+        public void ShowSubPage(int index)
+        {
+            if(IsHidden) Show();
+            HideSubPages();
+            SubPageContainers[index].SetActive(true);
+        }
+        public void ShowSubPage(GameObject container)
+        {
+            for (int i = 0; i < SubPageContainers.Length; i++)
+            {
+                GameObject compare = SubPageContainers[i];
+                if(compare != container) continue;
+                ShowSubPage(i);
+                break;
+            }
+        }
+        public void HideSubPages()
+        {
+            foreach (GameObject subPageContainer in SubPageContainers)
+                subPageContainer.SetActive(false);
         }
 
         internal virtual void Initialize()
