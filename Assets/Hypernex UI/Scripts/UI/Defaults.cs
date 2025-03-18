@@ -1,6 +1,5 @@
 using System;
 using Hypernex.CCK.Unity;
-using Hypernex.Tools;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
 

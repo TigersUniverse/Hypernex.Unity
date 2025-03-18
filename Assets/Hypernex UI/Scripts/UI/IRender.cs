@@ -6,5 +6,6 @@ namespace Hypernex.UI
     {
         public Transform transform { get; }
         public void Render(T t);
+        public T1 GetComponent<T1>();
     }
 }

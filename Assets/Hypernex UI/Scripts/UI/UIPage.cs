@@ -34,6 +34,7 @@ namespace Hypernex.UI
         }
 
         public bool IsHidden => !PageToShow.activeSelf;
+        public int VisibleSubPage { get; private set; }
         protected bool HasInitialized { get; private set; }
         public GameObject PageToShow;
         public UIPage PreviousPage;
@@ -59,6 +60,7 @@ namespace Hypernex.UI
             if(IsHidden) Show();
             HideSubPages();
             SubPageContainers[index].SetActive(true);
+            VisibleSubPage = index;
         }
         public void ShowSubPage(GameObject container)
         {
@@ -74,6 +76,7 @@ namespace Hypernex.UI
         {
             foreach (GameObject subPageContainer in SubPageContainers)
                 subPageContainer.SetActive(false);
+            VisibleSubPage = -1;
         }
 
         internal virtual void Initialize()
