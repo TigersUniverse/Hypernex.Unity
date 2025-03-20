@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Hypernex.UI.Components
 {
@@ -10,6 +11,7 @@ namespace Hypernex.UI.Components
         public ButtonType DisabledTheme = ButtonType.Grey;
         public ToggleButton[] Family = Array.Empty<ToggleButton>();
         public bool DefaultState;
+        public UnityEvent OnChange;
 
         private UIThemeObject uiThemeObject;
         
@@ -29,20 +31,32 @@ namespace Hypernex.UI.Components
             foreach (ToggleButton toggleButton in Family)
                 toggleButton.isOn = false;
             isOn = true;
+            RaiseEvents();
         }
 
-        public void Toggle() => isOn = !isOn;
+        public void Toggle()
+        {
+            isOn = !isOn;
+            RaiseEvents();
+        }
+
+        private void RaiseEvents() => OnChange.Invoke();
         
         private void Repaint()
         {
+            if(uiThemeObject == null)
+                uiThemeObject = GetComponent<UIThemeObject>();
             uiThemeObject.ButtonType = m_isOn ? EnabledTheme : DisabledTheme;
             uiThemeObject.ApplyTheme(UITheme.SelectedTheme);
         }
 
         private void Start()
         {
-            uiThemeObject = GetComponent<UIThemeObject>();
-            isOn = DefaultState;
+            if (DefaultState)
+            {
+                isOn = true;
+                RaiseEvents();
+            }
         }
     }
 }

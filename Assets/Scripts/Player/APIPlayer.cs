@@ -98,7 +98,7 @@ namespace Hypernex.Player
                 QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{false, null});
         }
 
-        public static void RefreshUser()
+        public static void RefreshUser(Action<User> additionalOnRefresh = null)
         {
             if (APISettings != null && APIObject != null)
                 APIObject.GetUser(CurrentToken, getUserResult =>
@@ -106,6 +106,8 @@ namespace Hypernex.Player
                     if (!getUserResult.success) return;
                     APIUser = getUserResult.result.UserData;
                     QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, getUserResult.result.UserData);
+                    if(additionalOnRefresh != null)
+                        QuickInvoke.InvokeActionOnMainThread(additionalOnRefresh, getUserResult.result.UserData);
                 });
         }
 

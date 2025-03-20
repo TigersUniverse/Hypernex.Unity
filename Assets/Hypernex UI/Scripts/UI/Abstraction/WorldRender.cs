@@ -1,25 +1,116 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Abstraction
 {
     public class WorldRender : UIRender, IRender<WorldMeta>
     {
+        private static List<WorldMeta> CachedWorldMeta = new();
+        
         public TMP_Text WorldName;
         public RawImage Banner;
         public TMP_Text WorldCreator;
         public TMP_Text DescriptionText;
         public Button NextIcon;
         public Button PreviousIcon;
+        public TMP_Text PlayerCount;
+        internal WorldMeta meta;
         
         private List<(Texture2D, byte[])> Icons = new();
         private int currentIndex;
+        
+        public static void GetWorldMeta(string worldId, Action<WorldMeta> callback)
+        {
+            if (CachedWorldMeta.Count(x => x.Id == worldId) > 0)
+            {
+                WorldMeta worldMeta = CachedWorldMeta.First(x => x.Id == worldId);
+                callback.Invoke(worldMeta);
+                return;
+            }
+            APIPlayer.APIObject.GetWorldMeta(result =>
+            {
+                if (result.success)
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                    {
+                        CachedWorldMeta.Add(result.result.Meta);
+                        callback.Invoke(result.result.Meta);
+                    }));
+                else
+                    Logger.CurrentLogger.Error("Failed to get WorldMeta for " + worldId);
+            }, worldId);
+        }
+        
+        private static void GetAllInstanceHosts(Action<List<(SafeInstance, User)>> callback, List<SafeInstance> instances, List<(SafeInstance, User)> c = null)
+        {
+            if (instances.Count <= 0)
+            {
+                callback.Invoke(new List<(SafeInstance, User)>());
+                return;
+            }
+            List<(SafeInstance, User)> temp;
+            if (c == null)
+                temp = new List<(SafeInstance, User)>();
+            else
+                temp = c;
+            SafeInstance sharedInstance = instances.ElementAt(0);
+            APIPlayer.APIObject.GetUser(result =>
+            {
+                if (result.success)
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        temp.Add((sharedInstance, result.result.UserData))));
+                instances.Remove(sharedInstance);
+                if(instances.Count > 0)
+                    QuickInvoke.InvokeActionOnMainThread(new Action(() => GetAllInstanceHosts(callback, instances, temp)));
+                else
+                    QuickInvoke.InvokeActionOnMainThread(callback, temp);
+            }, sharedInstance.InstanceCreatorId, isUserId: true);
+        }
+
+        public static void GetWorldInstances(Action<List<(SafeInstance, User)>> callback, WorldMeta worldMeta)
+        {
+            List<SafeInstance> safeInstances = new List<SafeInstance>();
+            APIPlayer.APIObject.GetPublicInstancesOfWorld(instanceResults =>
+            {
+                if (instanceResults.success)
+                {
+                    foreach (SafeInstance resultSafeInstance in instanceResults.result.SafeInstances)
+                    {
+                        if (safeInstances.Count(x =>
+                                x.GameServerId == resultSafeInstance.GameServerId &&
+                                x.InstanceId == resultSafeInstance.InstanceId) <= 0)
+                            safeInstances.Add(resultSafeInstance);
+                    }
+                }
+                GetAllInstanceHosts(callback.Invoke, safeInstances);
+            }, worldMeta.Id);
+        }
+        
+        public static void GetWorldInstances(Action<List<SafeInstance>> callback, WorldMeta worldMeta)
+        {
+            List<SafeInstance> safeInstances = new List<SafeInstance>();
+            APIPlayer.APIObject.GetPublicInstancesOfWorld(instanceResults =>
+            {
+                if (instanceResults.success)
+                {
+                    foreach (SafeInstance resultSafeInstance in instanceResults.result.SafeInstances)
+                    {
+                        if (safeInstances.Count(x =>
+                                x.GameServerId == resultSafeInstance.GameServerId &&
+                                x.InstanceId == resultSafeInstance.InstanceId) <= 0)
+                            safeInstances.Add(resultSafeInstance);
+                    }
+                }
+                QuickInvoke.InvokeActionOnMainThread(callback, safeInstances);
+            }, worldMeta.Id);
+        }
         
         private void RenderIcon()
         {
@@ -38,6 +129,7 @@ namespace Hypernex.UI.Abstraction
         
         public void Render(WorldMeta worldMeta)
         {
+            meta = worldMeta;
             Icons.Clear();
             currentIndex = 0;
             if(Banner != null)
@@ -103,9 +195,16 @@ namespace Hypernex.UI.Abstraction
                 }, worldMeta.OwnerId);
             if(DescriptionText != null)
                 DescriptionText.text = worldMeta.Description;
+            if (PlayerCount != null)
+                GetWorldInstances(safeInstances => PlayerCount.text = safeInstances.GetWorldPlayerCount().ToString(),
+                    worldMeta);
+            if(NextIcon != null)
+                NextIcon.gameObject.SetActive(Banner != null && worldMeta.IconURLs.Count > 0);
+            if(PreviousIcon != null)
+                PreviousIcon.gameObject.SetActive(Banner != null && worldMeta.IconURLs.Count > 0);
         }
         
-        public void Start()
+        private void Start()
         {
             if(Banner == null || NextIcon == null || PreviousIcon == null) return;
             NextIcon.onClick.AddListener(() =>

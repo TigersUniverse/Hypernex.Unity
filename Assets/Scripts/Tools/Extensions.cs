@@ -36,6 +36,14 @@ namespace Hypernex.Tools
             return networkedObject;
         }
 
+        internal static int GetWorldPlayerCount(this List<SafeInstance> instances)
+        {
+            int i = 0;
+            foreach (SafeInstance safeInstance in instances)
+                i += safeInstance.ConnectedUsers.Count;
+            return i;
+        }
+
         internal static void Apply(this NetworkedObject networkedObject, SmoothTransform transform, bool global = true)
         {
             transform.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
@@ -72,7 +80,7 @@ namespace Hypernex.Tools
             }
         }
 
-        internal static void AddChild(this Transform t, Transform parent) => t.SetParent(parent);
+        internal static void AddChild(this Transform parent, Transform t) => t.SetParent(parent);
 
         internal static RotationOffsetDriver GetOffsetRotator(this Transform t, Transform root) => new (t, root);
 
