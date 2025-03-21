@@ -192,7 +192,7 @@ namespace Hypernex.UI.Abstraction
                         if (creatorCallback.success)
                             WorldCreator.text = $"Created by {creatorCallback.result.UserData.GetUserDisplayName()}";
                     }));
-                }, worldMeta.OwnerId);
+                }, worldMeta.OwnerId, null, true);
             if(DescriptionText != null)
                 DescriptionText.text = worldMeta.Description;
             if (PlayerCount != null)

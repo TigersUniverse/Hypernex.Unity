@@ -184,10 +184,10 @@ namespace Hypernex.Tools
             VolumeManager.instance.SetCustomDefaultProfiles(lastVolumeProfiles);
         }
 
-        public static string GetUserDisplayName(this User user)
+        public static string GetUserDisplayName(this User user, int size = 24)
         {
             if (!string.IsNullOrEmpty(user.Bio.DisplayName))
-                return user.Bio.DisplayName + " <size=15>@" + user.Username + "</size>";
+                return user.Bio.DisplayName + $" <size={size}>@" + user.Username + "</size>";
             return "@" + user.Username;
         }
 
