@@ -6,7 +6,6 @@ using Hypernex.Tools;
 using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
 using HypernexSharp.API;
-using HypernexSharp.API.APIMessages;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using TMPro;
