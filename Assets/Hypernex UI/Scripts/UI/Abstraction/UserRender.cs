@@ -18,8 +18,11 @@ namespace Hypernex.UI.Abstraction
         public TMP_Text DescriptionText;
         public PronounRender PronounRender;
 
-        public void Render(User user)
+        internal User user;
+
+        public void Render(User u)
         {
+            user = u;
             if (DisplayName != null && !string.IsNullOrEmpty(user.Bio.DisplayName))
             {
                 DisplayName.text = user.Bio.DisplayName;

@@ -233,6 +233,12 @@ namespace Hypernex.UI.Pages
             RequestButton.gameObject.SetActive(false);
             SocketManager.RequestInvite(UserToRender);
         }
+        
+        public void OnSelectUser(UserRender u)
+        {
+            UserToRender = u.user;
+            Show();
+        }
 
         public void OnUserVolumeChanged(float v)
         {
