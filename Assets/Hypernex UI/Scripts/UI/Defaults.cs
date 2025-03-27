@@ -8,6 +8,8 @@ namespace Hypernex.UI
     [RequireComponent(typeof(DontDestroyMe))]
     public class Defaults : MonoBehaviour
     {
+        public const int MAX_RESULTS = 9*2;
+        
         public static Defaults Instance { get; private set; }
 
         public static IRender<T> GetRenderer<T>(string templateName)

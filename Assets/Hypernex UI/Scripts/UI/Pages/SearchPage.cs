@@ -15,8 +15,6 @@ namespace Hypernex.UI.Pages
 {
     public class SearchPage : UIPage
     {
-        private const int MAX_RESULTS = 50;
-        
         public TMP_InputField SearchField;
         public ScrollRect SearchScroll;
         public RectTransform SearchList;
@@ -85,18 +83,18 @@ namespace Hypernex.UI.Pages
             switch (index)
             {
                 case SearchType.User:
-                    APIPlayer.APIObject.SearchByName(OnSearchResult, SearchType.User, s, MAX_RESULTS, page);
+                    APIPlayer.APIObject.SearchByName(OnSearchResult, SearchType.User, s, Defaults.MAX_RESULTS, page);
                     break;
                 case SearchType.Avatar:
                     switch (type)
                     {
                         case 0:
                             APIPlayer.APIObject.SearchByName(OnSearchResult, SearchType.Avatar, s,
-                                MAX_RESULTS, page);
+                                Defaults.MAX_RESULTS, page);
                             break;
                         case 1:
                             APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.Avatar, s,
-                                MAX_RESULTS, page);
+                                Defaults.MAX_RESULTS, page);
                             break;
                         default:
                             isSearching = false;
@@ -108,11 +106,11 @@ namespace Hypernex.UI.Pages
                     {
                         case 0:
                             APIPlayer.APIObject.SearchByName(OnSearchResult, SearchType.World, s,
-                                MAX_RESULTS, page);
+                                Defaults.MAX_RESULTS, page);
                             break;
                         case 1:
                             APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.World, s,
-                                MAX_RESULTS, page);
+                                Defaults.MAX_RESULTS, page);
                             break;
                         default:
                             isSearching = false;
@@ -219,15 +217,17 @@ namespace Hypernex.UI.Pages
                     break;
             }
             ((TMP_Text) SearchField.placeholder).text = inp;
+            SearchField.text = String.Empty;
         }
 
         private void Update()
         {
-            if (isSearching || lastResultsLength < MAX_RESULTS || lastType < 0 || string.IsNullOrEmpty(lastSearch)) return;
+            if (isSearching || lastResultsLength < Defaults.MAX_RESULTS || lastType < 0 || string.IsNullOrEmpty(lastSearch)) return;
             Vector2 pos = SearchScroll.normalizedPosition;
-            if(pos.y > 0) return;
+            if(pos.y >= 0) return;
             page++;
             Search(lastType, lastSearchIndex, lastSearch);
+            Debug.Log("Requesting search refresh at page " + page);
         }
     }
 }

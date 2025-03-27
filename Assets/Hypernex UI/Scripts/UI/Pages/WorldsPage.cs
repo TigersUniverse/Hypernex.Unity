@@ -11,6 +11,7 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hypernex.UI.Pages
 {
@@ -22,31 +23,50 @@ namespace Hypernex.UI.Pages
         public ToggleButton[] CategoryToggles;
         public RectTransform List;
         public TMP_Text FavoriteButtonText;
+        public ScrollRect ScrollList;
+
+        private bool isRendering = true;
+        private bool local;
+        private int page;
+        private int lastResultsLength;
         
         public void RefreshWorlds()
         {
             ShowSubPage(0);
             List.ClearChildren();
+            page = 0;
+            SendRefresh();
+        }
+
+        private void SendRefresh()
+        {
             int i = CategoryToggles.GetSelectedIndex();
             PopularityDropdown.gameObject.SetActive(i == 0);
+            isRendering = true;
             switch (i)
             {
                 case 0:
                     HeaderText.text = "Popular Worlds";
                     PopularityType popularityType = (PopularityType) PopularityDropdown.value;
-                    APIPlayer.APIObject.GetWorldPopularity(OnPopularityResult, popularityType);
+                    APIPlayer.APIObject.GetWorldPopularity(OnPopularityResult, popularityType, Defaults.MAX_RESULTS,
+                        page);
+                    local = false;
                     break;
                 case 1:
                     HeaderText.text = "Game Worlds";
-                    APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.World, "game");
+                    APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.World, "game", Defaults.MAX_RESULTS,
+                        page);
+                    local = false;
                     break;
                 case 2:
                     HeaderText.text = "Favorite Worlds";
                     RenderListedIds(ConfigManager.SelectedConfigUser.SavedWorlds);
+                    local = true;
                     break;
                 case 3:
                     HeaderText.text = "My Worlds";
                     APIPlayer.RefreshUser(u => RenderListedIds(u.Worlds));
+                    local = true;
                     break;
             }
         }
@@ -81,6 +101,8 @@ namespace Hypernex.UI.Pages
             QuickInvoke.InvokeActionOnMainThread(new Action(
                 () =>
                 {
+                    lastResultsLength = callbackResult.result.Candidates.Count;
+                    isRendering = false;
                     if (!callbackResult.success) return;
                     foreach (string id in callbackResult.result.Candidates)
                     {
@@ -100,6 +122,8 @@ namespace Hypernex.UI.Pages
                     if(!popularityResult.success) return;
                     GetWorldsInOrder(popularityResult.result.Popularity, new List<WorldMeta>(), result =>
                     {
+                        lastResultsLength = result.Count;
+                        isRendering = false;
                         foreach (WorldMeta m in result)
                         {
                             if (m == null) continue;
@@ -141,6 +165,9 @@ namespace Hypernex.UI.Pages
                     CreateWorldCardTemplate(worldMeta);
                 });
             }
+            isRendering = false;
+            page = 0;
+            lastResultsLength = 0;
         }
         
         private void RenderListedIds(List<string> ids)
@@ -154,6 +181,9 @@ namespace Hypernex.UI.Pages
                     CreateWorldCardTemplate(worldMeta);
                 });
             }
+            isRendering = false;
+            page = 0;
+            lastResultsLength = 0;
         }
         
         private void CreateWorldCardTemplate(WorldMeta worldMeta)
@@ -170,6 +200,16 @@ namespace Hypernex.UI.Pages
         private void OnEnable()
         {
             RefreshWorlds();
+        }
+        
+        private void Update()
+        {
+            if (isRendering || lastResultsLength < Defaults.MAX_RESULTS || local) return;
+            Vector2 pos = ScrollList.normalizedPosition;
+            if(pos.y >= 0) return;
+            page++;
+            SendRefresh();
+            Debug.Log("Requesting world refresh at page " + page);
         }
     }
 }

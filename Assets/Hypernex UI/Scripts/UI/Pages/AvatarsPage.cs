@@ -10,6 +10,7 @@ using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hypernex.UI.Pages
 {
@@ -21,31 +22,49 @@ namespace Hypernex.UI.Pages
         public ToggleButton[] CategoryToggles;
         public RectTransform List;
         public TMP_Text FavoriteButtonText;
+        public ScrollRect ScrollList;
+
+        private bool isRendering = true;
+        private bool local;
+        private int page;
+        private int lastResultsLength;
         
         public void RefreshAvatars()
         {
             ShowSubPage(0);
             List.ClearChildren();
+            page = 0;
+            SendRefresh();
+        }
+
+        private void SendRefresh()
+        {
             int i = CategoryToggles.GetSelectedIndex();
             PopularityDropdown.gameObject.SetActive(i == 0);
+            isRendering = true;
             switch (i)
             {
                 case 0:
                     HeaderText.text = "Popular Avatars";
                     PopularityType popularityType = (PopularityType) PopularityDropdown.value;
-                    APIPlayer.APIObject.GetAvatarPopularity(OnPopularityResult, popularityType);
+                    APIPlayer.APIObject.GetAvatarPopularity(OnPopularityResult, popularityType, Defaults.MAX_RESULTS,
+                        page);
+                    local = false;
                     break;
                 /*case 1:
                     HeaderText.text = ". Avatar";
                     APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.Avatar, ".");
+                    local = true;
                     break;*/
                 case 1:
                     HeaderText.text = "Favorite Avatars";
                     RenderListedIds(ConfigManager.SelectedConfigUser.SavedAvatars);
+                    local = true;
                     break;
                 case 2:
                     HeaderText.text = "My Avatars";
                     APIPlayer.RefreshUser(u => RenderListedIds(u.Avatars));
+                    local = true;
                     break;
             }
         }
@@ -80,6 +99,8 @@ namespace Hypernex.UI.Pages
             QuickInvoke.InvokeActionOnMainThread(new Action(
                 () =>
                 {
+                    lastResultsLength = callbackResult.result.Candidates.Count;
+                    isRendering = false;
                     if (!callbackResult.success) return;
                     foreach (string id in callbackResult.result.Candidates)
                     {
@@ -99,6 +120,8 @@ namespace Hypernex.UI.Pages
                     if(!popularityResult.success) return;
                     GetAvatarsInOrder(popularityResult.result.Popularity, new List<AvatarMeta>(), result =>
                     {
+                        lastResultsLength = result.Count;
+                        isRendering = false;
                         foreach (AvatarMeta m in result)
                         {
                             if (m == null) continue;
@@ -140,6 +163,9 @@ namespace Hypernex.UI.Pages
                     CreateAvatarCardTemplate(avatarMeta);
                 });
             }
+            isRendering = false;
+            page = 0;
+            lastResultsLength = 0;
         }
         
         private void RenderListedIds(List<string> ids)
@@ -153,6 +179,9 @@ namespace Hypernex.UI.Pages
                     CreateAvatarCardTemplate(avatarMeta);
                 });
             }
+            isRendering = false;
+            page = 0;
+            lastResultsLength = 0;
         }
         
         private void CreateAvatarCardTemplate(AvatarMeta avatarMeta)
@@ -169,6 +198,16 @@ namespace Hypernex.UI.Pages
         private void OnEnable()
         {
             RefreshAvatars();
+        }
+        
+        private void Update()
+        {
+            if (isRendering || lastResultsLength < Defaults.MAX_RESULTS || local) return;
+            Vector2 pos = ScrollList.normalizedPosition;
+            if(pos.y >= 0) return;
+            page++;
+            SendRefresh();
+            Debug.Log("Requesting avatar refresh at page " + page);
         }
     }
 }

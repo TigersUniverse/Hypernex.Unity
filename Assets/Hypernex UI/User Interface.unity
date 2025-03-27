@@ -59160,6 +59160,7 @@ MonoBehaviour:
   - {fileID: 122642274}
   List: {fileID: 154491277}
   FavoriteButtonText: {fileID: 1306300125}
+  ScrollList: {fileID: 1022868378}
 --- !u!1 &987435644
 GameObject:
   m_ObjectHideFlags: 0
@@ -94268,6 +94269,7 @@ MonoBehaviour:
   - {fileID: 705868893}
   List: {fileID: 1283275899}
   FavoriteButtonText: {fileID: 1451563890}
+  ScrollList: {fileID: 488877453}
 --- !u!1 &1598797054
 GameObject:
   m_ObjectHideFlags: 0
