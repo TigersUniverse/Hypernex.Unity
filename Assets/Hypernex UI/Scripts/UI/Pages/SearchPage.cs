@@ -30,24 +30,10 @@ namespace Hypernex.UI.Pages
         private int lastType = -1;
         private SearchType lastSearchIndex;
         
-        private int SelectedIndex
-        {
-            get
-            {
-                for (int i = 0; i < CategoryToggles.Length; i++)
-                {
-                    ToggleButton t = CategoryToggles[i];
-                    if(!t.isOn) continue;
-                    return i;
-                }
-                return -1;
-            }
-        }
-        
         public void SearchName()
         {
             if(isSearching) return;
-            int index = SelectedIndex;
+            int index = CategoryToggles.GetSelectedIndex();
             if(index < 0) return;
             string n = SearchField.text;
             if(string.IsNullOrEmpty(n) || n.Length < 3) return;
@@ -58,7 +44,7 @@ namespace Hypernex.UI.Pages
         public void SearchTag()
         {
             if(isSearching) return;
-            int index = SelectedIndex;
+            int index = CategoryToggles.GetSelectedIndex();
             if(index < 0) return;
             string n = SearchField.text;
             if(string.IsNullOrEmpty(n) || n.Length < 3) return;
@@ -69,7 +55,7 @@ namespace Hypernex.UI.Pages
         public void SearchName(string n)
         {
             if(isSearching) return;
-            int index = SelectedIndex;
+            int index = CategoryToggles.GetSelectedIndex();
             if(index < 0) return;
             if(string.IsNullOrEmpty(n) || n.Length < 3) return;
             ResetSearch();
@@ -79,7 +65,7 @@ namespace Hypernex.UI.Pages
         public void SearchTag(string n)
         {
             if(isSearching) return;
-            int index = SelectedIndex;
+            int index = CategoryToggles.GetSelectedIndex();
             if(index < 0) return;
             if(string.IsNullOrEmpty(n) || n.Length < 3) return;
             ResetSearch();
@@ -217,7 +203,7 @@ namespace Hypernex.UI.Pages
 
         public void OnToggleChanged()
         {
-            int index = SelectedIndex;
+            int index = CategoryToggles.GetSelectedIndex();
             if(index < 0) return;
             foreach (GameObject presetTag in PresetTags)
                 presetTag.SetActive(false);

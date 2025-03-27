@@ -6,6 +6,7 @@ using Hypernex.CCK.Unity;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -209,6 +210,17 @@ namespace Hypernex.Tools
                     });
             else
                 rawImage.texture = fallback;
+        }
+
+        public static int GetSelectedIndex(this ToggleButton[] toggleButtons)
+        {
+            for (int i = 0; i < toggleButtons.Length; i++)
+            {
+                ToggleButton t = toggleButtons[i];
+                if(!t.isOn) continue;
+                return i;
+            }
+            return -1;
         }
 
         internal class UserEqualityComparer : IEqualityComparer<User>

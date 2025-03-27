@@ -1,3 +1,4 @@
+using System;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
@@ -27,6 +28,11 @@ namespace Hypernex.UI.Abstraction
             {
                 DisplayName.text = user.Bio.DisplayName;
                 Username.text = "@" + user.Username;
+            }
+            else if (DisplayName != null)
+            {
+                DisplayName.text = user.GetUserDisplayName();
+                Username.text = String.Empty;
             }
             else if (Username != null)
                 Username.text = user.GetUserDisplayName();

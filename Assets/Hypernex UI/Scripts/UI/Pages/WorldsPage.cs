@@ -22,26 +22,12 @@ namespace Hypernex.UI.Pages
         public ToggleButton[] CategoryToggles;
         public RectTransform List;
         public TMP_Text FavoriteButtonText;
-
-        public int SelectedIndex
-        {
-            get
-            {
-                for (int i = 0; i < CategoryToggles.Length; i++)
-                {
-                    ToggleButton t = CategoryToggles[i];
-                    if(!t.isOn) continue;
-                    return i;
-                }
-                return -1;
-            }
-        }
         
         public void RefreshWorlds()
         {
             ShowSubPage(0);
             List.ClearChildren();
-            int i = SelectedIndex;
+            int i = CategoryToggles.GetSelectedIndex();
             PopularityDropdown.gameObject.SetActive(i == 0);
             switch (i)
             {
