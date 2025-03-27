@@ -55,6 +55,9 @@ namespace Hypernex.UI.Pages
         public RawImage Eyes;
         public RawImage Face;
         private UnifiedMutationConfig Mutations;
+        [Header("Advanced")]
+        public TMP_InputField DownloadThreadsInput;
+        public TMP_InputField MMSCInput;
 
         #region Settings
 
@@ -67,6 +70,7 @@ namespace Hypernex.UI.Pages
             InitializeVRSettings();
             InitializeSecuritySettings();
             InitializeFaceTrackingSettings();
+            InitializeAdvancedSettings();
         }
 
         public void FocusSettingsPage(int index)
@@ -208,6 +212,12 @@ namespace Hypernex.UI.Pages
                 MutationsPanel.SetActive(false);
                 CamerasPanel.SetActive(false);
             }
+        }
+
+        private void InitializeAdvancedSettings()
+        {
+            DownloadThreadsInput.text = ConfigManager.LoadedConfig.DownloadThreads.ToString();
+            MMSCInput.text = ConfigManager.LoadedConfig.MaxMemoryStorageCache.ToString();
         }
         
         public void OnAudioDeviceSelection(int i)
@@ -386,6 +396,24 @@ namespace Hypernex.UI.Pages
         
         public void RestartFaceTracking() => FaceTrackingManager.Restart();
         
+        public void ApplyDownloadThreads()
+        {
+            try
+            {
+                int dtv = Convert.ToInt32(DownloadThreadsInput.text);
+                ConfigManager.LoadedConfig.DownloadThreads = dtv;
+            } catch(Exception){}
+        }
+
+        public void ApplyMemory()
+        {
+            try
+            {
+                int mmscv = Convert.ToInt32(MMSCInput.text);
+                ConfigManager.LoadedConfig.MaxMemoryStorageCache = mmscv;
+            } catch(Exception){}
+        }
+        
         private void UpdateComponentSecurityToggles()
         {
             AllowedAvatarComponent allowedAvatarComponent;
@@ -487,7 +515,9 @@ namespace Hypernex.UI.Pages
         }
         
         #endregion
-        
+
+        public override void Hide() => ConfigManager.SaveConfigToFile();
+
         private void OnEnable()
         {
             RefreshSettings();

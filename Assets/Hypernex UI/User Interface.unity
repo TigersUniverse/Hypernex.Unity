@@ -25740,7 +25740,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 406086978}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1706985788}
+        m_TargetAssemblyTypeName: Hypernex.UI.Pages.HomePage, Assembly-CSharp
+        m_MethodName: FocusSettingsPage
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 6
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &406086978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40519,7 +40531,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 641771075}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1706985788}
+        m_TargetAssemblyTypeName: Hypernex.UI.Pages.HomePage, Assembly-CSharp
+        m_MethodName: ApplyMemory
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &641771075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86548,7 +86572,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1478497408}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1706985788}
+        m_TargetAssemblyTypeName: Hypernex.UI.Pages.HomePage, Assembly-CSharp
+        m_MethodName: ApplyDownloadThreads
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1478497411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101946,6 +101982,8 @@ MonoBehaviour:
   CamerasPanel: {fileID: 666486189}
   Eyes: {fileID: 1701703523}
   Face: {fileID: 2077026037}
+  DownloadThreadsInput: {fileID: 422029179}
+  MMSCInput: {fileID: 1338457609}
 --- !u!1 &1708025641
 GameObject:
   m_ObjectHideFlags: 0
