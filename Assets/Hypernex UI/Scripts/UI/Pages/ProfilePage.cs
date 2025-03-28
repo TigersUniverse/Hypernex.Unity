@@ -85,15 +85,18 @@ namespace Hypernex.UI.Pages
                 }
                 InviteButton.gameObject.SetActive(gameInstance != null && gameInstance.CanInvite);
                 RequestButton.gameObject.SetActive(true);
-                Database database = ConfigManager.GetDatabase();
-                if (database != null)
+                try
                 {
-                    PlayerOverrides playerOverrides =
-                        database.Get<PlayerOverrides>(PlayerOverrides.TABLE, UserToRender.Id);
-                    VolumeText.text = playerOverrides != null
-                        ? $"{(int) Mathf.Round(playerOverrides.Volume * 100f)}%"
-                        : "100%";
-                }
+                    Database database = ConfigManager.GetDatabase();
+                    if (database != null)
+                    {
+                        PlayerOverrides playerOverrides =
+                            database.Get<PlayerOverrides>(PlayerOverrides.TABLE, UserToRender.Id);
+                        VolumeText.text = playerOverrides != null
+                            ? $"{(int) Mathf.Round(playerOverrides.Volume * 100f)}%"
+                            : "100%";
+                    }
+                } catch(Exception){}
                 HideIfLocal.ForEach(x => x.SetActive(true));
             }
             else
@@ -236,7 +239,7 @@ namespace Hypernex.UI.Pages
         
         public void OnSelectUser(UserRender u)
         {
-            UserToRender = u.user;
+            UserToRender = u.u;
             Show();
         }
 

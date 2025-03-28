@@ -19,11 +19,10 @@ namespace Hypernex.UI.Abstraction
         public TMP_Text DescriptionText;
         public PronounRender PronounRender;
 
-        internal User user;
+        internal User u;
 
-        public void Render(User u)
+        public void Render(User user)
         {
-            user = u;
             if (DisplayName != null && !string.IsNullOrEmpty(user.Bio.DisplayName))
             {
                 DisplayName.text = user.Bio.DisplayName;
@@ -67,6 +66,7 @@ namespace Hypernex.UI.Abstraction
                 ProfileIcon.RenderNetImage(user.Bio.PfpURL, Defaults.Instance.DefaultProfilePicture);
             if(ProfileBanner != null)
                 ProfileBanner.RenderNetImage(user.Bio.BannerURL, Defaults.Instance.DefaultProfileBanner);
+            u = user;
         }
     }
 }

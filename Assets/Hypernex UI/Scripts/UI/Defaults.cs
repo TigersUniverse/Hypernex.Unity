@@ -1,5 +1,6 @@
 using System;
 using Hypernex.CCK.Unity;
+using Hypernex.UI.Components;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
 
@@ -25,10 +26,12 @@ namespace Hypernex.UI
         public Texture2D DefaultProfileBanner;
         public Texture2D DefaultAvatarBanner;
         public Texture2D DefaultWorldBanner;
+        public ConsoleWindow Console;
 
         private void Initialize()
         {
             new UnityLogger().SetLogger();
+            Console.Initialize();
             GetComponent<DontDestroyMe>().Register();
             UIPage[] uiPages = FindObjectsByType<UIPage>(FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
             Array.Reverse(uiPages);

@@ -194,14 +194,14 @@ namespace Hypernex.Tools
 
         public static void RenderNetImage(this RawImage rawImage, string url, Texture2D fallback = null)
         {
+            if(ComponentTools.HasComponent<GifRenderer>(rawImage.gameObject))
+                Object.Destroy(rawImage.GetComponent<GifRenderer>());
             if (!string.IsNullOrEmpty(url))
                 DownloadTools.DownloadBytes(url,
                     bytes =>
                     {
                         if (GifRenderer.IsGif(bytes))
                         {
-                            if(ComponentTools.HasComponent<GifRenderer>(rawImage.gameObject))
-                                Object.Destroy(rawImage.GetComponent<GifRenderer>());
                             GifRenderer gifRenderer = rawImage.gameObject.AddComponent<GifRenderer>();
                             gifRenderer.LoadGif(bytes);
                         }
