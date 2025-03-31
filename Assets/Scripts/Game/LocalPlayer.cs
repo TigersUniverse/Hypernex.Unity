@@ -680,7 +680,7 @@ namespace Hypernex.Game
         }
 
         private void FixedUpdate() => avatar?.FixedUpdate();
-
+        private static Vector3 velocity = Vector3.zero;
         private void Update()
         {
             // TODO: Reduce GC
@@ -749,8 +749,11 @@ namespace Hypernex.Game
             }
             if (!LockMovement)
             {
+                
+                
+                
                 move.y = verticalVelocity;
-                CharacterController.Move(move * Time.deltaTime);
+                CharacterController.Move(move * Time.deltaTime); //TODO: Smooth Movement
                 avatar?.SetMove(left_m?.Item4 ?? Vector2.zero, isRunning);
                 avatar?.SetIsGrounded(groundedPlayer);
                 avatar?.SetRun(isRunning);

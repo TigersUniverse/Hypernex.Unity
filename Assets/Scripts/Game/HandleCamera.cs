@@ -26,21 +26,35 @@ namespace Hypernex.Game
         private const string TEMPLATE_CAMERA_NAME = "HandleCamera";
         private const string CAMERA_CANVAS_NAME = "CameraCanvas";
         private const string HANDLE_CAMERA_CANVAS_NAME = "HandleCameraCanvas";
+        private static bool CAMERA_EXIST = false;
         
         public static HandleCamera[] allCameras => new List<HandleCamera>(handleCameras).Where(x => x != null).ToArray();
 
         private static readonly List<HandleCamera> handleCameras = new();
 
+        /// <summary>
+        /// Added check for if camera object exists in scene already.
+        /// </summary>
         public static HandleCamera Create()
         {
-            GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
-                .Find(TEMPLATE_CAMERA_NAME)).gameObject;
-            string n = "camera_" + Guid.NewGuid();
-            while(DontDestroyMe.Cache.ContainsKey(n))
-                n = "camera_" + Guid.NewGuid();
-            newCamera.name = n;
-            newCamera.transform.parent = null;
-            return newCamera.AddComponent<HandleCamera>();
+            if (!CAMERA_EXIST)
+            {
+                GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
+                    .Find(TEMPLATE_CAMERA_NAME)).gameObject;
+                string n = "camera_" + Guid.NewGuid();
+                while(DontDestroyMe.Cache.ContainsKey(n))
+                    n = "camera_" + Guid.NewGuid();
+                newCamera.name = n;
+                newCamera.transform.parent = null;
+                CAMERA_EXIST = true;
+                return newCamera.AddComponent<HandleCamera>();
+            }
+            else
+            {
+                CAMERA_EXIST = false;
+                DisposeAll();
+                return null;
+            }
         }
 
         public static void DisposeAll()
