@@ -1,6 +1,8 @@
 using System;
 using Hypernex.CCK.Unity;
+using Hypernex.Player;
 using Hypernex.UI.Components;
+using Hypernex.UI.Pages;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
 
@@ -27,6 +29,16 @@ namespace Hypernex.UI
         public Texture2D DefaultAvatarBanner;
         public Texture2D DefaultWorldBanner;
         public ConsoleWindow Console;
+        public GameObject GameMenuObject;
+
+        public void SignOut()
+        {
+            APIPlayer.Logout();
+            GameMenuObject.SetActive(false);
+            UIPage.GetPage<ServerSelectPage>().Show();
+        }
+        
+        public void Exit() => Application.Quit();
 
         private void Initialize()
         {
