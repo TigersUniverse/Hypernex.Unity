@@ -9,7 +9,7 @@ using Logger = Hypernex.CCK.Logger;
 namespace Hypernex.UI
 {
     [RequireComponent(typeof(DontDestroyMe))]
-    public class Defaults : MonoBehaviour
+    public class Defaults : MonoBehaviour, IDisposable
     {
         public const int MAX_RESULTS = 9*2;
         
@@ -30,6 +30,7 @@ namespace Hypernex.UI
         public Texture2D DefaultWorldBanner;
         public ConsoleWindow Console;
         public GameObject GameMenuObject;
+        public OverlayNotification OverlayNotification;
 
         public void SignOut()
         {
@@ -51,6 +52,7 @@ namespace Hypernex.UI
                 uiPage.Initialize();
             foreach (UIRender uiRenderer in FindObjectsByType<UIRender>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                 uiRenderer.Initialize();
+            OverlayNotification.Begin();
         }
 
         public void OnEnable()
@@ -62,6 +64,12 @@ namespace Hypernex.UI
             }
             Instance = this;
             Initialize();
+        }
+
+
+        public void Dispose()
+        {
+            OverlayNotification.Dispose();
         }
     }
 }
