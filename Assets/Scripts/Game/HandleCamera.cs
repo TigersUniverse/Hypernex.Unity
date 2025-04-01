@@ -26,7 +26,6 @@ namespace Hypernex.Game
         private const string TEMPLATE_CAMERA_NAME = "HandleCamera";
         private const string CAMERA_CANVAS_NAME = "CameraCanvas";
         private const string HANDLE_CAMERA_CANVAS_NAME = "HandleCameraCanvas";
-        private static bool CAMERA_EXIST = false;
         
         public static HandleCamera[] allCameras => new List<HandleCamera>(handleCameras).Where(x => x != null).ToArray();
 
