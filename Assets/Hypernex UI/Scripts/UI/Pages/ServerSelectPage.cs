@@ -44,6 +44,11 @@ namespace Hypernex.UI.Pages
         private void HandleConnect(string s)
         {
             Server = s;
+            if (!ConfigManager.LoadedConfig.SavedServers.Contains(s.ToLower()))
+            {
+                ConfigManager.LoadedConfig.SavedServers.Add(s.ToLower());
+                ConfigManager.SaveConfigToFile();
+            }
             UserSelectPage userSelectPage = GetPage<UserSelectPage>();
             userSelectPage.Show();
         }
