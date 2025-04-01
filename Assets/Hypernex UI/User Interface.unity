@@ -9677,8 +9677,9 @@ GameObject:
   - component: {fileID: 138801890}
   - component: {fileID: 138801892}
   - component: {fileID: 138801893}
+  - component: {fileID: 138801894}
   m_Layer: 0
-  m_Name: User Template
+  m_Name: CurrentInstanceUserCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9691,19 +9692,19 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 138801889}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -3.8297122}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 998022369}
   - {fileID: 1405844795}
   - {fileID: 924548345}
-  m_Father: {fileID: 856034478}
+  m_Father: {fileID: 144027160}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 320, y: -85}
+  m_AnchoredPosition: {x: 598.4557, y: 140.79561}
   m_SizeDelta: {x: 620, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &138801892
@@ -9758,6 +9759,26 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &138801894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 138801889}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b73d9dcf44ef9ab0d8a89b2e465f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ProfileIcon: {fileID: 292360502}
+  ProfileBanner: {fileID: 296859971}
+  StatusIcon: {fileID: 0}
+  DisplayName: {fileID: 924548346}
+  Username: {fileID: 0}
+  StatusText: {fileID: 0}
+  DescriptionText: {fileID: 0}
+  PronounRender: {fileID: 0}
 --- !u!1 &142044578
 GameObject:
   m_ObjectHideFlags: 0
@@ -9992,6 +10013,7 @@ Transform:
   - {fileID: 32315087}
   - {fileID: 816784500}
   - {fileID: 1089097402}
+  - {fileID: 138801890}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &144027161
@@ -52437,14 +52459,13 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 138801890}
+  m_Children: []
   m_Father: {fileID: 1944479175}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0.0000076293945}
-  m_SizeDelta: {x: 0, y: 160}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &856034479
 MonoBehaviour:
@@ -91772,6 +91793,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1546605160}
+  - component: {fileID: 1546605162}
+  - component: {fileID: 1546605161}
   m_Layer: 0
   m_Name: Current World
   m_TagString: Untagged
@@ -91796,6 +91819,40 @@ Transform:
   - {fileID: 640512785}
   m_Father: {fileID: 172067449}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1546605161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1546605159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a283a900fe454b77b4d7c9b5ea4eddb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Users: {fileID: 856034478}
+  HostLabel: {fileID: 800483383}
+  PlayerCount: {fileID: 1669691967}
+--- !u!114 &1546605162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1546605159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cf9fea8ece24766a752026c0f3443ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WorldName: {fileID: 905824315}
+  Banner: {fileID: 1774069417}
+  WorldCreator: {fileID: 0}
+  DescriptionText: {fileID: 2003216529}
+  NextIcon: {fileID: 525912738}
+  PreviousIcon: {fileID: 1960751698}
+  PlayerCount: {fileID: 0}
 --- !u!1 &1546646907
 GameObject:
   m_ObjectHideFlags: 0
@@ -102880,6 +102937,7 @@ MonoBehaviour:
   Face: {fileID: 2077026037}
   DownloadThreadsInput: {fileID: 422029179}
   MMSCInput: {fileID: 1338457609}
+  CurrentInstanceButton: {fileID: 251097527}
 --- !u!1 &1708025641
 GameObject:
   m_ObjectHideFlags: 0

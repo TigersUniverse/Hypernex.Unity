@@ -58,6 +58,8 @@ namespace Hypernex.UI.Pages
         [Header("Advanced")]
         public TMP_InputField DownloadThreadsInput;
         public TMP_InputField MMSCInput;
+        [Header("Current Instance")]
+        public GameObject CurrentInstanceButton;
 
         #region Settings
 
@@ -516,6 +518,17 @@ namespace Hypernex.UI.Pages
         
         #endregion
 
+        #region Current Instance
+
+        public void LeaveInstance()
+        {
+            if(GameInstance.FocusedInstance != null)
+                GameInstance.FocusedInstance.Dispose();
+            ShowSubPage(0);
+        }
+
+        #endregion
+
         public override void Hide() => ConfigManager.SaveConfigToFile();
 
         private void OnEnable()
@@ -525,6 +538,7 @@ namespace Hypernex.UI.Pages
 
         private void Update()
         {
+            CurrentInstanceButton.SetActive(GameInstance.FocusedInstance != null);
             UpdateCameras();
         }
     }
