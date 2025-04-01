@@ -3,6 +3,7 @@ using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using UnityEngine;
@@ -19,11 +20,11 @@ namespace Hypernex.UI.Pages
             {
                 MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
                 {
-                    /*OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Sent Invite!",
                         Description = "Sent Invite to " + from.Username
-                    });*/
+                    });
                     SocketManager.InviteUser(GameInstance.FocusedInstance, from);
                 }, 5f)
                 {
@@ -43,11 +44,11 @@ namespace Hypernex.UI.Pages
                 {
                     MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
                     {
-                        /*OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                        OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                         {
                             Header = "Joining Instance...",
                             Description = "Joining " + worldMeta.Name + " invited by " + from.Username
-                        });*/
+                        });
                         SocketManager.JoinInstance(new SafeInstance
                         {
                             GameServerId = invite.toGameServerId,

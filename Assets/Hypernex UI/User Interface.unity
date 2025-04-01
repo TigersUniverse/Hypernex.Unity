@@ -9131,7 +9131,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &134593061
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9210,9 +9210,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 603965087}
-        m_TargetAssemblyTypeName: Hypernex.UI.Pages.UserSelectPage, Assembly-CSharp
-        m_MethodName: OnInputLogin
+      - m_Target: {fileID: 2105476306}
+        m_TargetAssemblyTypeName: Hypernex.UI.Abstraction.WarnRender, Assembly-CSharp
+        m_MethodName: OnConfirm
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -10014,6 +10014,7 @@ MonoBehaviour:
   DefaultWorldBanner: {fileID: 2800000, guid: d87bf42ce2cc11646b4232f8157d6a3d, type: 3}
   Console: {fileID: 1710807923}
   GameMenuObject: {fileID: 0}
+  OverlayNotification: {fileID: 0}
 --- !u!114 &144027162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38881,6 +38882,8 @@ MonoBehaviour:
   TwoFAContainer: {fileID: 589935534}
   TwoFACode: {fileID: 1585331850}
   GameMenuObject: {fileID: 466621175}
+  WarnRender: {fileID: 2105476306}
+  BanRender: {fileID: 2105476307}
 --- !u!1 &607173663
 GameObject:
   m_ObjectHideFlags: 0
@@ -127421,6 +127424,8 @@ GameObject:
   - component: {fileID: 2105476303}
   - component: {fileID: 2105476305}
   - component: {fileID: 2105476304}
+  - component: {fileID: 2105476306}
+  - component: {fileID: 2105476307}
   m_Layer: 5
   m_Name: WarnBan
   m_TagString: Untagged
@@ -127488,6 +127493,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2105476302}
   m_CullTransparentMesh: 1
+--- !u!114 &2105476306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2105476302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 357e1af6cb014d5299290e9086ad2564, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Header: {fileID: 1144157779}
+  Reasoning: {fileID: 172188965}
+  ConfirmButton: {fileID: 134593060}
+--- !u!114 &2105476307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2105476302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b9ad9e91b9d746d3af53cc9af713c940, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Header: {fileID: 1144157779}
+  Reasoning: {fileID: 172188965}
 --- !u!1 &2108555251
 GameObject:
   m_ObjectHideFlags: 0

@@ -5,6 +5,7 @@ using Hypernex.Configuration.ConfigMeta;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp;
 using HypernexSharp.APIObjects;
 using TMPro;
@@ -37,6 +38,8 @@ namespace Hypernex.UI.Pages
         public GameObject TwoFAContainer;
         public TMP_InputField TwoFACode;
         public GameObject GameMenuObject;
+        public WarnRender WarnRender;
+        public BanRender BanRender;
 
         private ServerSelectPage serverSelectPage;
 
@@ -75,46 +78,62 @@ namespace Hypernex.UI.Pages
             switch (loginResult?.Result ?? LoginResult.Incorrect)
             {
                 case LoginResult.Incorrect:
-                    // TODO: Message Popup
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Error, MessageButtons.None)
+                    {
+                        Header = "Incorrect Credentials!",
+                        Description = "Please try again!"
+                    });
                     break;
                 case LoginResult.Missing2FA:
                     TwoFAContainer.SetActive(true);
                     break;
                 case LoginResult.Warned:
-                    // TODO: Create Page and Transition
+                    WarnRender.Render(loginResult!.WarnStatus);
+                    WarnRender.Confirmed += () =>
+                    {
+                        WarnRender.gameObject.SetActive(false);
+                        LoginCorrect(loginResult, user, c);
+                    };
+                    WarnRender.gameObject.SetActive(true);
                     break;
                 case LoginResult.Banned:
-                    // TODO: Create Page and Transition
+                    BanRender.Render(loginResult!.BanStatus);
+                    BanRender.gameObject.SetActive(true);
                     break;
                 case LoginResult.Correct:
-                    foreach (ConfigUser configUser in new List<ConfigUser>(ConfigManager.LoadedConfig.SavedAccounts))
-                    {
-                        if (configUser.UserId == user.Id && configUser.Server.ToLower() == serverSelectPage.Server.ToLower())
-                        {
-                            if (c == null)
-                            {
-                                configUser.TokenContent = loginResult!.Token.content;
-                                c = configUser;
-                            }
-                        }
-                    }
-                    if (c == null)
-                    {
-                        c = new ConfigUser
-                        {
-                            UserId = user.Id,
-                            Username = user.Username,
-                            TokenContent = loginResult!.Token.content,
-                            Server = serverSelectPage.Server
-                        };
-                        ConfigManager.LoadedConfig.SavedAccounts.Add(c);
-                    }
-                    ConfigManager.SelectedConfigUser = c;
-                    ConfigManager.SaveConfigToFile();
-                    GameMenuObject.SetActive(true);
-                    GetPage<HomePage>().Show();
+                    LoginCorrect(loginResult, user, c);
                     break;
             }
+        }
+
+        private void LoginCorrect(HypernexSharp.API.APIResults.LoginResult loginResult, User user, ConfigUser c = null)
+        {
+            foreach (ConfigUser configUser in new List<ConfigUser>(ConfigManager.LoadedConfig.SavedAccounts))
+            {
+                if (configUser.UserId == user.Id && configUser.Server.ToLower() == serverSelectPage.Server.ToLower())
+                {
+                    if (c == null)
+                    {
+                        configUser.TokenContent = loginResult!.Token.content;
+                        c = configUser;
+                    }
+                }
+            }
+            if (c == null)
+            {
+                c = new ConfigUser
+                {
+                    UserId = user.Id,
+                    Username = user.Username,
+                    TokenContent = loginResult!.Token.content,
+                    Server = serverSelectPage.Server
+                };
+                ConfigManager.LoadedConfig.SavedAccounts.Add(c);
+            }
+            ConfigManager.SelectedConfigUser = c;
+            ConfigManager.SaveConfigToFile();
+            GameMenuObject.SetActive(true);
+            GetPage<HomePage>().Show();
         }
         
         private void Refresh(Config config)
