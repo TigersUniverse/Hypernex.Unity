@@ -37,24 +37,15 @@ namespace Hypernex.Game
         /// </summary>
         public static HandleCamera Create()
         {
-            if (!CAMERA_EXIST)
-            {
-                GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
-                    .Find(TEMPLATE_CAMERA_NAME)).gameObject;
-                string n = "camera_" + Guid.NewGuid();
-                while(DontDestroyMe.Cache.ContainsKey(n))
-                    n = "camera_" + Guid.NewGuid();
-                newCamera.name = n;
-                newCamera.transform.parent = null;
-                CAMERA_EXIST = true;
-                return newCamera.AddComponent<HandleCamera>();
-            }
-            else
-            {
-                CAMERA_EXIST = false;
-                DisposeAll();
-                return null;
-            }
+            GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
+                .Find(TEMPLATE_CAMERA_NAME)).gameObject;
+            string n = "camera_" + Guid.NewGuid();
+            while(DontDestroyMe.Cache.ContainsKey(n))
+                n = "camera_" + Guid.NewGuid();
+            newCamera.name = n;
+            newCamera.transform.parent = null;
+            CAMERA_EXIST = true;
+            return newCamera.AddComponent<HandleCamera>();
         }
 
         public static void DisposeAll()
