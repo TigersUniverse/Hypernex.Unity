@@ -30,7 +30,7 @@ namespace Hypernex.Game
         public static HandleCamera[] allCameras => new List<HandleCamera>(handleCameras).Where(x => x != null).ToArray();
 
         private static readonly List<HandleCamera> handleCameras = new();
-
+        
         public static HandleCamera Create()
         {
             GameObject newCamera = Instantiate(DontDestroyMe.GetNotDestroyedObject("Templates").transform
