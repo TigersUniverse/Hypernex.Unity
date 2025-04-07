@@ -22,6 +22,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if(f == null || r == null)
                 throw new Exception("No Renderer found on Item at " + i.Path);
         }
+        
+        public bool Enabled
+        {
+            get => r == null ? false : r.enabled;
+            set
+            {
+                if(read || r == null) return;
+                r.enabled = value;
+            }
+        }
 
         public Mesh Mesh
         {
