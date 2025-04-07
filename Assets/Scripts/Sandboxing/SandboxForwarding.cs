@@ -20,6 +20,9 @@ using Ray = Hypernex.Sandboxing.SandboxedTypes.Ray;
 using RaycastHit = Hypernex.Sandboxing.SandboxedTypes.RaycastHit;
 using Time = Hypernex.Sandboxing.SandboxedTypes.Time;
 using Light = Hypernex.Sandboxing.SandboxedTypes.Components.Light;
+using Mesh = Hypernex.Sandboxing.SandboxedTypes.Mesh;
+using Renderer = Hypernex.Sandboxing.SandboxedTypes.Components.Renderer;
+using Texture = Hypernex.Sandboxing.SandboxedTypes.Texture;
 
 namespace Hypernex.Sandboxing
 {
@@ -76,6 +79,16 @@ namespace Hypernex.Sandboxing
             ["Light"] = typeof(Light),
             ["LightShadows"] = typeof(LightShadows),
             ["LightType"] = typeof(LightType),
+            ["NavMesh"] = typeof(NavMesh),
+            ["NavAgent"] = typeof(NavAgent),
+            ["NavSurface"] = typeof(NavSurface),
+            ["NavMeshHit"] = typeof(NavMeshHit),
+            ["NavPath"] = typeof(NavPath),
+            ["NavMeshPathStatus"] = typeof(UnityEngine.AI.NavMeshPathStatus),
+            ["Animator"] = typeof(SandboxedTypes.Components.Animator),
+            ["Animation"] = typeof(SandboxedTypes.Components.Animation),
+            ["AnimState"] = typeof(AnimState),
+            ["Texture"] = typeof(Texture)
         });
 
         private static readonly ReadOnlyDictionary<string, Type> ForwardingLocalAvatarTypes = new(
@@ -89,7 +102,9 @@ namespace Hypernex.Sandboxing
             ["Streaming"] = typeof(Streaming),
             ["StreamDownloadOptions"] = typeof(Streaming.StreamDownloadOptions),
             ["StreamDownload"] = typeof(Streaming.StreamDownload),
-            ["PhysicsBody"] = typeof(PhysicsBody)
+            ["PhysicsBody"] = typeof(PhysicsBody),
+            ["Mesh"] = typeof(Mesh),
+            ["Renderer"] = typeof(Renderer),
         }.Union(BaseForwardingTypes).ToDictionary(pair => pair.Key, pair => pair.Value));
 
         public static InstanceContainer Forward(GameObject attached, IInterpreter interpreter, SandboxRestriction restriction,
