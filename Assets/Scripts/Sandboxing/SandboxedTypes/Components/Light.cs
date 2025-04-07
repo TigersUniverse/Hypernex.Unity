@@ -35,17 +35,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if (light == null) throw new Exception("No Light found on Item at " + i.Path);
         }
 
-        public bool IsEnabled
-        {
-            get => light.enabled;
-            set
-            {
-                if (read || light == null)
-                    return;
-                light.enabled = value;
-            }
-        }
-
         public LightType Type
         {
             get => light.type;

@@ -63,17 +63,59 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
             DynamicGI.UpdateEnvironment();
         }
 
-        [Obsolete("DuplicateItem is now Obsolete. Use Item.Duplicate instead")]
-        public Item DuplicateItem(Item item, string name = "")
+        public bool FogEnabled
         {
-            if(sandboxRestriction == SandboxRestriction.LocalAvatar) return null;
-            if (item.IsReadOnly) return null;
-            return item.Duplicate(name);
+            get => RenderSettings.fog;
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fog = value;
+            }
         }
-
-        [Obsolete("UpdateWorldProperties is now Obsolete. Use World.Properties instead")]
-        public void UpdateWorldProperties(WorldProperties worldProperties)
+        public float FogDensity
         {
+            get => RenderSettings.fogDensity;
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fogDensity = value;
+            }
+        }
+        public float FogStartDistance
+        {
+            get => RenderSettings.fogStartDistance;
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fogStartDistance = value;
+            }
+        }
+        public float FogEndDistance
+        {
+            get => RenderSettings.fogEndDistance;
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fogEndDistance = value;
+            }
+        }
+        public FogMode FogMode
+        {
+            get => RenderSettings.fogMode;
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fogMode = value;
+            }
+        }
+        public Color FogColor
+        {
+            get => Color.FromUnityColor(RenderSettings.fogColor);
+            set
+            {
+                if (sandboxRestriction == SandboxRestriction.LocalAvatar) return;
+                RenderSettings.fogColor = value.ToUnityColor();
+            }
         }
     }
 }

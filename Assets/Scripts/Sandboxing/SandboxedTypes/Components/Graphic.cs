@@ -60,7 +60,15 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             if (image != null)
                 image.sprite = (Sprite) a;
             if (rawImage != null)
-                rawImage.texture = (Texture) a;
+                rawImage.texture = (UnityEngine.Texture) a;
+        }
+        
+        public void SetImageFromTexture(Texture texture)
+        {
+            if(read)
+                return;
+            if (rawImage != null)
+                rawImage.texture = texture.r;
         }
     }
 }
