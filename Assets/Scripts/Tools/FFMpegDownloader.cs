@@ -6,15 +6,9 @@ namespace Hypernex.Tools
 {
     public static class FFMpegDownloader
     {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         // win64
         // This build is LGPL, see https://ffmpeg.org/legal.html
         private const string URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-07-31-12-50/ffmpeg-n6.0-32-gd4a7a6e7fa-win64-lgpl-shared-6.0.zip";
-#else
-        // linux64
-        // This build is LGPL, see https://ffmpeg.org/legal.html
-        private const string URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-07-31-12-50/ffmpeg-n6.0-32-gd4a7a6e7fa-linux64-lgpl-shared-6.0.tar.xz";
-#endif
         
         public static void Download(string outputDirectory, bool overwrite = false)
         {
