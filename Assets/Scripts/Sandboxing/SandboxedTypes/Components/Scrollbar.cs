@@ -16,6 +16,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 throw new Exception("No Scrollbar found on Item at " + i.Path);
         }
         
+        public bool Enabled
+        {
+            get => scrollbar == null ? false : scrollbar.enabled;
+            set
+            {
+                if(read || scrollbar == null) return;
+                scrollbar.enabled = value;
+            }
+        }
+        
         public float GetValue()
         {
             if (scrollbar != null)
