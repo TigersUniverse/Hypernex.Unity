@@ -757,7 +757,7 @@ namespace Hypernex.Game
                 
                 
                 move.y = verticalVelocity;
-                CharacterController.Move(move * Time.deltaTime); //TODO: Smooth Movement
+                CharacterController.Move(move * Time.deltaTime);
                 avatar?.SetMove(left_m?.Item4 ?? Vector2.zero, isRunning);
                 avatar?.SetIsGrounded(groundedPlayer);
                 avatar?.SetRun(isRunning);
