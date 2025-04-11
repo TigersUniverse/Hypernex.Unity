@@ -53,17 +53,11 @@ namespace Hypernex.UI.Pages
                     local = false;
                     break;
                 case 1:
-                    HeaderText.text = "Game Worlds";
-                    APIPlayer.APIObject.SearchByTag(OnSearchResult, SearchType.World, "game", Defaults.MAX_RESULTS,
-                        page);
-                    local = false;
-                    break;
-                case 2:
                     HeaderText.text = "Favorite Worlds";
                     RenderListedIds(ConfigManager.SelectedConfigUser.SavedWorlds);
                     local = true;
                     break;
-                case 3:
+                case 2:
                     HeaderText.text = "My Worlds";
                     APIPlayer.RefreshUser(u => RenderListedIds(u.Worlds));
                     local = true;
