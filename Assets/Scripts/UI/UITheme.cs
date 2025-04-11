@@ -46,6 +46,8 @@ namespace Hypernex.UI
         public Color LinkLabelColor;
         public TMP_FontAsset LinkLabelFont;
 
+        public Color MicMuteColor;
+
         public Sprite InfoSprite;
         public Sprite WarningSprite;
         public Sprite ErrorSprite;

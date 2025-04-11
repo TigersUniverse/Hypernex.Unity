@@ -35,7 +35,10 @@ namespace Hypernex.UI.Components
         }
 
         public LocalPlayer LocalPlayer;
-        public GameObject MicrophoneIcon;
+        public RawImage MicrophoneIcon;
+        public UIThemeObject MicTheme;
+        public Texture2D MicUnmute;
+        public Texture2D MicMute;
         public List<NotificationRender> Panels = new();
         public Transform OverlayAlign;
         public Transform OverlayVRAlign;
@@ -117,7 +120,8 @@ namespace Hypernex.UI.Components
         private void Update()
         {
             transform.localPosition = LocalPlayer.IsVR ? OverlayVRAlign.localPosition : OverlayAlign.localPosition;
-            MicrophoneIcon.SetActive(LocalPlayer.MicrophoneEnabled);
+            MicrophoneIcon.texture = LocalPlayer.MicrophoneEnabled ? MicUnmute : MicMute;
+            MicTheme.ApplyTheme(UITheme.SelectedTheme);
             CheckForDownloading();
         }
 

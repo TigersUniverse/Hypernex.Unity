@@ -160,6 +160,16 @@ namespace Hypernex.UI
                     lineVisual.validColorGradient.SetKeys(gradientColorKeys, gradientAlphaKeys);
                 }
             }
+            else if (ThemeType == UIThemeObjectType.MicMute)
+            {
+                Color c = LocalPlayer.Instance.MicrophoneEnabled ? theme.PrimaryColorTheme : theme.MicMuteColor;
+                Image img = GetComponent<Image>();
+                if (img != null)
+                    img.color = c;
+                RawImage rawimg = GetComponent<RawImage>();
+                if (rawimg != null)
+                    rawimg.color = c;
+            }
         }
 
         private void OnEnable()
@@ -186,6 +196,7 @@ namespace Hypernex.UI
         ButtonText = 7,
         PrimaryColorVector = 8,
         BackgroundImage = 9,
-        LineRenderer = 10
+        LineRenderer = 10,
+        MicMute = 14,
     }
 }
