@@ -8,7 +8,7 @@ using Hypernex.Game.Bindings;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Tools;
 using Hypernex.UI;
-using Hypernex.UIActions;
+using Hypernex.UI.Components;
 using Hypernex.UIActions.Data;
 using TMPro;
 using UnityEngine;
@@ -16,6 +16,9 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using MessageButtons = Hypernex.UI.Abstraction.MessageButtons;
+using MessageMeta = Hypernex.UI.Abstraction.MessageMeta;
+using MessageUrgency = Hypernex.UI.Abstraction.MessageUrgency;
 
 namespace Hypernex.Game
 {
@@ -350,7 +353,7 @@ namespace Hypernex.Game
                         universalAdditionalCameraData.antialiasing = AntialiasingMode.None;
                         universalAdditionalCameraData.renderPostProcessing = false;
                     }
-                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Saved Photo",
                         Description = "Saved Photo to " + file

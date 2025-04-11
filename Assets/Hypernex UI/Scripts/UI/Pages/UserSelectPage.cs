@@ -144,7 +144,7 @@ namespace Hypernex.UI.Pages
             {
                 IRender<ConfigUser> newUser = Defaults.GetRenderer<ConfigUser>("UserItem");
                 newUser.Render(savedUser);
-                newUser.transform.SetParent(Items);
+                newUser.transform.SetParent(Items, false);
             }
         }
         

@@ -47,9 +47,6 @@ namespace Hypernex.UI.Pages
                         })), userFriendId, null, true);
                     }
                     break;
-                case 1:
-                    // TODO: Favorite Friends
-                    break;
                 case 2:
                     FriendsLabel.text = "Friend Requests (" + user.FriendRequests.Count + ")";
                     foreach (string userFriendRequestId in user.FriendRequests)
@@ -64,6 +61,25 @@ namespace Hypernex.UI.Pages
                         })), userFriendRequestId, null, true);
                     }
                     break;
+                case 1:
+                    FriendsLabel.text = "Followed Users (" + user.Following.Count + ")";
+                    foreach (string userFollowingId in user.Following)
+                    {
+                        APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
+                        {
+                            if (result.success)
+                            {
+                                if(lastFriends.Count(x => x.Id == result.result.UserData.Id) <= 0)
+                                    lastFriends.Add(result.result.UserData);
+                                if(result.result.UserData.Bio.Status != Status.Offline || ShowOfflineFriends.isOn)
+                                    CreateFriendCardFromUser(result.result.UserData);
+                            }
+                            else
+                                Logger.CurrentLogger.Error("Failed to get data for userid " + userFollowingId + " for reason " +
+                                                           result.message);
+                        })), userFollowingId, null, true);
+                    }
+                    break;
             }
         }
         
@@ -76,8 +92,7 @@ namespace Hypernex.UI.Pages
         
         private void CreateFriendRequestCardFromUser(User user)
         {
-            // TODO: Create Friend Request Card Template
-            IRender<User> userRenderer = Defaults.GetRenderer<User>("FriendCardTemplate");
+            IRender<User> userRenderer = Defaults.GetRenderer<User>("FriendRequestCardTemplate");
             userRenderer.Render(user);
             FriendsContainer.AddChild(userRenderer.transform);
         }

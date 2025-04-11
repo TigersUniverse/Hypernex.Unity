@@ -60,12 +60,8 @@ namespace Hypernex.UI.Pages
                         LargeImage = worldBanner,
                         SmallImage = userIcon,
                         Header = "Got Invite to " + worldMeta.Name,
-                        SubHeader = string.IsNullOrEmpty(from.Bio.DisplayName)
-                            ? from.Username
-                            : $"{from.Bio.DisplayName} <size=15>@{from.Username}</size>",
-                        Description = string.IsNullOrEmpty(from.Bio.DisplayName)
-                            ? from.Username
-                            : $"{from.Bio.DisplayName} <size=15>@{from.Username}</size>" + " would like you to join " +
+                        SubHeader = from.GetUserDisplayName(20),
+                        Description = from.GetUserDisplayName(20) + " would like you to join " +
                               $"them in {worldMeta.Name}",
                         OKText = "Join"
                     };

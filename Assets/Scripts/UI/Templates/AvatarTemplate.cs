@@ -5,13 +5,15 @@ using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Logger = Hypernex.CCK.Logger;
+using MessageMeta = Hypernex.UI.Abstraction.MessageMeta;
 
 namespace Hypernex.UI.Templates
 {
@@ -121,7 +123,7 @@ namespace Hypernex.UI.Templates
                 if(LocalPlayer.Instance != null)
                 {
                     LocalPlayer.Instance.LoadAvatar();
-                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Equipping Avatar",
                         Description = $"Equipping Avatar {lastAvatarMeta.Name}, Please Wait."

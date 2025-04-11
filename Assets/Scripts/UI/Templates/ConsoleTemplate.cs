@@ -4,8 +4,8 @@ using Hypernex.Game;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using Nexport;
 using TMPro;
 using UnityEngine;
@@ -124,7 +124,7 @@ namespace Hypernex.UI.Templates
                     NexboxScript script = new NexboxScript(nexboxLanguage, ScriptText.text){Name = "console"};
                     GameInstance.FocusedInstance.sandboxes.Add(new Sandbox(script, GameInstance.FocusedInstance,
                         GameInstance.FocusedInstance.World.gameObject));
-                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Executed Script!",
                         Description = "Executed " + nexboxLanguage + " script on the client-side"
@@ -143,7 +143,7 @@ namespace Hypernex.UI.Templates
                     };
                     GameInstance.FocusedInstance.SendMessage(typeof(ServerConsoleExecute).FullName,
                         Msg.Serialize(serverConsoleExecute));
-                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                    OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                     {
                         Header = "Executed Script!",
                         Description = "Executed " + nexboxLanguage + " script on the server-side"

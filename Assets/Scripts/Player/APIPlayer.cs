@@ -4,12 +4,14 @@ using HypernexSharp;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Hypernex.Tools;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Components;
 using HypernexSharp.Socketing;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
 using LoginResult = HypernexSharp.APIObjects.LoginResult;
+using MessageButtons = Hypernex.UI.Abstraction.MessageButtons;
+using MessageMeta = Hypernex.UI.Abstraction.MessageMeta;
+using MessageUrgency = Hypernex.UI.Abstraction.MessageUrgency;
 
 namespace Hypernex.Player
 {
@@ -59,7 +61,7 @@ namespace Hypernex.Player
                                 UserSocket = APIObject.OpenUserSocket(APIUser, CurrentToken, () =>
                                     QuickInvoke.InvokeActionOnMainThread(new Action(SocketManager.InitSocket)), false);
                                 QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, APIUser);
-                                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                                OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                                 {
                                     Header = "Signed-In!",
                                     Description = "Signed-In as " + getUserResult.result.UserData.Username + "!"

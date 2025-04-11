@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Hypernex.CCK;
 using Hypernex.CCK.Unity.Assets;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Networking;
@@ -12,7 +11,6 @@ using Hypernex.Sandboxing;
 using Hypernex.Sandboxing.SandboxedTypes.Handlers;
 using Hypernex.Tools;
 using Hypernex.Tools.Debug;
-using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketResponses;
 using HypernexSharp.SocketObjects;
@@ -447,15 +445,6 @@ namespace Hypernex.Game
                 {
                     loadedScene = currentScene;
                     FocusedInstance = this;
-                    if(string.IsNullOrEmpty(worldMeta.ThumbnailURL))
-                        CurrentInstanceBanner.Instance.Render(this, Array.Empty<byte>());
-                    else
-                        DownloadTools.DownloadBytes(worldMeta.ThumbnailURL,
-                            bytes =>
-                            {
-                                Thumbnail = ImageTools.BytesToTexture2D(worldMeta.ThumbnailURL, bytes);
-                                CurrentInstanceBanner.Instance.Render(this, bytes);
-                            });
                     if (open)
                         Open();
                     foreach (LocalScript ls in Object.FindObjectsByType<LocalScript>(FindObjectsInactive.Include, FindObjectsSortMode.None))

@@ -81,7 +81,7 @@ namespace Hypernex.Tools
             }
         }
 
-        internal static void AddChild(this Transform parent, Transform t) => t.SetParent(parent);
+        internal static void AddChild(this Transform parent, Transform t) => t.SetParent(parent, false);
 
         internal static RotationOffsetDriver GetOffsetRotator(this Transform t, Transform root) => new (t, root);
 

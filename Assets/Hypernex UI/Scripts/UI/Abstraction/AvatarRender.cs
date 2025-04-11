@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hypernex.CCK;
 using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Abstraction
 {

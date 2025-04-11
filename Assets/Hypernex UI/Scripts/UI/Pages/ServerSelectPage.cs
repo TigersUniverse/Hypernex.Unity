@@ -60,7 +60,7 @@ namespace Hypernex.UI.Pages
             {
                 IRender<string> newServer = Defaults.GetRenderer<string>("ServerItem");
                 newServer.Render(savedServer);
-                newServer.transform.SetParent(Items);
+                newServer.transform.SetParent(Items, false);
             }
         }
 

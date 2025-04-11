@@ -15,7 +15,6 @@ using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
-using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -97,11 +96,6 @@ namespace Hypernex.Game.Avatar
                 SetupAnimators();
                 Calibrated = true;
             }
-            if (string.IsNullOrEmpty(LocalPlayer.Instance.avatarMeta.ImageURL))
-                CurrentAvatarBanner.Instance.Render(this, Array.Empty<byte>());
-            else
-                DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
-                    bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
             VRCFTParameters.UpdateParameters(avatarMeta, this);
             GameInstance.OnGameInstanceLoaded += OnGameInstanceLoaded;

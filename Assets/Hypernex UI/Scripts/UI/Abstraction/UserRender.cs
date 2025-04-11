@@ -26,12 +26,14 @@ namespace Hypernex.UI.Abstraction
             if (DisplayName != null && !string.IsNullOrEmpty(user.Bio.DisplayName))
             {
                 DisplayName.text = user.Bio.DisplayName;
-                Username.text = "@" + user.Username;
+                if(Username != null)
+                    Username.text = "@" + user.Username;
             }
             else if (DisplayName != null)
             {
                 DisplayName.text = user.GetUserDisplayName();
-                Username.text = String.Empty;
+                if(Username != null)
+                    Username.text = String.Empty;
             }
             else if (Username != null)
                 Username.text = user.GetUserDisplayName();

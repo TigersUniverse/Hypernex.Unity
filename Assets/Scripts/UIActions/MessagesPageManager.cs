@@ -28,7 +28,7 @@ namespace Hypernex.UIActions
             MessagesScroll.Clear();
             last.HideNotification();
             TopTopLoginManager.UnreadMessages.Clear();
-            OverlayManager.ClearNonImportantMessages();
+            //OverlayManager.ClearNonImportantMessages();
         }
         
         private void CreateMessageTemplate(MessageMeta messageMeta)

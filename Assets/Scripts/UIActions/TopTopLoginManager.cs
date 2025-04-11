@@ -35,11 +35,11 @@ namespace Hypernex.UIActions
         {
             MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
             {
-                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                /*OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                 {
                     Header = "Sent Invite!",
                     Description = "Sent Invite to " + from.Username
-                });
+                });*/
                 SocketManager.InviteUser(GameInstance.FocusedInstance, from);
             }, 5f)
             {
@@ -49,7 +49,7 @@ namespace Hypernex.UIActions
             };
             UnreadMessages.Enqueue(messageMeta);
             ShowNotification();
-            OverlayManager.AddMessageToQueue(messageMeta);
+            //OverlayManager.AddMessageToQueue(messageMeta);
         }
 
         private void PushInvite(GotInvite invite, WorldMeta worldMeta, User from,
@@ -57,11 +57,11 @@ namespace Hypernex.UIActions
         {
             MessageMeta messageMeta = new MessageMeta(MessageUrgency.Info, MessageButtons.OK, _ =>
             {
-                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                /*OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                 {
                     Header = "Joining Instance...",
                     Description = "Joining " + worldMeta.Name + " invited by " + from.Username
-                });
+                });*/
                 SocketManager.JoinInstance(new SafeInstance
                 {
                     GameServerId = invite.toGameServerId,
@@ -84,7 +84,7 @@ namespace Hypernex.UIActions
             };
             UnreadMessages.Enqueue(messageMeta);
             ShowNotification();
-            OverlayManager.AddMessageToQueue(messageMeta);
+            //OverlayManager.AddMessageToQueue(messageMeta);
         }
 
         private void GetUserIcon(GotInvite gotInvite, WorldMeta worldMeta, (Texture2D, (string, byte[])?) worldBanner)

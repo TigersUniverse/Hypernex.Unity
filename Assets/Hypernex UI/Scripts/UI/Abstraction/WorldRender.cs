@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -22,6 +23,8 @@ namespace Hypernex.UI.Abstraction
         public Button NextIcon;
         public Button PreviousIcon;
         public TMP_Text PlayerCount;
+        public RectTransform InstanceList;
+        public CreateInstanceWindow CreateInstanceWindow;
         internal WorldMeta meta;
         
         private List<(Texture2D, byte[])> Icons = new();
@@ -127,6 +130,22 @@ namespace Hypernex.UI.Abstraction
             }
         }
         
+        private void CreateInstanceCard(SafeInstance safeInstance)
+        {
+            IRender<SafeInstance> instanceRender = Defaults.GetRenderer<SafeInstance>("InstanceTemplate");
+            instanceRender.Render(safeInstance);
+            InstanceList.AddChild(instanceRender.transform);
+        }
+
+        private void OnSafeInstances(List<SafeInstance> safeInstances)
+        {
+            PlayerCount.text = safeInstances.GetWorldPlayerCount().ToString();
+            if(InstanceList == null) return;
+            InstanceList.ClearChildren();
+            foreach (SafeInstance safeInstance in safeInstances)
+                CreateInstanceCard(safeInstance);
+        }
+        
         public void Render(WorldMeta worldMeta)
         {
             meta = worldMeta;
@@ -196,13 +215,14 @@ namespace Hypernex.UI.Abstraction
             if(DescriptionText != null)
                 DescriptionText.text = worldMeta.Description;
             if (PlayerCount != null)
-                GetWorldInstances(safeInstances => PlayerCount.text = safeInstances.GetWorldPlayerCount().ToString(),
-                    worldMeta);
+                GetWorldInstances(OnSafeInstances, worldMeta);
             if(NextIcon != null)
                 NextIcon.gameObject.SetActive(Banner != null && worldMeta.IconURLs.Count > 0);
             if(PreviousIcon != null)
                 PreviousIcon.gameObject.SetActive(Banner != null && worldMeta.IconURLs.Count > 0);
         }
+
+        public void CreateInstance() => CreateInstanceWindow.Apply(meta);
         
         private void Start()
         {

@@ -12,8 +12,8 @@ using Hypernex.ExtendedTracking;
 using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
+using Hypernex.UI.Components;
 using Hypernex.UI.Templates;
-using Hypernex.UIActions;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -35,6 +35,12 @@ public class Init : MonoBehaviour
 {
     internal const string DEFAULT_DOMAIN = "play.hypernex.dev";
     internal const string DEFAULT_WEB_URL = "https://" + DEFAULT_DOMAIN;
+    internal const string WEBSITE = "https://hypernex.dev/";
+    internal const string FORUM_URL = "https://forum.hypernex.dev/";
+    internal const string GITHUB_URL = "https://github.com/TigersUniverse";
+    internal const string DISCORD_URL = WEBSITE + "discord";
+    internal const string X_URL = "https://x.com/HypernexGame";
+    internal const string BLUESKY_URL = "https://bsky.app/profile/hypernex.dev";
     
     public string Version => Application.version;
 
@@ -50,12 +56,12 @@ public class Init : MonoBehaviour
     public AudioMixerGroup VoiceGroup;
     public AudioMixerGroup WorldGroup;
     public AudioMixerGroup AvatarGroup;
-    public OverlayManager OverlayManager;
+    public OverlayNotification OverlayManager;
     public List<TMP_Text> VersionLabels = new();
     public CurrentAvatar ca;
     public Texture2D MouseTexture;
     public Texture2D CircleMouseTexture;
-    public CreateInstanceTemplate CreateInstanceTemplate;
+    public CreateInstanceWindow CreateInstanceWindow;
     public float SmoothingFrames = 0.1f;
     public List<Object> BadgeRankAssets = new();
     public bool NoVLC;
@@ -205,7 +211,7 @@ public class Init : MonoBehaviour
                 if (configUser.UseFacialTracking)
                     FaceTrackingManager.Init(targetStreamingPath, user);
             }
-            WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
+            WebHandler.HandleLaunchArgs(args, CreateInstanceWindow);
         };
         CurrentAvatar.Instance = ca;
         GetComponent<CoroutineRunner>()

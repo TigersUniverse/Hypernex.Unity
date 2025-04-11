@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -11,6 +12,7 @@ using Hypernex.Game.Avatar.FingerInterfacing;
 using Hypernex.Tools;
 using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
+using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,7 +22,10 @@ namespace Hypernex.UI.Pages
 {
     public class HomePage : UIPage
     {
-        [Header("Settings Sub-SubPages")] public GameObject[] SettingsPages;
+        [Header("Home")]
+        public TMP_Text InfoText;
+        [Header("Settings Sub-SubPages")]
+        public GameObject[] SettingsPages;
         [Header("Audio")]
         public TMP_Dropdown AudioDeviceSelection;
         public Slider VoicesBoostSlider;
@@ -60,6 +65,30 @@ namespace Hypernex.UI.Pages
         public TMP_InputField MMSCInput;
         [Header("Current Instance")]
         public GameObject CurrentInstanceButton;
+        public WorldRender WorldRender;
+        public InstanceRender InstanceRender;
+
+        private Coroutine c;
+
+        #region Home
+
+        private IEnumerator UpdateHomeText()
+        {
+            while (!Init.IsQuitting)
+            {
+                InfoText.text = $"{Application.version}\nFPS : {Mathf.RoundToInt(FPSCounter.FPS)}";
+                yield return new WaitForSeconds(0.1f);
+            }
+        }
+
+        public void OpenWebsite() => Application.OpenURL(Init.WEBSITE);
+        public void OpenForum() => Application.OpenURL(Init.FORUM_URL);
+        public void OpenGitHub() => Application.OpenURL(Init.GITHUB_URL);
+        public void OpenDiscord() => Application.OpenURL(Init.DISCORD_URL);
+        public void OpenBluesky() => Application.OpenURL(Init.BLUESKY_URL);
+        public void OpenX() => Application.OpenURL(Init.X_URL);
+
+        #endregion
 
         #region Settings
 
@@ -520,6 +549,16 @@ namespace Hypernex.UI.Pages
 
         #region Current Instance
 
+        public void ShowCurrentInstance()
+        {
+            GameInstance gameInstance = GameInstance.FocusedInstance;
+            if(gameInstance == null) return;
+            WorldMeta worldMeta = gameInstance.worldMeta;
+            WorldRender.Render(worldMeta);
+            InstanceRender.Render(gameInstance);
+            ShowSubPage(2);
+        }
+
         public void LeaveInstance()
         {
             if(GameInstance.FocusedInstance != null)
@@ -534,12 +573,19 @@ namespace Hypernex.UI.Pages
         private void OnEnable()
         {
             RefreshSettings();
+            c = StartCoroutine(UpdateHomeText());
         }
 
         private void Update()
         {
             CurrentInstanceButton.SetActive(GameInstance.FocusedInstance != null);
             UpdateCameras();
+        }
+
+        private void OnDisable()
+        {
+            StopCoroutine(c);
+            c = null;
         }
     }
 }

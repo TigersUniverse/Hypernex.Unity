@@ -7,9 +7,11 @@ using Hypernex.Databasing.Objects;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hypernex.UI.Pages
 {
@@ -31,22 +33,27 @@ namespace Hypernex.UI.Pages
         public UIThemeObject ModButton;
         public TMP_Text ModText;
         public UIThemeObject WarnButton;
+        public Slider VolumeSlider;
         public TMP_Text VolumeText;
+        public ModerateWindow ModerateWindow;
         
         public User UserToRender;
 
         private UserRender userRender;
         private Dictionary<UIThemeObject, ButtonType> cachedButtonTypes = new();
+        private bool isInit;
 
         private string GetTextFromButtonState(UIThemeObject button, bool v, string t, string f)
         {
             if(!cachedButtonTypes.ContainsKey(button)) cachedButtonTypes.Add(button, button.ButtonType);
             button.ButtonType = v ? cachedButtonTypes[button] : ButtonType.Grey;
+            button.ApplyTheme(UITheme.SelectedTheme);
             return v ? t : f;
         }
 
         private void RenderPage()
         {
+            isInit = true;
             User localUser = APIPlayer.APIUser;
             if (UserToRender != localUser)
             {
@@ -92,6 +99,7 @@ namespace Hypernex.UI.Pages
                     {
                         PlayerOverrides playerOverrides =
                             database.Get<PlayerOverrides>(PlayerOverrides.TABLE, UserToRender.Id);
+                        VolumeSlider.value = playerOverrides?.Volume ?? 1;
                         VolumeText.text = playerOverrides != null
                             ? $"{(int) Mathf.Round(playerOverrides.Volume * 100f)}%"
                             : "100%";
@@ -112,6 +120,7 @@ namespace Hypernex.UI.Pages
                 RequestButton.gameObject.SetActive(false);
                 HideIfLocal.ForEach(x => x.SetActive(false));
             }
+            isInit = false;
         }
 
         private void AfterAction() => APIPlayer.RefreshUser(_ => RenderPage());
@@ -164,24 +173,31 @@ namespace Hypernex.UI.Pages
                 APIPlayer.APIObject.UnblockUser(_ => AfterAction(), localUser, APIPlayer.CurrentToken, UserToRender.Id);
             }
         }
-
-        // TODO: Warn, Kick, Ban Popup
         
         public void Ban()
         {
             if(UserToRender == APIPlayer.APIUser) return;
             GameInstance gameInstance = GameInstance.FocusedInstance;
             if(gameInstance == null) return;
-            BanButton.gameObject.SetActive(false);
-            if(!gameInstance.BannedUsers.Contains(UserToRender.Id))
-            {
-                gameInstance.BanUser(UserToRender, String.Empty);
-            }
-            else
+            if (gameInstance.BannedUsers.Contains(UserToRender.Id))
             {
                 gameInstance.UnbanUser(UserToRender);
+                AfterAction();
             }
-            AfterAction();
+            else
+                ModerateWindow.Apply("Ban", UserToRender.Username, s =>
+                {
+                    BanButton.gameObject.SetActive(false);
+                    if(!gameInstance.BannedUsers.Contains(UserToRender.Id))
+                    {
+                        gameInstance.BanUser(UserToRender, s);
+                    }
+                    else
+                    {
+                        gameInstance.UnbanUser(UserToRender);
+                    }
+                    AfterAction();
+                });
         }
 
         public void Kick()
@@ -189,9 +205,12 @@ namespace Hypernex.UI.Pages
             if(UserToRender == APIPlayer.APIUser) return;
             GameInstance gameInstance = GameInstance.FocusedInstance;
             if(gameInstance == null) return;
-            KickButton.gameObject.SetActive(false);
-            gameInstance.KickUser(UserToRender, String.Empty);
-            AfterAction();
+            ModerateWindow.Apply("Kick", UserToRender.Username, s =>
+            {
+                KickButton.gameObject.SetActive(false);
+                gameInstance.KickUser(UserToRender, s);
+                AfterAction();
+            });
         }
 
         public void Warn()
@@ -199,9 +218,12 @@ namespace Hypernex.UI.Pages
             if(UserToRender == APIPlayer.APIUser) return;
             GameInstance gameInstance = GameInstance.FocusedInstance;
             if(gameInstance == null) return;
-            WarnButton.gameObject.SetActive(false);
-            gameInstance.WarnUser(UserToRender, String.Empty);
-            AfterAction();
+            ModerateWindow.Apply("Warn", UserToRender.Username, s =>
+            {
+                WarnButton.gameObject.SetActive(false);
+                gameInstance.WarnUser(UserToRender, s);
+                AfterAction();
+            });
         }
 
         public void Invite()
@@ -245,7 +267,7 @@ namespace Hypernex.UI.Pages
 
         public void OnUserVolumeChanged(float v)
         {
-            if(UserToRender == APIPlayer.APIUser) return;
+            if(isInit || UserToRender == APIPlayer.APIUser) return;
             Database database = ConfigManager.GetDatabase();
             if(database == null) return;
             if (GameInstance.FocusedInstance != null && GameInstance.FocusedInstance.ConnectedUsers.Count(x => x.Id == UserToRender.Id) > 0)

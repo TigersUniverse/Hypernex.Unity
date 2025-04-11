@@ -247,11 +247,11 @@ namespace Hypernex.UIActions
             switch (loginResult?.Result ?? LoginResult.Incorrect)
             {
                 case LoginResult.Incorrect:
-                    OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Error, MessageButtons.None)
+                    /*OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Error, MessageButtons.None)
                     {
                         Header = "Incorrect Credentials!",
                         Description = "Please try again!"
-                    });
+                    });*/
                     break;
                 case LoginResult.Missing2FA:
                     TwoFAInput.text = String.Empty;

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Player;
 using Hypernex.Tools;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp.API;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
@@ -56,7 +56,7 @@ namespace Hypernex.UI.Templates
 
         public void Create()
         {
-            OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+            OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
             {
                 Header = "Creating Instance",
                 Description = $"Creating instance for World {worldMeta.Name}, Please Wait"

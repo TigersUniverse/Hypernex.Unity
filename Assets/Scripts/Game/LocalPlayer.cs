@@ -15,6 +15,7 @@ using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI;
+using Hypernex.UI.Components;
 using Hypernex.UI.Templates;
 using Hypernex.UIActions;
 using HypernexSharp.API;
@@ -343,7 +344,7 @@ namespace Hypernex.Game
                 APIPlayer.APIObject.GetAvatarMeta(OnAvatarMeta, ConfigManager.SelectedConfigUser.CurrentAvatar);
                 return;
             }
-            OverlayManager.Instance.CurrentLoadingAvatarMeta = r.result.Meta;
+            OverlayNotification.Instance.CurrentLoadingAvatarMeta = r.result.Meta;
             IsLoadingAvatar = true;
             AvatarDownloadPercentage = 0;
             Builds build = r.result.Meta.Builds.FirstOrDefault(x => x.BuildPlatform == AssetBundleTools.Platform);
@@ -377,6 +378,7 @@ namespace Hypernex.Game
                 string knownHash = String.Empty;
                 if (fileMetaResult.success)
                     knownHash = fileMetaResult.result.FileMeta.Hash;
+                Debug.Log("Got file meta!");
                 DownloadTools.DownloadFile(file, $"{r.result.Meta.Id}.hna", f => OnAvatarDownload(f, r.result.Meta),
                     knownHash, args => AvatarDownloadPercentage = args.ProgressPercentage / 100f);
             }, r.result.Meta.OwnerId, build.FileId);

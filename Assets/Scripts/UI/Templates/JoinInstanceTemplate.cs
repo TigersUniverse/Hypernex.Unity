@@ -2,8 +2,8 @@
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -62,7 +62,7 @@ namespace Hypernex.UI.Templates
                     GameInstance.FocusedInstance.gameServerId == Instance.GameServerId &&
                     GameInstance.FocusedInstance.instanceId == Instance.InstanceId)
                     return;
-                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                 {
                     Header = "Joining Instance",
                     Description = $"Joining instance for World {WorldMeta.Name}, hosted by {Host.Username}, Please Wait"

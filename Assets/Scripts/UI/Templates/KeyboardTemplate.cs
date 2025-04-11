@@ -31,7 +31,9 @@ namespace Hypernex.UI.Templates
         public Button Cancel;
         public Button Submit;
         public Button Clear;
+        public Button Copy;
         public Button Paste;
+        public Transform Parent;
         [HideInInspector] public bool IsCaps;
 
         private Dictionary<string, TMP_Text> cachedTexts = new();
@@ -71,6 +73,7 @@ namespace Hypernex.UI.Templates
 
         private void Start()
         {
+            if (Parent == null) Parent = transform;
             Backspace?.onClick.AddListener(() =>
             {
                 if (Input.text.Length > 0)
@@ -81,10 +84,11 @@ namespace Hypernex.UI.Templates
             Enter?.onClick.AddListener(() => Input.text += "\n");
             Space?.onClick.AddListener(() => Input.text += " ");
             Clear?.onClick.AddListener(() => Input.text = String.Empty);
+            Copy?.onClick.AddListener(() => GUIUtility.systemCopyBuffer = Input.text);
             Paste?.onClick.AddListener(() => Input.text += GUIUtility.systemCopyBuffer);
-            for (int i = 0; i < transform.childCount; i++)
+            for (int i = 0; i < Parent.childCount; i++)
             {
-                Transform t = transform.GetChild(i);
+                Transform t = Parent.GetChild(i);
                 if (t != Input.transform && t != Backspace?.transform && t != Tab?.transform && t != Caps?.transform &&
                     t != Enter?.transform && t != Space?.transform && t != Cancel?.transform &&
                     t != Submit?.transform && t != Clear?.transform && t != Paste?.transform && t.name != "input")
@@ -101,11 +105,11 @@ namespace Hypernex.UI.Templates
 
         private void Update()
         {
-            for (int i = 0; i < transform.childCount; i++)
+            for (int i = 0; i < Parent.childCount; i++)
             {
-                Transform t = transform.GetChild(i);
+                Transform t = Parent.GetChild(i);
                 if (t != Input.transform && t != Backspace?.transform && t != Tab?.transform && t != Caps?.transform &&
-                    t != Enter?.transform && t != Space?.transform && t != Cancel?.transform &&
+                    t != Enter?.transform && t != Space?.transform && t != Cancel?.transform && t != Copy?.transform &&
                     t != Submit?.transform && t != Clear?.transform && t != Paste?.transform && t.name != "input")
                 {
                     if (cachedTexts.ContainsKey(t.name))

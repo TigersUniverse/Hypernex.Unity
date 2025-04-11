@@ -15,9 +15,9 @@ using UnityEngine.UI;
 
 namespace Hypernex.UIActions
 {
-    public class OverlayManager : MonoBehaviour, IDisposable
+    public class OverlayManager_Old : MonoBehaviour, IDisposable
     {
-        public static OverlayManager Instance { get; set; }
+        public static OverlayManager_Old Instance { get; set; }
 
         public static void AddMessageToQueue(MessageMeta messageMeta) =>
             Instance.MessagesToDisplay.Enqueue(messageMeta);
