@@ -47,7 +47,7 @@ namespace Hypernex.UI.Pages
                 case 0:
                     HeaderText.text = "Popular Avatars";
                     PopularityType popularityType = (PopularityType) PopularityDropdown.value;
-                    APIPlayer.APIObject.GetAvatarPopularity(OnPopularityResult, popularityType, Defaults.MAX_RESULTS,
+                    APIPlayer.APIObject.GetAvatarPopularity(OnPopularityResult, popularityType, null, Defaults.MAX_RESULTS,
                         page);
                     local = false;
                     break;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game;
 using Hypernex.UI.Abstraction;
 using Hypernex.UI.Templates;

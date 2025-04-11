@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;

@@ -48,7 +48,7 @@ namespace Hypernex.UI.Pages
                 case 0:
                     HeaderText.text = "Popular Worlds";
                     PopularityType popularityType = (PopularityType) PopularityDropdown.value;
-                    APIPlayer.APIObject.GetWorldPopularity(OnPopularityResult, popularityType, Defaults.MAX_RESULTS,
+                    APIPlayer.APIObject.GetWorldPopularity(OnPopularityResult, popularityType, null, Defaults.MAX_RESULTS,
                         page);
                     local = false;
                     break;

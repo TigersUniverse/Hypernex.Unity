@@ -48,7 +48,7 @@ namespace Hypernex.UI.Pages
             HypernexSettings settings = new HypernexSettings(User.UserId, User.TokenContent)
             {
                 TargetDomain = serverSelectPage.Server,
-                IsHTTP = Init.Instance != null && Init.Instance.UseHTTP
+                IsHTTP = Init.Instance == null ? false : Init.Instance.UseHTTP
             };
             HandleSetUser(settings, User);
         }
@@ -60,7 +60,7 @@ namespace Hypernex.UI.Pages
             HypernexSettings settings = new HypernexSettings(Username.text, Password.text, TwoFACode.text)
             {
                 TargetDomain = serverSelectPage.Server,
-                IsHTTP = Init.Instance != null && Init.Instance.UseHTTP
+                IsHTTP = Init.Instance == null ? false : Init.Instance.UseHTTP
             };
             HandleSetUser(settings);
         }
