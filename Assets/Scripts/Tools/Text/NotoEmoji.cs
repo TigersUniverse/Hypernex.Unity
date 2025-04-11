@@ -1,13 +1,23 @@
 ﻿using System.Collections.Generic;
 using TMPro;
-using UnityEngine;
 using UnityEngine.TextCore;
 
 namespace Hypernex.Tools.Text
 {
     public class NotoEmoji : IEmojiSheet
     {
-        public List<string> GetUnicodeCharacters(TMP_SpriteAsset spriteAsset)
+        private List<string> unicode;
+        public List<string> UnicodeCharacters
+        {
+            get
+            {
+                if (unicode == null)
+                    InitializeUnicodeCharacters(Init.Instance.EmojiSprites[1]);
+                return unicode;
+            }
+        }
+        
+        public void InitializeUnicodeCharacters(TMP_SpriteAsset spriteAsset)
         {
             List<string> unicodeCharacters = new List<string>();
             foreach (TMP_SpriteGlyph tmpSpriteGlyph in spriteAsset.spriteGlyphTable)
@@ -20,7 +30,7 @@ namespace Hypernex.Tools.Text
                 string s = @"\U000" + spriteCharacter.name.Substring(1).Replace("_", @"\U000").ToUpper();
                 unicodeCharacters.Add(s);
             }
-            return unicodeCharacters;
+            unicode =  unicodeCharacters;
         }
 
         public bool IsMatch(string unicode, string spriteAssetName)

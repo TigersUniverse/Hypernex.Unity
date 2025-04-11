@@ -4,10 +4,14 @@ namespace Hypernex.Tools
 {
     public static class CursorTools
     {
-        private static Texture2D newMouse;
-        private static Texture2D newCircle;
-        
-        public static void ToggleMouseVisibility(bool value) => Cursor.visible = value;
+        internal static Texture2D newMouse;
+        internal static Texture2D newCircle;
+
+        public static void ToggleMouseVisibility(bool value)
+        {
+            if(value == Cursor.visible) return;
+            Cursor.visible = value;
+        }
 
         public static void ToggleMouseLock(bool value)
         {
