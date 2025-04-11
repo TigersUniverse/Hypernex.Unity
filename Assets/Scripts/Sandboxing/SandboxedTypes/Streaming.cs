@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Linq;
-using Hypernex.CCK;
 using Hypernex.Configuration;
 using Hypernex.Game.Video;
 using Nexbox;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
@@ -61,9 +61,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                     return;
                 }
                 OptionSet optionSet = new OptionSet
-                {
+                {            
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_MAC
-                    Format = "bestvideo[vcodec=vp8]/bestvideo[vcodec=h264]+bestaudio/best"
+                    Format = "bestvideo[vcodec=vp8]/bestvideo[vcodec=h264]/bestvideo[vcodec*=avc1]+bestaudio/best"
 #else
                     Format = "bestvideo[vcodec=vp8]+bestaudio/best"
 #endif

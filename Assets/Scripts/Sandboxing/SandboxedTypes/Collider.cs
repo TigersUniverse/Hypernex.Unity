@@ -81,6 +81,22 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 return null;
             return new RaycastHit(g, read);
         }
+
+        public bool IsMeshCollider => c is UnityEngine.MeshCollider;
+        public bool IsConvex
+        {
+            get => ((UnityEngine.MeshCollider)c).convex;
+            set
+            {
+                if (read) throw new Exception(WRITE_ERROR);
+                ((UnityEngine.MeshCollider)c).convex = value;
+            }
+        }
+        public void SetMesh(Mesh mesh)
+        {
+            if (read) throw new Exception(WRITE_ERROR);
+            ((UnityEngine.MeshCollider)c).sharedMesh = mesh.r;
+        }
         
         public static bool operator ==(Collider x, Collider y) => x?.Equals(y) ?? false;
         public static bool operator !=(Collider x, Collider y) => !(x == y);

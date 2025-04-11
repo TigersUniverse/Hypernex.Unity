@@ -21,6 +21,26 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             placeholderText = tif.placeholder.GetComponent<TMP_Text>();
         }
         
+        public bool Enabled
+        {
+            get => tif == null ? false : tif.enabled;
+            set
+            {
+                if(read || tif == null) return;
+                tif.enabled = value;
+            }
+        }
+        
+        public bool PlaceholderEnabled
+        {
+            get => placeholderText == null ? false : placeholderText.enabled;
+            set
+            {
+                if(read || placeholderText == null) return;
+                placeholderText.enabled = value;
+            }
+        }
+        
         public void RegisterInputFieldVR()
         {
             if(read)

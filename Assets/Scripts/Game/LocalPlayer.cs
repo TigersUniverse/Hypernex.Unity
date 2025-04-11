@@ -152,6 +152,8 @@ namespace Hypernex.Game
         public HandGetter RightHandGetter;
         public List<XRInteractorLineVisual> XRRays = new ();
         public VRInputListener VRInputListener;
+        public BaseInputModule DesktopInput;
+        public BaseInputModule VRInput;
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
         public CurrentAvatar CurrentAvatarDisplay;
@@ -695,8 +697,10 @@ namespace Hypernex.Game
                     x.lineWidth = 0.01f;
                 x.enabled = vr;
             });
+            DesktopInput.enabled = !vr;
+            VRInput.enabled = vr;
             CursorTools.ToggleMouseLock(vr || LockCamera);
-            CursorTools.ToggleMouseVisibility(!vr);
+            CursorTools.ToggleMouseVisibility(!vr || LockCamera);
             groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)
             {

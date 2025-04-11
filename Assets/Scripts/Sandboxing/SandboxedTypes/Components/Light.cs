@@ -16,6 +16,16 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 return null;
             return a;
         }
+        
+        public bool Enabled
+        {
+            get => light == null ? false : light.enabled;
+            set
+            {
+                if(read || light == null) return;
+                light.enabled = value;
+            }
+        }
 
         public Light(Item i)
         {
@@ -23,17 +33,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             read = i.IsReadOnly;
             light = GetLight(i);
             if (light == null) throw new Exception("No Light found on Item at " + i.Path);
-        }
-
-        public bool IsEnabled
-        {
-            get => light.enabled;
-            set
-            {
-                if (read || light == null)
-                    return;
-                light.enabled = value;
-            }
         }
 
         public LightType Type
