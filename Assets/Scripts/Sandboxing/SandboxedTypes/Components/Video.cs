@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Video;
 using Hypernex.Tools;
 
@@ -118,9 +119,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
                 return;
             if (streamDownload.isStream)
             {
-                IVideoPlayer videoPlayer = videoPlayerDescriptor.Replace(
-                    VideoPlayerManager.GetVideoPlayerType(new Uri(streamDownload.pathToFile)) ??
-                    VideoPlayerManager.DefaultVideoPlayerType);
+                IVideoPlayer videoPlayer =
+                    videoPlayerDescriptor.Replace(
+                        VideoPlayerManager.GetVideoPlayerType(new Uri(streamDownload.pathToFile)));
                 if (videoPlayer == null)
                     return;
                 videoPlayer.Source = streamDownload.pathToFile;
@@ -129,12 +130,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             {
                 if (!File.Exists(streamDownload.pathToFile))
                     return;
-                string filePath = "file:///" + streamDownload.pathToFile;
-                IVideoPlayer videoPlayer = videoPlayerDescriptor.Replace(
-                    VideoPlayerManager.GetVideoPlayerType(new Uri(filePath)) ??
-                    VideoPlayerManager.DefaultVideoPlayerType);
+                IVideoPlayer videoPlayer =
+                    videoPlayerDescriptor.Replace(VideoPlayerManager.GetVideoPlayerType(new Uri(streamDownload.pathToFile)));
                 if (videoPlayer == null)
                     return;
+                string filePath = videoPlayer.GetFileHeader() + streamDownload.pathToFile;
                 videoPlayer.Source = filePath;
             }
         }

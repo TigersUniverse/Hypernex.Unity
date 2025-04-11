@@ -164,7 +164,7 @@ namespace Hypernex.Game.Networking
                     {
                         XRTrackerRole xrTrackerRole = tracker.TrackerRole;
                         if(xrTrackerRole == XRTrackerRole.Camera) continue;
-                        CoreBone? coreBone = TrackerRoleToCoreBone(xrTrackerRole);
+                        CoreBone? coreBone = tracker.CalibratedTo;
                         if (coreBone == null) continue;
                         coreTransforms.Add((int) coreBone.Value, tracker.transform.GetNetworkTransform(localPlayer.transform));
                         Transform vriktarget = localPlayer.avatar.GetTargetChild(tracker.transform);
@@ -297,7 +297,7 @@ namespace Hypernex.Game.Networking
         {
             if (APIPlayer.APIUser == null || GameInstance.FocusedInstance == null) return;
             // These are going into a Bulk, so we shouldn't include any token
-            List<WeightedObjectUpdate> w = localPlayer.avatar?.GetAnimatorWeights();
+            List<WeightedObjectUpdate> w = localPlayer.avatar?.GetAnimatorWeights(includeNonNetworked:false);
             if(w == null) return;
             if (w.Count != weightedObjectUpdates.Count || lastAvatarId != localPlayer.avatarMeta?.Id)
             {

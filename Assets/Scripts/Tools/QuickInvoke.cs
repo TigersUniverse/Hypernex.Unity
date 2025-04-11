@@ -1,15 +1,25 @@
 using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using UnityEngine;
 using UnityEngine.Events;
 
 namespace Hypernex.Tools
 {
-    public static class QuickInvoke
+    [RequireComponent(typeof(DontDestroyMe))]
+    public class QuickInvoke : MonoBehaviour
     {
-        public static void InvokeActionOnMainThread(object action, params object[] args) => UnityMainThreadDispatcher
-            .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
+        private static UnityMainThreadDispatcher threadDispatcher;
         
-        public static void InvokeActionOnMainThreadObject(object action, object[] args) => UnityMainThreadDispatcher
-            .Instance().Enqueue(() => action.GetType().GetMethod("Invoke").Invoke(action, args));
+        public static void InvokeActionOnMainThread(Delegate action, params object[] args) => queue.Enqueue((action, args));
+        
+        public static void InvokeActionOnMainThreadObject(Delegate action, object[] args) => queue.Enqueue((action, args));
+
+        public static void InvokeImmediate(Action a)
+        {
+            if(threadDispatcher == null) threadDispatcher = UnityMainThreadDispatcher.Instance();
+            threadDispatcher.Enqueue(a);
+        }
         
         public static void OverwriteListener(UnityEvent u, Action newAction)
         {
@@ -21,6 +31,27 @@ namespace Hypernex.Tools
         {
             u.RemoveAllListeners();
             u.AddListener(newAction.Invoke);
+        }
+
+        public static QuickInvoke Instance { get; private set; }
+        public static ConcurrentQueue<(Delegate, object[])> queue = new ConcurrentQueue<(Delegate, object[])>();
+        private Stopwatch sw = new Stopwatch();
+        public int maxInvokes = 1000;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
+
+        private void Update()
+        {
+            int i = 0;
+            sw.Restart();
+            while (sw.ElapsedTicks < Stopwatch.Frequency / 2000 && i < maxInvokes && queue.TryDequeue(out (Delegate action, object[] args) item))
+            {
+                item.action.DynamicInvoke(item.args);
+                i++;
+            }
         }
     }
 }

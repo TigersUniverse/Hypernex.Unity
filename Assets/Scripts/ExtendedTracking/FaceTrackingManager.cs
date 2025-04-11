@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Interaction;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using Microsoft.Extensions.Logging;
@@ -63,7 +63,7 @@ namespace Hypernex.ExtendedTracking
             await mainIntegrated.InitializeAsync();
             CustomFaceExpressions.Clear();
             UnifiedTracking.OnUnifiedDataUpdated +=
-                data => QuickInvoke.InvokeActionOnMainThread(OnTrackingUpdated, data);
+                data => QuickInvoke.InvokeImmediate(() => OnTrackingUpdated.Invoke(data));
             HasInitialized = true;
         }
 

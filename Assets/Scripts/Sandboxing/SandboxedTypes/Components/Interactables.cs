@@ -19,6 +19,36 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Components
             grabbable = i.t.GetComponent<Grabbable>();
         }
         
+        public bool SyncEnabled
+        {
+            get => networkSync == null ? false : networkSync.enabled;
+            set
+            {
+                if(read || networkSync == null) return;
+                networkSync.enabled = value;
+            }
+        }
+        
+        public bool RespawnEnabled
+        {
+            get => respawnable == null ? false : respawnable.enabled;
+            set
+            {
+                if(read || respawnable == null) return;
+                respawnable.enabled = value;
+            }
+        }
+        
+        public bool GrabEnabled
+        {
+            get => grabbable == null ? false : grabbable.enabled;
+            set
+            {
+                if(read || grabbable == null) return;
+                grabbable.enabled = value;
+            }
+        }
+        
         public void Respawn()
         {
             // Don't respawn if you don't have control

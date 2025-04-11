@@ -11,8 +11,12 @@
 #if VLC
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Hypernex.CCK.Unity;
+using System.Runtime.InteropServices;
+using FFMediaToolkit.Decoding;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using LibVLCSharp;
@@ -31,7 +35,7 @@ namespace Hypernex.Game.Video
     {
 	    private static LibVLC libVLC;
         private MediaPlayer mediaPlayer;
-        private bool logToConsole;
+        private VLCAudioSource vlcAudioSource;
         private bool flipTextureX = true;
         private bool flipTextureY = true;
         private List<Renderer> screens;
@@ -43,6 +47,7 @@ namespace Hypernex.Game.Video
 
         public VLCVideoPlayer(VideoPlayerDescriptor descriptor)
         {
+	        GameObject attachedObject = descriptor.gameObject;
 	        videoPlayerDescriptor = descriptor;
             screens = descriptor.VideoOutputs;
             foreach (Renderer screen in screens)
@@ -50,8 +55,10 @@ namespace Hypernex.Game.Video
 	            if (screen.material == null)
 		            screen.material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             }
+            if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.GetComponent<AudioSource>();
+            if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.AddComponent<AudioSource>();
             if (libVLC == null)
-	            CreateLibVLC();
+	            CreateLibVLC(false);
             CreateMediaPlayer();
             descriptor.CurrentVideoPlayer = this;
         }
@@ -70,19 +77,58 @@ namespace Hypernex.Game.Video
 
         public bool Muted
         {
-	        get => mediaPlayer.Mute;
-	        set => mediaPlayer.Mute = value;
+	        get
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+			        return vlcAudioSource.audioSource.mute;
+		        return mediaPlayer.Mute;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+		        {
+			        vlcAudioSource.audioSource.mute = value;
+			        mediaPlayer.Mute = false;
+			        return;
+		        }
+		        mediaPlayer.Mute = value;
+	        }
         }
 
         public bool Looping { get; set; }
 
-        // TODO: Hook into AudioComponent
-        public float Pitch { get; set; }
+        public float Pitch
+        {
+	        get
+	        {
+		        if (vlcAudioSource == null || vlcAudioSource.audioSource == null) return 1;
+		        return vlcAudioSource.audioSource.pitch;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource == null || vlcAudioSource.audioSource == null) return;
+		        vlcAudioSource.audioSource.pitch = value;
+	        }
+        }
 
         public float Volume
         {
-	        get => mediaPlayer.Volume / 100f;
-	        set => mediaPlayer.SetVolume(Mathf.RoundToInt(value * 100f));
+	        get
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+			        return vlcAudioSource.audioSource.volume;
+		        return mediaPlayer.Volume / 100f;
+	        }
+	        set
+	        {
+		        if (vlcAudioSource != null && vlcAudioSource.audioSource != null)
+		        {
+			        vlcAudioSource.audioSource.volume = value;
+			        mediaPlayer.SetVolume(100);
+			        return;
+		        }
+		        mediaPlayer.SetVolume(Mathf.RoundToInt(value * 100f));
+	        }
         }
 
         public double Position
@@ -104,8 +150,30 @@ namespace Hypernex.Game.Video
 		        lastUri = new Uri(trimmedPath);
 		        IsStream = VideoPlayerManager.IsStream(lastUri);
 		        mediaPlayer.Media = new Media(lastUri);
+		        if(lastUri.IsFile)
+		        {
+			        Debug.Log(lastUri.LocalPath);
+			        using MediaFile mediaFile = MediaFile.Open(lastUri.LocalPath);
+			        CreateAudio(mediaFile);
+		        }
+		        else
+					CreateAudio();
 		        c = CoroutineRunner.Instance.StartCoroutine(PauseEnum());
 	        }
+        }
+
+        private void CreateAudio(MediaFile mediaFile = null)
+        {
+	        if(vlcAudioSource != null)
+	        {
+		        Object.Destroy(vlcAudioSource);
+		        vlcAudioSource = null;
+	        }
+	        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.GetComponent<VLCAudioSource>();
+	        if(vlcAudioSource == null)
+				vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
+	        vlcAudioSource.Create(mediaPlayer, mediaFile?.Audio.Info.SampleRate ?? 48000,
+		        mediaFile?.Audio.Info.NumChannels ?? 2);
         }
 
         public override void Update()
@@ -172,6 +240,8 @@ namespace Hypernex.Game.Video
             DestroyRenderTexture();
         }
 
+        public string GetFileHeader() => "file:///";
+
         public bool IsStream { get; private set; }
         
         public VideoOrientation? GetVideoOrientation()
@@ -182,7 +252,7 @@ namespace Hypernex.Game.Video
 	        return orientation;
         }
         
-		private void CreateLibVLC()
+		internal static void CreateLibVLC(bool logToConsole)
 		{
 			if (libVLC != null)
 			{
@@ -205,7 +275,7 @@ namespace Hypernex.Game.Video
 			}));
 		}
 
-		private void CreateMediaPlayer()
+		private MediaPlayer CreateMediaPlayer()
 		{
 			if (mediaPlayer != null) DestroyMediaPlayer();
 			mediaPlayer = new MediaPlayer(libVLC);
@@ -217,13 +287,28 @@ namespace Hypernex.Game.Video
 				QuickInvoke.InvokeActionOnMainThread(new Action(() => IsPlaying = false));
 			mediaPlayer.Stopped += (sender, args) =>
 				QuickInvoke.InvokeActionOnMainThread(new Action(() => IsPlaying = false));
+			return mediaPlayer;
 		}
 
 		private void DestroyMediaPlayer()
 		{
-			Stop();
-			mediaPlayer?.Dispose();
+			if (mediaPlayer == null) return;
+			try
+			{
+				mediaPlayer.Stop(); // Stop before disposing
+				System.Threading.Thread.Sleep(100); // Allow time for stopping
+			}
+			catch (Exception e)
+			{
+				Logger.CurrentLogger.Critical(e);
+			}
+			mediaPlayer.Dispose();
 			mediaPlayer = null;
+			if(vlcAudioSource != null)
+			{
+				Object.Destroy(vlcAudioSource);
+				vlcAudioSource = null;
+			}
 		}
 
 		private void DestroyRenderTexture()
@@ -258,6 +343,107 @@ namespace Hypernex.Game.Video
 
 		public void Dispose() => DestroyMediaPlayer();
     }
+
+	[RequireComponent(typeof(AudioSource))]
+	public class VLCAudioSource : MonoBehaviour
+	{
+	    private const int BUFFER_SIZE_MULT = 1;
+	    internal AudioSource audioSource;
+	    private int sampleRate = 48000;
+	    private int _channels = 2;
+	    private AudioClip audioClip;
+	    private ConcurrentQueue<float> audioDataQueue = new();
+	    private readonly object bufferLock = new();
+	    private MediaPlayer mediaPlayer;
+
+	    public void Create(MediaPlayer m, int s = 48000, int c = 2)
+	    {
+	        mediaPlayer = m;
+	        sampleRate = s;
+	        _channels = c;
+	        audioSource = GetComponent<AudioSource>();
+	        audioClip = AudioClip.Create("VLCAudioClip", sampleRate * BUFFER_SIZE_MULT, _channels, sampleRate, true, OnAudioRead);
+	        audioSource.clip = audioClip;
+	        audioSource.loop = true;
+	        audioSource.Play();
+	        mediaPlayer.SetAudioFormatCallback(AudioSetup, AudioCleanup);
+	        mediaPlayer.SetAudioCallbacks(PlayAudio, PauseAudio, ResumeAudio, FlushAudio, DrainAudio);
+	    }
+
+	    private void OnAudioRead(float[] data)
+	    {
+	        lock (bufferLock)
+	        {
+	            if (audioDataQueue.Count < data.Length)
+	            {
+	                Array.Clear(data, 0, data.Length);
+	                return;
+	            }
+	            for (int i = 0; i < data.Length; i++)
+	            {
+	                if (audioDataQueue.TryDequeue(out float sample))
+	                {
+	                    data[i] = sample;
+	                }
+	                else
+	                {
+	                    data[i] = 0f;
+	                }
+	            }
+	        }
+	    }
+
+	    private void PlayAudio(IntPtr data, IntPtr samples, uint count, long pts)
+	    {
+	        int bytes = (int)count * 2 * _channels;
+	        byte[] buffer = new byte[bytes];
+	        Marshal.Copy(samples, buffer, 0, bytes);
+	        float[] pcmData = new float[bytes / 2];
+
+	        for (int i = 0; i < pcmData.Length; i++)
+	        {
+	            short sample = BitConverter.ToInt16(buffer, i * 2);
+	            pcmData[i] = sample / 32768.0f;
+	        }
+
+	        lock (bufferLock)
+	        {
+	            foreach (float sample in pcmData)
+	            {
+	                audioDataQueue.Enqueue(sample);
+	            }
+	            while (audioDataQueue.Count > sampleRate * BUFFER_SIZE_MULT)
+	            {
+	                audioDataQueue.TryDequeue(out _);
+	            }
+	        }
+	    }
+
+	    private int AudioSetup(ref IntPtr opaque, ref IntPtr format, ref uint rate, ref uint channels)
+	    {
+	        rate = (uint) sampleRate;
+	        channels = (uint) _channels;
+	        return 0;
+	    }
+
+	    private void AudioCleanup(IntPtr opaque) { }
+
+	    private void PauseAudio(IntPtr data, long pts) =>
+	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.Pause()));
+
+	    private void ResumeAudio(IntPtr data, long pts) =>
+	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.UnPause()));
+
+	    private void FlushAudio(IntPtr data, long pts)
+	    {
+	        lock (bufferLock)
+	        {
+	            audioDataQueue.Clear();
+	        }
+	    }
+
+	    private void DrainAudio(IntPtr data) { }
+	}
 }
 #endif
 

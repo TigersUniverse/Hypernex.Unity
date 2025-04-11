@@ -129,7 +129,7 @@ namespace Hypernex.Tools
 
         public static void ClearCache() => Cache.Clear();
 
-        private static void Check()
+        internal static void Check()
         {
             if (Queue.Count <= 0 || RunningThreads.Count >= ConfigManager.LoadedConfig.DownloadThreads)
                 return;

@@ -8,7 +8,7 @@ using HypernexSharp.APIObjects;
 
 namespace Hypernex.Tools
 {
-#if UNITY_ANDROID
+#if UNITY_ANDROID || UNITY_EDITOR
     internal static class DiscordTools
     {
         public static void StartDiscord()

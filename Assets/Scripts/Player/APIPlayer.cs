@@ -118,7 +118,7 @@ namespace Hypernex.Player
                 Instances.Invoke(new List<SafeInstance>());
                 return;
             }
-            APIObject.GetInstances(result =>
+            APIObject.GetLiveInstances(result =>
             {
                 if (result.success)
                 {
@@ -132,7 +132,7 @@ namespace Hypernex.Player
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         _sharedInstances = new List<SafeInstance>()));
                 }
-            }, APIUser, CurrentToken);
+            });
         }
 
         public static void Logout(Action<bool> result = null)

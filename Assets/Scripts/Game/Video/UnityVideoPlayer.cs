@@ -1,5 +1,8 @@
 ﻿using System;
-using Hypernex.CCK.Unity;
+using System.Linq;
+using FFMediaToolkit.Decoding;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using UnityEngine;
 using UnityEngine.Video;
 using Object = UnityEngine.Object;
@@ -8,6 +11,16 @@ namespace Hypernex.Game.Video
 {
     public class UnityVideoPlayer : IVideoPlayer
     {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+        private static readonly string[] supportedCodecs = {"h263", "h264", "vp8", "mpeg", "mpg1", "mpg2", "mpg3"};
+#elif UNITY_STANDALONE_OSX || UNITY_STANDALONE_OSX
+        private static readonly string[] supportedCodecs = {"h264", "vp8", "mpeg", "mpg1", "mpg2", "mpg4", "avi"};
+#elif UNITY_ANDROID
+        private static readonly string[] supportedCodecs = {"h263", "h264", "h265", "hevc", "mpeg", "vp8", "vp9", "av1"};
+#else
+        private static readonly string[] supportedCodecs = {"mpeg", "vp8", "vp9", "av1"};
+#endif
+        
         private VideoPlayer videoPlayer;
         private AudioSource audioSource;
         private RenderTexture renderTexture;
@@ -54,8 +67,9 @@ namespace Hypernex.Game.Video
         public static bool CanBeUsed(Uri source)
         {
             if (source.Scheme != "file") return false;
-            // TODO: Check to see if file is in compatible format
-            return true;
+            using MediaFile mediaFile = MediaFile.Open(source.LocalPath);
+            bool compatible = supportedCodecs.Contains(mediaFile.Video.Info.CodecName);
+            return compatible;
         }
 
         public bool IsPlaying => videoPlayer.isPlaying;
@@ -100,7 +114,8 @@ namespace Hypernex.Game.Video
         public void Play() => videoPlayer.Play();
         public void Pause() => videoPlayer.Pause();
         public void Stop() => videoPlayer.Stop();
-        
+        public string GetFileHeader() => "file:///";
+
         public void Dispose()
         {
             renderTexture.DiscardContents();

@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FFMediaToolkit;
 using Hypernex.Player;
 using Hypernex.UI;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
@@ -23,6 +24,7 @@ using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using UnityEngine.XR.Management;
 #if VLC
+using Hypernex.Game.Video;
 using LibVLCSharp;
 #endif
 using Logger = Hypernex.CCK.Logger;
@@ -82,10 +84,6 @@ public class Init : MonoBehaviour
         LocalPlayer.IsVR = false;
         LocalPlayer.StopVR();
     }
-
-#if VLC
-    private void Awake() => Core.Initialize(Application.dataPath);
-#endif
 
     private void Start()
     {
@@ -147,7 +145,7 @@ public class Init : MonoBehaviour
                 break;
         }
         SecurityTools.AllowExtraTypes();
-        SecurityTools.ImplementRestrictions();
+        ExtraSandboxTools.ImplementRestrictions();
         kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
         RenderPipelineManager.beginCameraRendering += BeginRender_NoAvatar;
         AvatarNearClip.BeforeClip += BeginRender_Avatar;
@@ -173,6 +171,13 @@ public class Init : MonoBehaviour
 #endif
         Streaming.ytdl.OutputFolder = Path.Combine(GetYTDLLocation(), "Downloads");
         YoutubeDLSharp.Utils.DownloadBinaries(true, GetYTDLLocation());
+        string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
+        FFMpegDownloader.Download(ffmpegPath);
+        FFmpegLoader.FFmpegPath = ffmpegPath;
+        FFmpegLoader.LoadFFmpeg();
+#if VLC
+        VLCVideoPlayer.CreateLibVLC(false);
+#endif
 
         int pluginsLoaded;
         try
@@ -197,9 +202,8 @@ public class Init : MonoBehaviour
                 UITheme userTheme = UITheme.GetUIThemeByName(configUser.Theme);
                 if(userTheme != null)
                     userTheme.ApplyThemeToUI();
-                if(configUser.UseFacialTracking)
-                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        FaceTrackingManager.Init(targetStreamingPath, user)));
+                if (configUser.UseFacialTracking)
+                    FaceTrackingManager.Init(targetStreamingPath, user);
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
         };
@@ -234,6 +238,7 @@ public class Init : MonoBehaviour
             audioMixers[WorldGroup].SetFloat("volume", ConfigManager.SelectedConfigUser.WorldAudioVolume);
         }
         GameInstance.FocusedInstance?.Update();
+        DownloadTools.Check();
     }
     
     private void LateUpdate() => GameInstance.FocusedInstance?.LateUpdate();

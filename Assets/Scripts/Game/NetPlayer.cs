@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Assets;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Databasing;
 using Hypernex.Databasing.Objects;
@@ -159,11 +160,8 @@ namespace Hypernex.Game
                         if ((ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(UserId) ??
                              new AllowedAvatarComponent()).Scripting)
                         {
-                            foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
-                                Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
-                                    a.gameObject));
                             foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                                Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                                Avatar.localAvatarSandboxes.Add(new Sandbox(ls.Script, transform, ls.gameObject));
                         }
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
@@ -185,10 +183,8 @@ namespace Hypernex.Game
                         return;
                     Avatar?.Dispose();
                     Avatar = new NetAvatarCreator(this, a, avatarMeta, lastPlayerUpdate.IsPlayerVR);
-                    foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
-                        Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
                     foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                        Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                        Avatar.localAvatarSandboxes.Add(new Sandbox(ls.Script, transform, ls.gameObject));
                     if (nameplateTemplate != null)
                         nameplateTemplate.transform.SetLocalPositionAndRotation(
                             new Vector3(0, transform.localScale.y + 0.9f, 0),

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Assets;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Networking;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
@@ -21,8 +22,8 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using Physics = UnityEngine.Physics;
-using Security = Hypernex.CCK.Unity.Security;
-using World = Hypernex.CCK.Unity.World;
+using Security = Hypernex.CCK.Unity.Internals.Security;
+using World = Hypernex.CCK.Unity.Assets.World;
 
 namespace Hypernex.Game
 {
@@ -457,13 +458,11 @@ namespace Hypernex.Game
                             });
                     if (open)
                         Open();
-                    foreach (NexboxScript worldLocalScript in World.LocalScripts)
-                        sandboxes.Add(new Sandbox(worldLocalScript, this, World.gameObject));
                     foreach (LocalScript ls in Object.FindObjectsByType<LocalScript>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     {
                         Transform r = AnimationUtility.GetRootOfChild(ls.transform);
                         if(r.GetComponent<LocalPlayer>() == null && r.GetComponent<NetPlayer>() == null)
-                            sandboxes.Add(new Sandbox(ls.NexboxScript, this, ls.gameObject));
+                            sandboxes.Add(new Sandbox(ls.Script, this, ls.gameObject));
                     }
                     if (LocalPlayer.Instance.Dashboard.IsVisible)
                         LocalPlayer.Instance.Dashboard.ToggleDashboard(LocalPlayer.Instance);

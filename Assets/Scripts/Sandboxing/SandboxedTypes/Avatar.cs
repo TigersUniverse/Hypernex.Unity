@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hypernex.CCK.Unity;
-using Hypernex.Configuration;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game;
 using Hypernex.Game.Avatar;
-using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Hypernex.UI.Templates;
