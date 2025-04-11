@@ -235,7 +235,7 @@ namespace Hypernex.Game
                     spawnPosition = GameInstance.FocusedInstance.World.transform.position;
             }
             CharacterController.enabled = false;
-            transform.position = spawnPosition;
+            transform.position = spawnPosition.AddOneUp();
             if(Dashboard.IsVisible)
                 Dashboard.PositionDashboard(this);
             CharacterController.enabled = true;

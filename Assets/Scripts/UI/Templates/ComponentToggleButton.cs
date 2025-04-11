@@ -1,5 +1,5 @@
 ﻿using System;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.UIActions;
 using TMPro;

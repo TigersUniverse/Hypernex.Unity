@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FFMediaToolkit;
-using FFmpeg.AutoGen;
 using Hypernex.Player;
 using Hypernex.UI;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
@@ -143,7 +142,7 @@ public class Init : MonoBehaviour
                 break;
         }
         SecurityTools.AllowExtraTypes();
-        SecurityTools.ImplementRestrictions();
+        ExtraSandboxTools.ImplementRestrictions();
         kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
         RenderPipelineManager.beginCameraRendering += BeginRender_NoAvatar;
         AvatarNearClip.BeforeClip += BeginRender_Avatar;
@@ -200,9 +199,8 @@ public class Init : MonoBehaviour
                 UITheme userTheme = UITheme.GetUIThemeByName(configUser.Theme);
                 if(userTheme != null)
                     userTheme.ApplyThemeToUI();
-                if(configUser.UseFacialTracking)
-                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                        FaceTrackingManager.Init(targetStreamingPath, user)));
+                if (configUser.UseFacialTracking)
+                    FaceTrackingManager.Init(targetStreamingPath, user);
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceTemplate);
         };

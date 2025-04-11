@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;

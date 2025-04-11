@@ -15,7 +15,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using FFMediaToolkit.Decoding;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using LibVLCSharp;
@@ -238,6 +239,8 @@ namespace Hypernex.Game.Video
             _vlcTexture = null;
             DestroyRenderTexture();
         }
+
+        public string GetFileHeader() => "file:///";
 
         public bool IsStream { get; private set; }
         

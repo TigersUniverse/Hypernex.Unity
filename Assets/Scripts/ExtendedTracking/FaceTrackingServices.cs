@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Hypernex.CCK;
 using Hypernex.Configuration;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using UnityEngine;
 using VRCFaceTracking.Core.Contracts.Services;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.ExtendedTracking
 {
@@ -64,7 +66,7 @@ namespace Hypernex.ExtendedTracking
 
         public class FTDispatcher : IDispatcherService
         {
-            public void Run(Action action) => QuickInvoke.InvokeActionOnMainThread(action);
+            public void Run(Action action) => QuickInvoke.InvokeImmediate(action);
         }
 
         public class FTSettings : ILocalSettingsService

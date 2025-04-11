@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Linq;
 using FFMediaToolkit.Decoding;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using UnityEngine;
 using UnityEngine.Video;
 using Object = UnityEngine.Object;
@@ -113,7 +114,8 @@ namespace Hypernex.Game.Video
         public void Play() => videoPlayer.Play();
         public void Pause() => videoPlayer.Pause();
         public void Stop() => videoPlayer.Stop();
-        
+        public string GetFileHeader() => "file:///";
+
         public void Dispose()
         {
             renderTexture.DiscardContents();

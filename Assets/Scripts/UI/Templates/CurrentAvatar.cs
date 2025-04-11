@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Assets;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Databasing.Objects;
 using Hypernex.Game;
 using Hypernex.Game.Avatar;
@@ -41,15 +42,21 @@ namespace Hypernex.UI.Templates
             avatarCreator = a;
             ParameterButtons.Clear();
             AvatarNameLabel.text = "Current Avatar: " + LocalPlayer.Instance.avatarMeta.Name;
-            foreach (AnimatorPlayable animatorPlayable in a.AnimatorPlayables)
+            if(a.Avatar.Parameters != null)
             {
-                foreach (AnimatorControllerParameter animatorControllerParameter in animatorPlayable
-                             .AnimatorControllerParameters)
+                foreach (AvatarParameter avatarParameter in a.Avatar.Parameters.Parameters)
                 {
-                    if (a.Avatar.ShowAllParameters ||
-                        a.Avatar.VisibleParameters.Contains(animatorControllerParameter.name))
-                        CreateParameterButton(animatorPlayable, animatorControllerParameter.name,
-                            animatorControllerParameter.type);
+                    foreach (AnimatorPlayable animatorPlayable in a.AnimatorPlayables)
+                    {
+                        if (animatorPlayable.AnimatorControllerParameters.Count(x =>
+                                x.name == avatarParameter.ParameterName) <=
+                            0) continue;
+                        AnimatorControllerParameter literalParameter =
+                            animatorPlayable.AnimatorControllerParameters.First(x =>
+                                x.name == avatarParameter.ParameterName);
+                        CreateParameterButton(animatorPlayable, avatarParameter.ParameterName, literalParameter.type,
+                            avatarParameter.ParameterType);
+                    }
                 }
             }
             RenderProfiles(true);
@@ -201,7 +208,7 @@ namespace Hypernex.UI.Templates
         }
 
         private void CreateParameterButton(AnimatorPlayable animatorPlayable, string parameterName,
-            AnimatorControllerParameterType t)
+            AnimatorControllerParameterType literal, AnimatorControllerParameterType t)
         {
             GameObject parameterButton = DontDestroyMe.GetNotDestroyedObject("UITemplates").transform
                 .Find("ParameterSelect").gameObject;
@@ -211,7 +218,7 @@ namespace Hypernex.UI.Templates
             {
                 ParameterTemplates.ForEach(x => x.gameObject.SetActive(false));
                 ParameterTemplate pt = ParameterTemplates.First(x => x.ParameterType == t);
-                pt.Render(animatorPlayable, parameterName);
+                pt.Render(animatorPlayable, parameterName, literal);
                 pt.gameObject.SetActive(true);
             });
             newParameterButton.transform.GetChild(0).GetComponent<TMP_Text>().text = parameterName;

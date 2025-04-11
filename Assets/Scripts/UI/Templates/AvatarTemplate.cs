@@ -10,9 +10,7 @@ using Hypernex.UIActions.Data;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
-using Avatar = Hypernex.CCK.Unity.Avatar;
 using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.UI.Templates

@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using Hypernex.Game;
 using HypernexSharp.APIObjects;
 using UnityEngine;
-using Avatar = Hypernex.CCK.Unity.Avatar;
-using Logger = Hypernex.CCK.Logger;
-using Object = UnityEngine.Object;
+using Avatar = Hypernex.CCK.Unity.Assets.Avatar;
 
 namespace Hypernex.Tools
 {

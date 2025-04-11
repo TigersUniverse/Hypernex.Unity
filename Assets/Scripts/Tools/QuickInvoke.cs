@@ -9,9 +9,17 @@ namespace Hypernex.Tools
     [RequireComponent(typeof(DontDestroyMe))]
     public class QuickInvoke : MonoBehaviour
     {
+        private static UnityMainThreadDispatcher threadDispatcher;
+        
         public static void InvokeActionOnMainThread(Delegate action, params object[] args) => queue.Enqueue((action, args));
         
         public static void InvokeActionOnMainThreadObject(Delegate action, object[] args) => queue.Enqueue((action, args));
+
+        public static void InvokeImmediate(Action a)
+        {
+            if(threadDispatcher == null) threadDispatcher = UnityMainThreadDispatcher.Instance();
+            threadDispatcher.Enqueue(a);
+        }
         
         public static void OverwriteListener(UnityEvent u, Action newAction)
         {
