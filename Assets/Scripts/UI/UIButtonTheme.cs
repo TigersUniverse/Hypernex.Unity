@@ -21,6 +21,7 @@ namespace Hypernex.UI
         Yellow,
         Red,
         Orange,
-        SecondaryGray
+        SecondaryGray,
+        ThirdGray,
     }
 }
