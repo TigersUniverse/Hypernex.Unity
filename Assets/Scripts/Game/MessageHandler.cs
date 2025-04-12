@@ -2,7 +2,7 @@
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Tools;
-using Hypernex.UI.Templates;
+using Hypernex.UI;
 using Nexport;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
@@ -110,7 +110,7 @@ namespace Hypernex.Game
                 {
                     ServerConsoleLog serverConsoleLog =
                         (ServerConsoleLog) Convert.ChangeType(msgMeta.Data, typeof(ServerConsoleLog));
-                    ConsoleTemplate.AddMessage(serverConsoleLog);
+                    Defaults.Instance.Console.AddMessage(serverConsoleLog);
                     break;
                 }
             }

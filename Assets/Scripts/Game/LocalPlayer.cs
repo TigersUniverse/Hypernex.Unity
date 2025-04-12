@@ -157,7 +157,7 @@ namespace Hypernex.Game
         public BaseInputModule VRInput;
         public Vector3 LowestPoint;
         public float LowestPointRespawnThreshold = 50f;
-        public CurrentAvatar CurrentAvatarDisplay;
+        //public CurrentAvatar CurrentAvatarDisplay; TODO: Avatar Display
         public LocalPlayerSyncController LocalPlayerSyncController;
         public DesktopFingerCurler.Left LeftDesktopCurler = new();
         public DesktopFingerCurler.Right RightDesktopCurler = new();
@@ -205,8 +205,9 @@ namespace Hypernex.Game
         // maybe we should cache an avatar instead? would improve speeds for HDD users, but increase memory usage
         public void RefreshAvatar(bool fromDash = false)
         {
-            if(!fromDash)
-                CurrentAvatarDisplay.RefreshAvatar(false);
+            // TODO: Avatar display
+            /*if(!fromDash)
+                CurrentAvatarDisplay.RefreshAvatar(false);*/
             transform.localScale = new Vector3(1, 1, 1);
             Dashboard.PositionDashboard(this);
             OnAvatarDownload(avatarFile, avatarMeta);
@@ -304,7 +305,8 @@ namespace Hypernex.Game
                 }
                 avatarMeta = am;
                 avatar?.Dispose();
-                CurrentAvatarDisplay.SizeAvatar(1f);
+                // TODO: Avatar disiplay
+                //CurrentAvatarDisplay.SizeAvatar(1f);
                 IsLoadingAvatar = false;
                 avatar = new LocalAvatarCreator(this, a, IsVR, am);
                 avatarFile = file;

@@ -60,10 +60,10 @@ namespace Hypernex.UI.Components
             Instance = this;
             cts = new CancellationTokenSource();
             coroutine = StartCoroutine(MessageShowLoop());
-            UnityLogger.OnLog += o => ConsoleTemplate.AddMessage($"[GAME] {o}");
-            UnityLogger.OnWarn += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 1);
-            UnityLogger.OnError += o => ConsoleTemplate.AddMessage($"[GAME] {o}", 2);
-            UnityLogger.OnCritical += o => ConsoleTemplate.AddMessage($"[CRITICAL-GAME] {o}", 2);
+            UnityLogger.OnLog += o => Defaults.Instance.Console.AddMessage($"[GAME] {o}");
+            UnityLogger.OnWarn += o => Defaults.Instance.Console.AddMessage($"[GAME] {o}", 1);
+            UnityLogger.OnError += o => Defaults.Instance.Console.AddMessage($"[GAME] {o}", 2);
+            UnityLogger.OnCritical += o => Defaults.Instance.Console.AddMessage($"[CRITICAL-GAME] {o}", 2);
         }
 
         private IEnumerator MessageShowLoop()
