@@ -28,7 +28,7 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
             extents = new Vector3(Mathf.Abs(TopLeft.localPosition.x - BottomRight.localPosition.x) * 0.5f,
                 Mathf.Abs(TopLeft.localPosition.y - BottomRight.localPosition.y) * 0.5f, 0);
             ControlText.text = t.Item1.ControlName;
-            if(t.Item1.ControlSprite != null) Icon.sprite = t.Item1.ControlSprite;
+            Icon.sprite = t.Item1.ControlSprite;
             avatarParameter1 = t.Item2;
             avatarParameter2 = t.Item3;
             UpdateState();
