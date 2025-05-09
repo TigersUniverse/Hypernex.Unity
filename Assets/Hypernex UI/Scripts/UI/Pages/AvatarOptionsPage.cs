@@ -6,7 +6,6 @@ namespace Hypernex.UI.Pages
 {
     public class AvatarOptionsPage : UIPage
     {
-        public Animator Animator;
         public RectTransform CubeHolder;
         
         public void Render(AvatarMenu menu, AvatarMenu previousPage = null)
