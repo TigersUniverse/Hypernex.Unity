@@ -223,6 +223,30 @@ namespace Hypernex.Tools
             return -1;
         }
 
+        public static bool ParameterToBool(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(float)) return (float) o > 0;
+            if (t == typeof(int)) return (int) o > 0;
+            return (bool) o;
+        }
+
+        public static float ParameterToFloat(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(int)) return Mathf.FloorToInt((float) o);
+            if (t == typeof(bool)) return (bool) o ? 1f : 0f;
+            return (float) o;
+        }
+
+        public static int ParameterToInt(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(float)) return Convert.ToInt32((float) o);
+            if (t == typeof(bool)) return (bool) o ? 1 : 0;
+            return (int) o;
+        }
+
         internal class UserEqualityComparer : IEqualityComparer<User>
         {
             public static UserEqualityComparer Instance { get; } = new();

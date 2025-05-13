@@ -1,12 +1,13 @@
 ﻿using Hypernex.CCK.Unity.Assets;
 using Hypernex.Game;
+using Hypernex.Tools;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction.AvatarControllers
 {
-    public class ToggleControl : MonoBehaviour, IRender<(AvatarControl,AvatarParameter)>, IParameterControl
+    public class ToggleControl : UIRender, IRender<(AvatarControl,AvatarParameter)>, IParameterControl
     {
         private const string ANIMATOR_PARAMETER = "EnabledThing";
         
@@ -28,7 +29,7 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         public void UpdateState()
         {
             if (LocalPlayer.Instance.AvatarCreator == null) return;
-            state = LocalPlayer.Instance.AvatarCreator.GetParameter<bool>(avatarParameter1.ParameterName);
+            state = LocalPlayer.Instance.AvatarCreator.GetParameter(avatarParameter1.ParameterName).ParameterToBool();
             SetAnimatorState();
         }
 
@@ -36,7 +37,7 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         {
             if(avatarParameter1 == null) return;
             state = !state;
-            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, state);
+            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, state, null, true);
             SetAnimatorState();
         }
 

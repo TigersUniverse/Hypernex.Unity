@@ -1,5 +1,6 @@
 ﻿using Hypernex.CCK.Unity.Assets;
 using Hypernex.Game;
+using Hypernex.Tools;
 using Hypernex.UI.Components;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine;
 namespace Hypernex.UI.Abstraction.AvatarControllers
 {
     [RequireComponent(typeof(ToggleButton))]
-    public class DropdownControl : MonoBehaviour, IRender<(AvatarControl, AvatarParameter)>, IParameterControl
+    public class DropdownControl : UIRender, IRender<(AvatarControl, AvatarParameter)>, IParameterControl
     {
         public TMP_Text LabelText;
         
@@ -27,14 +28,14 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         public void UpdateState()
         {
             if (LocalPlayer.Instance.AvatarCreator == null) return;
-            state = LocalPlayer.Instance.AvatarCreator.GetParameter<int>(avatarParameter1.ParameterName);
+            state = LocalPlayer.Instance.AvatarCreator.GetParameter(avatarParameter1.ParameterName).ParameterToInt();
             if(state == index) ToggleButton.Select();
         }
 
         public void OnSelect()
         {
             state = index;
-            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, state);
+            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, state, null, true);
         }
 
         private void Start()

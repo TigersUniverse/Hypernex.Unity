@@ -9,13 +9,13 @@ using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction.AvatarControllers
 {
-    public class DropdownContainer : MonoBehaviour, IRender<(AvatarControl, AvatarParameter)>
+    public class DropdownContainer : UIRender, IRender<(AvatarControl, AvatarParameter)>
     {
         public TMP_Text ControlText;
         public Image Icon;
         public RectTransform Content;
 
-        private List<DropdownControl> Dropdowns = new();
+        internal List<DropdownControl> Dropdowns = new();
         
         public void Render((AvatarControl, AvatarParameter) t)
         {

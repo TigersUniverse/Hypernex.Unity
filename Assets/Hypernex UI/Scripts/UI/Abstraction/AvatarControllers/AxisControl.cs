@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Hypernex.CCK.Unity.Assets;
 using Hypernex.Game;
+using Hypernex.Tools;
 using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
@@ -8,7 +9,7 @@ using UnityEngine.UI;
 
 namespace Hypernex.UI.Abstraction.AvatarControllers
 {
-    public class AxisControl : MonoBehaviour, IRender<(AvatarControl, AvatarParameter, AvatarParameter)>, IParameterControl
+    public class AxisControl : UIRender, IRender<(AvatarControl, AvatarParameter, AvatarParameter)>, IParameterControl
     {
         public TMP_Text ControlText;
         public Image Icon;
@@ -37,8 +38,8 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         public void UpdateState()
         {
             if (LocalPlayer.Instance.AvatarCreator == null) return;
-            float x = LocalPlayer.Instance.AvatarCreator.GetParameter<float>(avatarParameter1.ParameterName);
-            float y = LocalPlayer.Instance.AvatarCreator.GetParameter<float>(avatarParameter2.ParameterName);
+            float x = LocalPlayer.Instance.AvatarCreator.GetParameter(avatarParameter1.ParameterName).ParameterToFloat();
+            float y = LocalPlayer.Instance.AvatarCreator.GetParameter(avatarParameter2.ParameterName).ParameterToFloat();
             state = new Vector2(x, y);
             MoveDotToPosition(state);
             AxisPositionChanged();
@@ -47,8 +48,8 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         private void AxisPositionChanged()
         {
             Vector2 v2 = GetPosition();
-            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, v2.x);
-            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter2.ParameterName, v2.y);
+            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, v2.x, null, true);
+            LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter2.ParameterName, v2.y, null, true);
         }
 
         private void MoveDotToPosition(Vector2 v2)

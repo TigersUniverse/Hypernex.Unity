@@ -64,7 +64,6 @@ namespace Hypernex.UI
 
         private void Initialize()
         {
-            new UnityLogger().SetLogger();
             Console.Initialize();
             GetComponent<DontDestroyMe>().Register();
             foreach (UIPage uiPage in PagesToInitialize)

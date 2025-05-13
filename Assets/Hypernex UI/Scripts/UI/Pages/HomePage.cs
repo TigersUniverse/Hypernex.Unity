@@ -12,11 +12,13 @@ using Hypernex.Game.Avatar.FingerInterfacing;
 using Hypernex.Tools;
 using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
+using Hypernex.UI.Renderer;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VRCFaceTracking.Core.Models;
+using Avatar = Hypernex.CCK.Unity.Assets.Avatar;
 
 namespace Hypernex.UI.Pages
 {
@@ -67,6 +69,10 @@ namespace Hypernex.UI.Pages
         public GameObject CurrentInstanceButton;
         public WorldRender WorldRender;
         public InstanceRender InstanceRender;
+        [Header("Current Avatar")]
+        public GameObject CurrentAvatarButton;
+        public AvatarRender AvatarRender;
+        public AvatarOptionsRenderer AvatarRenderer;
 
         private Coroutine c;
 
@@ -568,6 +574,19 @@ namespace Hypernex.UI.Pages
 
         #endregion
 
+        #region Current Avatar Options
+
+        public void ShowCurrentAvatar()
+        {
+            if(LocalPlayer.Instance == null || LocalPlayer.Instance.AvatarCreator == null) return;
+            Avatar avatar = LocalPlayer.Instance.AvatarCreator.Avatar;
+            AvatarRenderer.Render((avatar.RootMenu, avatar.Parameters));
+            AvatarRender.Render(LocalPlayer.Instance.AvatarCreator.AvatarMeta);
+            ShowSubPage(3);
+        }
+
+        #endregion
+        
         public override void Hide() => ConfigManager.SaveConfigToFile();
 
         private void OnEnable()
@@ -579,6 +598,7 @@ namespace Hypernex.UI.Pages
         private void Update()
         {
             CurrentInstanceButton.SetActive(GameInstance.FocusedInstance != null);
+            CurrentAvatarButton.SetActive(LocalPlayer.Instance != null && LocalPlayer.Instance.AvatarCreator != null);
             UpdateCameras();
         }
 
