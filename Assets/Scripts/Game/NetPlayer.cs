@@ -165,7 +165,7 @@ namespace Hypernex.Game
                         }
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
-                                new Vector3(0, transform.localScale.y + 0.9f, 0),
+                                new Vector3(0, transform.localScale.y + 0.6f, 0),
                                 Quaternion.identity);
                     }));
                 }

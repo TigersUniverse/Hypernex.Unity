@@ -58,7 +58,6 @@ public class Init : MonoBehaviour
     public AudioMixerGroup AvatarGroup;
     public OverlayNotification OverlayManager;
     public List<TMP_Text> VersionLabels = new();
-    public CurrentAvatar ca;
     public Texture2D MouseTexture;
     public Texture2D CircleMouseTexture;
     public CreateInstanceWindow CreateInstanceWindow;
@@ -213,7 +212,6 @@ public class Init : MonoBehaviour
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceWindow);
         };
-        CurrentAvatar.Instance = ca;
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.SafeSwitchScene(1, null,
                 s =>

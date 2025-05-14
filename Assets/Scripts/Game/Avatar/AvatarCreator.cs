@@ -174,6 +174,7 @@ namespace Hypernex.Game.Avatar
                     }
                 }
             }
+            SetParameters(DefaultWeights.ToArray());
         }
 
         private Bounds GetAvatarBounds()

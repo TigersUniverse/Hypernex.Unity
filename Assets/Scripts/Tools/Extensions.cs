@@ -234,7 +234,7 @@ namespace Hypernex.Tools
         public static float ParameterToFloat(this object o)
         {
             Type t = o.GetType();
-            if (t == typeof(int)) return Mathf.FloorToInt((float) o);
+            if (t == typeof(int)) return Convert.ToSingle((int) o);
             if (t == typeof(bool)) return (bool) o ? 1f : 0f;
             return (float) o;
         }
