@@ -64,6 +64,7 @@ namespace Hypernex.Game
         private Quaternion OriginalRotation;
         private Camera LinkedCamera;
         private Canvas HandleCameraCanvas;
+        private RectTransform LayoutContainer;
         private Grabbable grabbable;
         private DontDestroyMe dontDestroyMe;
         private RenderTexture rt;
@@ -71,23 +72,31 @@ namespace Hypernex.Game
         
         private RawImage CameraRenderOutput;
         private Button DisposeButton;
-        public TMP_Dropdown DimensionsSelect;
-        public ThemedButton GrabbableButton;
-        public ThemedButton OutputButton;
-        public ThemedButton AnchorButton;
-        public ThemedButton TrackerAttachmentButton;
-        public TMP_InputField WaitTimeInput;
-        public ThemedButton LookAtAvatarButton;
+        public Button DimensionsSelect;
+        public TMP_Text DimensionsText;
+        public Button GrabbableButton;
+        public Button OutputButton;
+        public Button AnchorButton;
+        public Button TrackerAttachmentButton;
+        public Button WaitTimeInput;
+        public TMP_Text WaitTimeText;
+        public Button LookAtAvatarButton;
 
         private XRTracker attachedTracker;
-
         private bool isCapturing;
         private bool requestCapture;
         private float lastSelectedD;
         private float2 d;
         private float2 lastD;
+        private CameraDimensions cameraDimensions = CameraDimensions.p1080;
+        private WaitTimes waitTimes = WaitTimes.s0;
 
-        public void UpdateDimensions(float2 dd) => d = dd;
+        public void UpdateDimensions(float2 dd)
+        {
+            d = dd;
+            if(DimensionsText == null) return;
+            DimensionsText.text = dd.y + "p";
+        }
 
         public void SetCameraProperties(float2 dimensions) =>
             SetCameraProperties((int) dimensions.x, (int) dimensions.y);
@@ -110,8 +119,7 @@ namespace Hypernex.Game
         public void ToggleGrabbable()
         {
             grabbable.enabled = !IsGrabbable;
-            GrabbableButton.UIThemeObject.ButtonType = IsGrabbable ? ButtonType.Blue : ButtonType.Grey;
-            GrabbableButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
+            GrabbableButton.GetComponent<ToggleButton>().isOn = grabbable.enabled;
         }
 
         public void ToggleOutput()
@@ -139,8 +147,7 @@ namespace Hypernex.Game
                     LinkedCamera.GetUniversalAdditionalCameraData().antialiasing = AntialiasingMode.None;
                     break;
             }
-            OutputButton.UIThemeObject.ButtonType = IsOutputting ? ButtonType.Blue : ButtonType.Grey;
-            OutputButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
+            OutputButton.GetComponent<ToggleButton>().isOn = IsOutputting;
         }
 
         public void ToggleAnchor()
@@ -155,8 +162,7 @@ namespace Hypernex.Game
                 dontDestroyMe.MoveToScene(SceneManager.GetActiveScene());
                 transform.parent = LocalPlayer.Instance.transform;
             }
-            AnchorButton.UIThemeObject.ButtonType = IsAnchored ? ButtonType.Blue : ButtonType.Grey;
-            AnchorButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
+            AnchorButton.GetComponent<ToggleButton>().isOn = IsAnchored;
         }
 
         public void ToggleTrackerAttachment()
@@ -165,8 +171,7 @@ namespace Hypernex.Game
                 attachedTracker = null;
             else
                 attachedTracker = FindCameraTracker();
-            TrackerAttachmentButton.UIThemeObject.ButtonType = AttachedToTracker ? ButtonType.Blue : ButtonType.Grey;
-            TrackerAttachmentButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
+            TrackerAttachmentButton.GetComponent<ToggleButton>().isOn = AttachedToTracker;
         }
 
         public void ToggleLookAtAvatar()
@@ -177,8 +182,7 @@ namespace Hypernex.Game
                 LinkedCamera.transform.localPosition = OriginalPosition;
                 LinkedCamera.transform.localRotation = OriginalRotation;
             }
-            LookAtAvatarButton.UIThemeObject.ButtonType = LookingAtAvatar ? ButtonType.Blue : ButtonType.Grey;
-            LookAtAvatarButton.UIThemeObject.ApplyTheme(UITheme.SelectedTheme);
+            LookAtAvatarButton.GetComponent<ToggleButton>().isOn = LookingAtAvatar;
         }
 
         public IEnumerator Capture()
@@ -269,56 +273,77 @@ namespace Hypernex.Game
             UpdateDimensions(ConfigManager.SelectedConfigUser != null
                 ? ConfigManager.SelectedConfigUser.DefaultCameraDimensions
                 : new(1920, 1080));
-            DisposeButton = HandleCameraCanvas.transform.GetChild(1).GetComponent<Button>();
+            LayoutContainer = HandleCameraCanvas.transform.GetChild(1).GetChild(0).GetComponent<RectTransform>();
+            DisposeButton = LayoutContainer.GetChild(7).GetComponent<Button>();
             QuickInvoke.OverwriteListener(DisposeButton.onClick, Dispose);
-            DimensionsSelect = HandleCameraCanvas.transform.GetChild(2).GetComponent<TMP_Dropdown>();
-            QuickInvoke.OverwriteListener(DimensionsSelect.onValueChanged, value =>
+            DimensionsSelect = LayoutContainer.GetChild(2).GetComponent<Button>();
+            DimensionsText = DimensionsSelect.transform.GetChild(1).GetComponent<TMP_Text>();
+            DimensionsText.text = d.y + "p";
+            QuickInvoke.OverwriteListener(DimensionsSelect.onClick, () =>
             {
-                switch (value)
+                int d = (int) cameraDimensions;
+                d = d + 1;
+                if (d >= (int) CameraDimensions.Max) d = (int) CameraDimensions.p720;
+                cameraDimensions = (CameraDimensions) d;
+                switch (cameraDimensions)
                 {
-                    case 0:
+                    case CameraDimensions.p720:
                         UpdateDimensions(new(1280,720));
                         break;
-                    case 1:
+                    case CameraDimensions.p1080:
                         UpdateDimensions(new(1920, 1080));
                         break;
-                    case 2:
+                    case CameraDimensions.p1440:
                         UpdateDimensions(new(2560, 1440));
                         break;
-                    case 3:
+                    case CameraDimensions.p2160:
                         UpdateDimensions(new(4096, 2160));
                         break;
-                    case 4:
+                    case CameraDimensions.p4320:
                         UpdateDimensions(new(7680, 4320));
                         break;
-                    case 5:
+                    case CameraDimensions.p8640:
                         UpdateDimensions(new(15360, 8640));
                         break;
                 }
             });
-            GrabbableButton = new ThemedButton(HandleCameraCanvas.transform.GetChild(3).gameObject);
-            QuickInvoke.OverwriteListener(GrabbableButton.Button.onClick, ToggleGrabbable);
-            OutputButton = new ThemedButton(HandleCameraCanvas.transform.GetChild(4).gameObject);
-            QuickInvoke.OverwriteListener(OutputButton.Button.onClick, ToggleOutput);
-            AnchorButton = new ThemedButton(HandleCameraCanvas.transform.GetChild(5).gameObject);
-            QuickInvoke.OverwriteListener(AnchorButton.Button.onClick, ToggleAnchor);
-            TrackerAttachmentButton = new ThemedButton(HandleCameraCanvas.transform.GetChild(6).gameObject);
-            QuickInvoke.OverwriteListener(TrackerAttachmentButton.Button.onClick, ToggleTrackerAttachment);
-            WaitTimeInput = HandleCameraCanvas.transform.GetChild(7).GetComponent<TMP_InputField>();
-            QuickInvoke.OverwriteListener(WaitTimeInput.onValueChanged, s =>
+            GrabbableButton = LayoutContainer.GetChild(0).GetComponent<Button>();
+            GrabbableButton.GetComponent<ToggleButton>().isOn = grabbable.enabled;
+            QuickInvoke.OverwriteListener(GrabbableButton.onClick, ToggleGrabbable);
+            OutputButton = LayoutContainer.GetChild(1).GetComponent<Button>();
+            QuickInvoke.OverwriteListener(OutputButton.onClick, ToggleOutput);
+            AnchorButton = LayoutContainer.GetChild(6).GetComponent<Button>();
+            QuickInvoke.OverwriteListener(AnchorButton.onClick, ToggleAnchor);
+            TrackerAttachmentButton = LayoutContainer.GetChild(5).GetComponent<Button>();
+            QuickInvoke.OverwriteListener(TrackerAttachmentButton.onClick, ToggleTrackerAttachment);
+            WaitTimeInput = LayoutContainer.GetChild(4).GetComponent<Button>();
+            WaitTimeText = WaitTimeInput.transform.GetChild(0).GetComponent<TMP_Text>();
+            WaitTimeText.text = $"Timer ({Convert.ToInt32(WaitTime)}s)";
+            QuickInvoke.OverwriteListener(WaitTimeInput.onClick, () =>
             {
-                try
+                int t = (int) waitTimes;
+                t = t + 1;
+                if (t >= (int) WaitTimes.Max) t = 0;
+                waitTimes = (WaitTimes) t;
+                switch (waitTimes)
                 {
-                    float val = Single.Parse(s);
-                    WaitTime = val;
+                    case WaitTimes.s0:
+                        WaitTime = 0;
+                        break;
+                    case WaitTimes.s3:
+                        WaitTime = 3;
+                        break;
+                    case WaitTimes.s5:
+                        WaitTime = 5;
+                        break;
+                    case WaitTimes.s10:
+                        WaitTime = 10;
+                        break;
                 }
-                catch (Exception)
-                {
-                    WaitTime = 0;
-                }
+                WaitTimeText.text = $"Timer ({Convert.ToInt32(WaitTime)}s)";
             });
-            LookAtAvatarButton = new ThemedButton(HandleCameraCanvas.transform.GetChild(8).gameObject);
-            QuickInvoke.OverwriteListener(LookAtAvatarButton.Button.onClick, ToggleLookAtAvatar);
+            LookAtAvatarButton = LayoutContainer.GetChild(3).GetComponent<Button>();
+            QuickInvoke.OverwriteListener(LookAtAvatarButton.onClick, ToggleLookAtAvatar);
         }
 
         private void OnCameraEndRender(ScriptableRenderContext context, Camera c)
@@ -442,5 +467,25 @@ namespace Hypernex.Game
         }
 
         public void Dispose() => Destroy(gameObject);
+    }
+
+    public enum CameraDimensions
+    {
+        p720,
+        p1080,
+        p1440,
+        p2160,
+        p4320,
+        p8640,
+        Max
+    }
+
+    public enum WaitTimes
+    {
+        s0,
+        s3,
+        s5,
+        s10,
+        Max
     }
 }
