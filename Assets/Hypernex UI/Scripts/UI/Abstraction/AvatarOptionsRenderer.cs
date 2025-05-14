@@ -298,7 +298,7 @@ namespace Hypernex.UI.Renderer
                 return;
             }
             int profileIndex = GetProfileIndex(profileName);
-            WeightedObjectUpdate[] weights = avatarCreator.GetAnimatorWeights(true).ToArray();
+            WeightedObjectUpdate[] weights = avatarCreator.GetAnimatorWeights(true, includeSaved:false).ToArray();
             if (profileIndex > -1)
                 avatarCreator.AvatarConfiguration.SavedWeights[GetProfileNameFromProfileIndex(profileIndex)] = weights;
             else

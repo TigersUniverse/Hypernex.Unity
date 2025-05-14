@@ -152,6 +152,28 @@ namespace Hypernex.Game.Avatar
                 playableGraph.Play();
             }
             DefaultWeights = GetAnimatorWeights(true);
+            if(Avatar.Parameters == null) return;
+            for (int i = 0; i < DefaultWeights.Count; i++)
+            {
+                WeightedObjectUpdate weightedObjectUpdate = DefaultWeights.ElementAt(i);
+                if(weightedObjectUpdate.TypeOfWeight != PARAMETER_ID) continue;
+                foreach (AvatarParameter avatarParameter in Avatar.Parameters.Parameters)
+                {
+                    if(weightedObjectUpdate.WeightIndex != avatarParameter.ParameterName) continue;
+                    switch (avatarParameter.ParameterType)
+                    {
+                        case AnimatorControllerParameterType.Float:
+                            DefaultWeights[i].Weight = avatarParameter.DefaultFloatValue;
+                            break;
+                        case AnimatorControllerParameterType.Int:
+                            DefaultWeights[i].Weight = avatarParameter.DefaultIntValue.ParameterToFloat();
+                            break;
+                        case AnimatorControllerParameterType.Bool:
+                            DefaultWeights[i].Weight = avatarParameter.DefaultBoolValue.ParameterToFloat();
+                            break;
+                    }
+                }
+            }
         }
 
         private Bounds GetAvatarBounds()
@@ -587,6 +609,7 @@ namespace Hypernex.Game.Avatar
         private bool? IsNetworked(AnimatorControllerParameter playableParameter)
         {
             AvatarParameter avatarParameter = null;
+            if (Avatar.Parameters == null) return false;
             foreach (AvatarParameter parameter in Avatar.Parameters.Parameters)
             {
                 if(parameter.ParameterName != playableParameter.name) continue;
@@ -596,8 +619,22 @@ namespace Hypernex.Game.Avatar
             if (avatarParameter == null) return null;
             return avatarParameter.IsNetworked;
         }
+        
+        private bool? IsSaved(AnimatorControllerParameter playableParameter)
+        {
+            AvatarParameter avatarParameter = null;
+            if (Avatar.Parameters == null) return true;
+            foreach (AvatarParameter parameter in Avatar.Parameters.Parameters)
+            {
+                if(parameter.ParameterName != playableParameter.name) continue;
+                avatarParameter = parameter;
+                break;
+            }
+            if (avatarParameter == null) return null;
+            return avatarParameter.Saved;
+        }
 
-        internal List<WeightedObjectUpdate> GetAnimatorWeights(bool skipMain = false, bool includeNonNetworked = true)
+        internal List<WeightedObjectUpdate> GetAnimatorWeights(bool skipMain = false, bool includeNonNetworked = true, bool includeSaved = true)
         {
             List<WeightedObjectUpdate> weights = new();
             if(MainAnimator != null && !skipMain)
@@ -634,6 +671,7 @@ namespace Hypernex.Game.Avatar
                 foreach (AnimatorControllerParameter playableAnimatorControllerParameter in playableAnimator.AnimatorControllerParameters)
                 {
                     if(!includeNonNetworked && !(IsNetworked(playableAnimatorControllerParameter) ?? false)) continue;
+                    if(!includeSaved && (IsSaved(playableAnimatorControllerParameter) ?? false)) continue;
                     WeightedObjectUpdate weightedObjectUpdate = new WeightedObjectUpdate
                     {
                         PathToWeightContainer = playableAnimator.CustomPlayableAnimator.AnimatorController.name,
@@ -731,9 +769,7 @@ namespace Hypernex.Game.Avatar
         {
             if (lipSyncContext == null)
                 return;
-            lipSyncContext.PreprocessAudioSamples(data, (int) Mic.NumChannels);
             lipSyncContext.ProcessAudioSamples(data, (int) Mic.NumChannels);
-            lipSyncContext.PostprocessAudioSamples(data, (int) Mic.NumChannels);
         }
         
         protected OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(

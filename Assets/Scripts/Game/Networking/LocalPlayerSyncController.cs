@@ -11,7 +11,6 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Nexport;
-using NUnit.Framework;
 using UnityEngine;
 
 namespace Hypernex.Game.Networking
