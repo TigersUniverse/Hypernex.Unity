@@ -60,6 +60,9 @@ namespace Hypernex.UI
             LocalPlayer.Instance.Respawn();
         }
 
+        public void ToggleMicrophone() =>
+            LocalPlayer.Instance.MicrophoneEnabled = !LocalPlayer.Instance.MicrophoneEnabled;
+
         public void SpawnCamera() => HandleCamera.Create();
 
         private void Initialize()

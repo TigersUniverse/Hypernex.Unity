@@ -1,6 +1,7 @@
 ﻿using Hypernex.Game;
 using Hypernex.Tools;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hypernex.UI
 {
@@ -13,6 +14,9 @@ namespace Hypernex.UI
         public DontDestroyMe DontDestroyMe { get; private set; }
 
         public GameObject Dashboard;
+        public Image MicrophoneIcon;
+        public Sprite MicUnmute;
+        public Sprite MicMute;
 
         public Vector3 OpenedPosition { get; private set; }
         public Quaternion OpenedRotation { get; private set; }
@@ -67,5 +71,7 @@ namespace Hypernex.UI
             if(!LocalPlayer.IsVR)
                 CursorTools.UpdateMouseIcon(!IsVisible);
         }
+        
+        private void Update() => MicrophoneIcon.sprite = LocalPlayer.Instance.MicrophoneEnabled ? MicUnmute : MicMute;
     }
 }
