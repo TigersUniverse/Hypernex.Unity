@@ -470,7 +470,7 @@ namespace Hypernex.Game
                     c.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
                     c.Rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x,
                         networkedObject.Rotation.y, networkedObject.Rotation.z));
-                    c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
+                    c.Scale = Vector3.one;
                 }
                 if (keyValuePair.Key > (int) CoreBone.Max) continue;
                 CoreBone coreBone = (CoreBone) keyValuePair.Key;
