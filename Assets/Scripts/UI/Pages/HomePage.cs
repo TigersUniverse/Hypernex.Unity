@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.ExtendedTracking;
@@ -14,6 +15,7 @@ using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
 using Hypernex.UI.Renderer;
 using HypernexSharp.APIObjects;
+using Microsoft.Extensions.Primitives;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +28,7 @@ namespace Hypernex.UI.Pages
     {
         [Header("Home")]
         public TMP_Text InfoText;
+        public Button LinkButton;
         [Header("Settings Sub-SubPages")]
         public GameObject[] SettingsPages;
         [Header("Audio")]
@@ -74,18 +77,9 @@ namespace Hypernex.UI.Pages
         public AvatarRender AvatarRender;
         public AvatarOptionsRenderer AvatarRenderer;
 
-        private Coroutine c;
-
         #region Home
 
-        private IEnumerator UpdateHomeText()
-        {
-            while (!Init.IsQuitting)
-            {
-                InfoText.text = $"{Application.version}\nFPS : {Mathf.RoundToInt(FPSCounter.FPS)}";
-                yield return new WaitForSeconds(0.1f);
-            }
-        }
+        private string postUrl;
 
         public void OpenWebsite() => Application.OpenURL(Init.WEBSITE);
         public void OpenForum() => Application.OpenURL(Init.FORUM_URL);
@@ -93,6 +87,12 @@ namespace Hypernex.UI.Pages
         public void OpenDiscord() => Application.OpenURL(Init.DISCORD_URL);
         public void OpenBluesky() => Application.OpenURL(Init.BLUESKY_URL);
         public void OpenX() => Application.OpenURL(Init.X_URL);
+
+        public void OpenPostURL()
+        {
+            if(string.IsNullOrEmpty(postUrl)) return;
+            Application.OpenURL(postUrl);
+        }
 
         #endregion
 
@@ -586,13 +586,44 @@ namespace Hypernex.UI.Pages
         }
 
         #endregion
+
+        internal override async void Initialize()
+        {
+            if (!HasInitialized)
+            {
+                DiscoursePost? latestAnnouncement = await DiscourseTools.GetLatestAnnouncement();
+                string text;
+                if (latestAnnouncement != null)
+                {
+                    StringBuilder announcement = new StringBuilder();
+                    announcement.Append("<size=36>");
+                    announcement.Append(latestAnnouncement.Value.PostTitle);
+                    announcement.Append("</size>\n");
+                    announcement.Append("<size=22><color=grey>Written By: ");
+                    announcement.Append(latestAnnouncement.Value.PostCreator);
+                    announcement.Append("</color></size>\n\n");
+                    announcement.Append(latestAnnouncement.Value.PostText);
+                    text = announcement.ToString();
+                    postUrl = latestAnnouncement.Value.PostURL;
+                    LinkButton.gameObject.SetActive(true);
+                }
+                else
+                {
+                    text =
+                        "<size=16>Failed to Load Latest Announcement!</size>\n\nPlease see the logs for more information";
+                    LinkButton.gameObject.SetActive(false);
+                    postUrl = String.Empty;
+                }
+                InfoText.text = text;
+            }
+            base.Initialize();
+        }
         
         public override void Hide() => ConfigManager.SaveConfigToFile();
 
         private void OnEnable()
         {
             RefreshSettings();
-            c = StartCoroutine(UpdateHomeText());
         }
 
         private void Update()
@@ -600,12 +631,6 @@ namespace Hypernex.UI.Pages
             CurrentInstanceButton.SetActive(GameInstance.FocusedInstance != null);
             CurrentAvatarButton.SetActive(LocalPlayer.Instance != null && LocalPlayer.Instance.AvatarCreator != null);
             UpdateCameras();
-        }
-
-        private void OnDisable()
-        {
-            StopCoroutine(c);
-            c = null;
         }
     }
 }
