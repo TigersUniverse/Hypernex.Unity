@@ -596,9 +596,9 @@ namespace Hypernex.UI.Pages
                 if (latestAnnouncement != null)
                 {
                     StringBuilder announcement = new StringBuilder();
-                    announcement.Append("<size=36>");
+                    announcement.Append("<size=36><b>");
                     announcement.Append(latestAnnouncement.Value.PostTitle);
-                    announcement.Append("</size>\n");
+                    announcement.Append("</b></size>\n");
                     announcement.Append("<size=22><color=grey>Written By: ");
                     announcement.Append(latestAnnouncement.Value.PostCreator);
                     announcement.Append("</color></size>\n\n");
