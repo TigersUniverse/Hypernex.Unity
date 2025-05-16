@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -15,7 +14,6 @@ using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
 using Hypernex.UI.Renderer;
 using HypernexSharp.APIObjects;
-using Microsoft.Extensions.Primitives;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,6 +27,7 @@ namespace Hypernex.UI.Pages
         [Header("Home")]
         public TMP_Text InfoText;
         public Button LinkButton;
+        public ToggleButton[] ToggleButtons;
         [Header("Settings Sub-SubPages")]
         public GameObject[] SettingsPages;
         [Header("Audio")]
@@ -628,8 +627,14 @@ namespace Hypernex.UI.Pages
 
         private void Update()
         {
-            CurrentInstanceButton.SetActive(GameInstance.FocusedInstance != null);
-            CurrentAvatarButton.SetActive(LocalPlayer.Instance != null && LocalPlayer.Instance.AvatarCreator != null);
+            bool isInInstance = GameInstance.FocusedInstance != null;
+            bool hasAvatar = LocalPlayer.Instance != null && LocalPlayer.Instance.AvatarCreator != null;
+            CurrentInstanceButton.SetActive(isInInstance);
+            CurrentAvatarButton.SetActive(hasAvatar);
+            if(!isInInstance && ToggleButtons[2].isOn)
+                ToggleButtons[0].Select();
+            if(!hasAvatar && ToggleButtons[3].isOn)
+                ToggleButtons[0].Select();
             UpdateCameras();
         }
     }
