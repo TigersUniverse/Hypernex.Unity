@@ -19,9 +19,13 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
 
         public int AllAreas => UnityEngine.AI.NavMesh.AllAreas;
 
-        public bool Raycast(float3 source, float3 target, NavMeshHit meshHit, int areaMask)
+        public NavMeshHit Raycast(float3 source, float3 target, int areaMask)
         {
-            return UnityEngine.AI.NavMesh.Raycast(NetworkConversionTools.float3ToVector3(source), NetworkConversionTools.float3ToVector3(target), out meshHit.r, areaMask);
+            UnityEngine.AI.NavMeshHit n;
+            bool b = UnityEngine.AI.NavMesh.Raycast(NetworkConversionTools.float3ToVector3(source),
+                NetworkConversionTools.float3ToVector3(target), out n, areaMask);
+            if (!b) return null;
+            return new NavMeshHit(n);
         }
 
         public bool CalculatePath(float3 source, float3 target, int areaMask, NavPath path)
@@ -29,14 +33,22 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
             return UnityEngine.AI.NavMesh.CalculatePath(NetworkConversionTools.float3ToVector3(source), NetworkConversionTools.float3ToVector3(target), areaMask, path.r);
         }
 
-        public bool FindClosestEdge(float3 source, NavMeshHit meshHit, int areaMask)
+        public NavMeshHit FindClosestEdge(float3 source, int areaMask)
         {
-            return UnityEngine.AI.NavMesh.FindClosestEdge(NetworkConversionTools.float3ToVector3(source), out meshHit.r, areaMask);
+            UnityEngine.AI.NavMeshHit h;
+            bool b = UnityEngine.AI.NavMesh.FindClosestEdge(NetworkConversionTools.float3ToVector3(source), out h,
+                areaMask);
+            if (!b) return null;
+            return new NavMeshHit(h);
         }
 
-        public bool SamplePosition(float3 source, NavMeshHit meshHit, float maxDistance, int areaMask)
+        public NavMeshHit SamplePosition(float3 source, float maxDistance, int areaMask)
         {
-            return UnityEngine.AI.NavMesh.SamplePosition(NetworkConversionTools.float3ToVector3(source), out meshHit.r, maxDistance, areaMask);
+            UnityEngine.AI.NavMeshHit h;
+            bool b = UnityEngine.AI.NavMesh.SamplePosition(NetworkConversionTools.float3ToVector3(source), out h,
+                maxDistance, areaMask);
+            if (!b) return null;
+            return new NavMeshHit(h);
         }
     }
 }
