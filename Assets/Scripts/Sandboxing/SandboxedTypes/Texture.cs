@@ -33,9 +33,9 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             r.SetPixelData(data, 0);
         }
 
-        public void SetPixel(int x, int y, byte r, byte g, byte b, byte a)
+        public void SetPixel(int x, int y, Color color)
         {
-            this.r.SetPixel(x, y, new Color32(r, g, b, a));
+            this.r.SetPixel(x, y, color.ToUnityColor());
         }
 
         public void Apply()
