@@ -19,6 +19,7 @@
     "com.unity.xr.interaction.toolkit": "2.5.4",
     "com.unity.xr.management": "4.4.0",
     "com.unity.xr.openxr": "1.11.0",
+    "dev.hypernex.cck.unity": "2.0.3",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
@@ -51,5 +52,14 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "dev.hypernex"
+      ]
+    }
+  ]
 }
