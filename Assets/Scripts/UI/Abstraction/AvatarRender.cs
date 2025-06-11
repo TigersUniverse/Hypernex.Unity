@@ -5,9 +5,9 @@ using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
 using Logger = Hypernex.CCK.Logger;
 
@@ -22,6 +22,7 @@ namespace Hypernex.UI.Abstraction
         public TMP_Text AvatarCreator;
         public TMP_Text DescriptionText;
         public Button EquipAvatarButton;
+        public bool HideEquipButton = true;
         internal AvatarMeta meta;
         
         public static void GetAvatarMeta(string avatarId, Action<AvatarMeta> callback)
@@ -76,9 +77,24 @@ namespace Hypernex.UI.Abstraction
             if(LocalPlayer.Instance != null)
             {
                 LocalPlayer.Instance.LoadAvatar();
-                // TODO: Popup message
+                OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                {
+                    Header = "Equipping Avatar",
+                    Description = $"Equipping Avatar {meta.Name}, Please Wait."
+                });
             }
             ConfigManager.SaveConfigToFile();
+        }
+
+        private void LateUpdate()
+        {
+            if(!HideEquipButton || EquipAvatarButton == null) return;
+            if (GameInstance.FocusedInstance == null || GameInstance.FocusedInstance.World == null)
+            {
+                EquipAvatarButton.gameObject.SetActive(true);
+                return;
+            }
+            EquipAvatarButton.gameObject.SetActive(!GameInstance.FocusedInstance.World.LockAvatarSwitching);
         }
     }
 }

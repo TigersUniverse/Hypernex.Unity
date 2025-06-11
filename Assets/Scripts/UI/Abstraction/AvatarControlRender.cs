@@ -10,7 +10,6 @@ namespace Hypernex.UI.Abstraction
         
         public void Render(AvatarControl t)
         {
-            // TODO: finish
             switch (t.ControlType)
             {
                 case ControlType.Toggle:

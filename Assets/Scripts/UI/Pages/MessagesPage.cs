@@ -76,10 +76,7 @@ namespace Hypernex.UI.Pages
             message.Render(messageMeta);
             MessagesScroll.AddChild(message.transform);
             message.transform.SetAsFirstSibling();
-            // TODO: Move to new OverlayManager for top notifications bar
-            /*UnreadMessages.Enqueue(messageMeta);
-            ShowNotification();
-            OverlayManager.AddMessageToQueue(messageMeta);*/
+            OverlayNotification.AddMessageToQueue(messageMeta);
         }
 
         public void ClearMessages() => MessagesScroll.ClearChildren();
