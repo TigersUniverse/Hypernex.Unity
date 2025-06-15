@@ -15,222 +15,28 @@ namespace Hypernex.UI
     
         public void ApplyTheme(UITheme theme)
         {
-            if (ThemeType is UIThemeObjectType.PrimaryVector or UIThemeObjectType.SecondaryVector)
+            if (ThemeType is UIThemeObjectType.BackgroundColor1 or UIThemeObjectType.BackgroundColor2 or UIThemeObjectType.BackgroundColor3 or UIThemeObjectType.BackgroundColor4 or UIThemeObjectType.BackgroundColor5 or UIThemeObjectType.BackgroundColor6)
             {
+                Color color = theme.BackgroundColor1;
+                if (ThemeType == UIThemeObjectType.BackgroundColor2)
+                    color = theme.BackgroundColor2;
+                if (ThemeType == UIThemeObjectType.BackgroundColor3)
+                    color = theme.BackgroundColor3;
+                if (ThemeType == UIThemeObjectType.BackgroundColor4)
+                    color = theme.BackgroundColor4;
+                if (ThemeType == UIThemeObjectType.BackgroundColor5)
+                    color = theme.BackgroundColor5;
+                if (ThemeType == UIThemeObjectType.BackgroundColor6)
+                    color = theme.BackgroundColor6;
                 Image img = GetComponent<Image>();
                 if (img != null)
-                    img.color = ThemeType == UIThemeObjectType.PrimaryVector ? theme.PrimaryColor : theme.SecondaryColor;
+                    img.color = color;
                 RawImage rawimg = GetComponent<RawImage>();
-                if(rawimg != null)
-                    rawimg.color = ThemeType == UIThemeObjectType.PrimaryVector ? theme.PrimaryColor : theme.SecondaryColor;
-                TMP_Dropdown dropdown = GetComponent<TMP_Dropdown>();
-                if (dropdown != null)
-                {
-                    dropdown.colors = new ColorBlock
-                    {
-                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        colorMultiplier = 1
-                    };
-                    dropdown.itemText.color = theme.PrimaryLabelColor;
-                    dropdown.captionText.color = theme.PrimaryLabelColor;
-                }
-                Toggle toggle = GetComponent<Toggle>();
-                if (toggle != null)
-                {
-                    toggle.colors = new ColorBlock
-                    {
-                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        colorMultiplier = 1
-                    };
-                }
-                Scrollbar scrollbar = GetComponent<Scrollbar>();
-                if (scrollbar != null)
-                {
-                    scrollbar.colors = new ColorBlock
-                    {
-                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        colorMultiplier = 1
-                    };
-                }
-                Slider slider = GetComponent<Slider>();
-                if (slider != null)
-                {
-                    slider.colors = new ColorBlock
-                    {
-                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryColor
-                            : theme.SecondaryColor,
-                        colorMultiplier = 1
-                    };
-                }
-            }
-            else if (ThemeType is UIThemeObjectType.PrimaryColorVector)
-            {
-                Image img = GetComponent<Image>();
-                if (img != null)
-                    img.color = theme.PrimaryVectorColor;
-                RawImage rawimg = GetComponent<RawImage>();
-                if(rawimg != null)
-                    rawimg.color = theme.PrimaryVectorColor;
-                TMP_Dropdown dropdown = GetComponent<TMP_Dropdown>();
-                if (dropdown != null)
-                {
-                    dropdown.colors = new ColorBlock
-                    {
-                        normalColor = theme.PrimaryVectorColor,
-                        selectedColor = theme.PrimaryVectorColor,
-                        highlightedColor = theme.PrimaryVectorColor,
-                        pressedColor = theme.PrimaryVectorColor,
-                        colorMultiplier = 1
-                    };
-                    dropdown.itemText.color = theme.PrimaryLabelColor;
-                    dropdown.captionText.color = theme.PrimaryLabelColor;
-                }
-                Toggle toggle = GetComponent<Toggle>();
-                if (toggle != null)
-                {
-                    toggle.colors = new ColorBlock
-                    {
-                        normalColor = theme.PrimaryVectorColor,
-                        selectedColor = theme.PrimaryVectorColor,
-                        highlightedColor = theme.PrimaryVectorColor,
-                        pressedColor = theme.PrimaryVectorColor,
-                        colorMultiplier = 1
-                    };
-                }
-                Scrollbar scrollbar = GetComponent<Scrollbar>();
-                if (scrollbar != null)
-                {
-                    scrollbar.colors = new ColorBlock
-                    {
-                        normalColor = theme.PrimaryVectorColor,
-                        selectedColor = theme.PrimaryVectorColor,
-                        highlightedColor = theme.PrimaryVectorColor,
-                        pressedColor = theme.PrimaryVectorColor,
-                        colorMultiplier = 1
-                    };
-                }
-                Slider slider = GetComponent<Slider>();
-                if (slider != null)
-                {
-                    slider.colors = new ColorBlock
-                    {
-                        normalColor = theme.PrimaryVectorColor,
-                        selectedColor = theme.PrimaryVectorColor,
-                        highlightedColor = theme.PrimaryVectorColor,
-                        pressedColor = theme.PrimaryVectorColor,
-                        colorMultiplier = 1
-                    };
-                }
-            }
-            else if (ThemeType is UIThemeObjectType.InverseVector)
-            {
-                Image img = GetComponent<Image>();
-                if (img != null)
-                    img.color = theme.PrimaryLabelColor;
-                RawImage rawimg = GetComponent<RawImage>();
-                if(rawimg != null)
-                    rawimg.color = theme.PrimaryLabelColor;
-            }
-            else if (ThemeType is UIThemeObjectType.PrimaryText or UIThemeObjectType.SecondaryText)
-            {
-                TMP_Text textMeshPro = GetComponent<TMP_Text>();
-                if (textMeshPro != null)
-                {
-                    textMeshPro.color = ThemeType == UIThemeObjectType.PrimaryText ? theme.PrimaryLabelColor : theme.SecondaryLabelColor;
-                    textMeshPro.font = ThemeType == UIThemeObjectType.PrimaryText ? theme.PrimaryFont : theme.SecondaryFont;
-                }
-            }
-            else if (ThemeType == UIThemeObjectType.ButtonText)
-            {
-                Button button = gameObject.GetComponent<Button>();
-                if (button != null)
-                {
-                    button.colors = new ColorBlock
-                    {
-                        normalColor = theme.GetButtonThemeFromButtonType(ButtonType).ButtonNormalColor,
-                        pressedColor = theme.GetButtonThemeFromButtonType(ButtonType).ButtonPressedColor,
-                        disabledColor = theme.GetButtonThemeFromButtonType(ButtonType).ButtonDisabledColor,
-                        highlightedColor = theme.GetButtonThemeFromButtonType(ButtonType).ButtonHighlightedColor,
-                        selectedColor = theme.GetButtonThemeFromButtonType(ButtonType).ButtonSelectedColor,
-                        colorMultiplier = 1
-                    };
-                    foreach (TMP_Text child in GetComponentsInChildren<TMP_Text>())
-                    {
-                        child.color = theme.GetButtonThemeFromButtonType(ButtonType).ButtonLabelColor;
-                        child.font = theme.GetButtonThemeFromButtonType(ButtonType).ButtonFont;
-                    }
-                }
-            }
-            else if (ThemeType is UIThemeObjectType.PrimaryInput or UIThemeObjectType.SecondaryInput)
-            {
+                if (rawimg != null)
+                    rawimg.color = color;
                 TMP_InputField inputField = gameObject.GetComponent<TMP_InputField>();
                 if (inputField != null)
                 {
-                    inputField.colors = new ColorBlock
-                    {
-                        normalColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryInputColor
-                            : theme.SecondaryInputColor,
-                        selectedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryInputColor
-                            : theme.SecondaryInputColor,
-                        highlightedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryInputColor
-                            : theme.SecondaryInputColor,
-                        pressedColor = ThemeType == UIThemeObjectType.PrimaryInput
-                            ? theme.PrimaryInputColor
-                            : theme.SecondaryInputColor,
-                        colorMultiplier = 1
-                    };
-                    inputField.textComponent.color = ThemeType == UIThemeObjectType.PrimaryInput
-                        ? theme.PrimaryInputTextColor
-                        : theme.SecondaryInputTextColor;
-                    inputField.textComponent.font = ThemeType == UIThemeObjectType.PrimaryInput
-                        ? theme.PrimaryInputFont
-                        : theme.SecondaryInputFont;
                     inputField.onSelect.RemoveAllListeners();
                     inputField.onSelect.AddListener(_ =>
                     {
@@ -240,6 +46,65 @@ namespace Hypernex.UI
                     });
                 }
             }
+            else if (ThemeType is UIThemeObjectType.PrimaryColorVector)
+            {
+                Image img = GetComponent<Image>();
+                if (img != null)
+                    img.color = theme.PrimaryColorTheme;
+                RawImage rawimg = GetComponent<RawImage>();
+                if(rawimg != null)
+                    rawimg.color = theme.PrimaryColorTheme;
+            }
+            else if (ThemeType is UIThemeObjectType.FirstText or UIThemeObjectType.SecondText or UIThemeObjectType.ThirdText or UIThemeObjectType.LinkText)
+            {
+                Color color = theme.FirstLabelColor;
+                TMP_FontAsset font = theme.FirstLabelFont;
+                if (ThemeType == UIThemeObjectType.SecondText)
+                {
+                    color = theme.SecondLabelColor;
+                    font = theme.SecondaryLabelFont;
+                }
+                if (ThemeType == UIThemeObjectType.ThirdText)
+                {
+                    color = theme.ThirdLabelColor;
+                    font = theme.ThirdLabelFont;
+                }
+                if (ThemeType == UIThemeObjectType.LinkText)
+                {
+                    color = theme.LinkLabelColor;
+                    font = theme.LinkLabelFont;
+                }
+                TMP_Text textMeshPro = GetComponent<TMP_Text>();
+                Image image = GetComponent<Image>();
+                RawImage rawimg = GetComponent<RawImage>();
+                if (textMeshPro != null)
+                {
+                    textMeshPro.color = color;
+                    textMeshPro.font = font;
+                }
+                if (image != null)
+                    image.color = color;
+                if (rawimg != null)
+                    rawimg.color = color;
+            }
+            else if (ThemeType == UIThemeObjectType.ButtonText)
+            {
+                Image img = gameObject.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.color = theme.GetButtonThemeFromButtonType(ButtonType).ButtonColor;
+                    foreach (TMP_Text child in GetComponentsInChildren<TMP_Text>())
+                    {
+                        child.color = theme.GetButtonThemeFromButtonType(ButtonType).ButtonLabelColor;
+                        child.font = theme.GetButtonThemeFromButtonType(ButtonType).ButtonFont;
+                    }
+                    foreach (Image image in GetComponentsInChildren<Image>())
+                    {
+                        if(img == image) continue;
+                        image.color = theme.GetButtonThemeFromButtonType(ButtonType).ButtonLabelColor;
+                    }
+                }
+            }
             else if (ThemeType == UIThemeObjectType.BackgroundImage)
             {
                 Image img = GetComponent<Image>();
@@ -247,12 +112,12 @@ namespace Hypernex.UI
                 {
                     if (theme.BackgroundImage == null)
                     {
-                        img.color = theme.PrimaryColor;
+                        img.color = theme.BackgroundColor1;
                         img.sprite = null;
                     }
                     else
                     {
-                        img.color = new Color(1, 1, 1, theme.PrimaryColor.a);
+                        img.color = new Color(1, 1, 1, theme.BackgroundColor1.a);
                         img.sprite = theme.BackgroundImage;
                     }
                 }
@@ -261,12 +126,12 @@ namespace Hypernex.UI
                 {
                     if (theme.BackgroundImage == null)
                     {
-                        rawimg.color = theme.PrimaryColor;
+                        rawimg.color = theme.BackgroundColor1;
                         rawimg.texture = null;
                     }
                     else
                     {
-                        rawimg.color = new Color(1, 1, 1, theme.PrimaryColor.a);
+                        rawimg.color = new Color(1, 1, 1, theme.BackgroundColor1.a);
                         rawimg.texture = theme.BackgroundImage.texture;
                     }
                 }
@@ -276,16 +141,16 @@ namespace Hypernex.UI
                 LineRenderer lineRenderer = GetComponent<LineRenderer>();
                 if(lineRenderer != null)
                 {
-                    lineRenderer.startColor = theme.PrimaryVectorColor;
-                    lineRenderer.endColor = theme.PrimaryVectorColor;
+                    lineRenderer.startColor = theme.PrimaryColorTheme;
+                    lineRenderer.endColor = theme.PrimaryColorTheme;
                 }
                 XRInteractorLineVisual lineVisual = GetComponent<XRInteractorLineVisual>();
                 if (lineVisual != null)
                 {
                     GradientColorKey[] gradientColorKeys =
                     {
-                        new GradientColorKey(theme.PrimaryVectorColor, 0),
-                        new GradientColorKey(theme.PrimaryColor, 0)
+                        new GradientColorKey(theme.PrimaryColorTheme, 0),
+                        new GradientColorKey(theme.BackgroundColor1, 0)
                     };
                     GradientAlphaKey[] gradientAlphaKeys =
                     {
@@ -294,6 +159,16 @@ namespace Hypernex.UI
                     };
                     lineVisual.validColorGradient.SetKeys(gradientColorKeys, gradientAlphaKeys);
                 }
+            }
+            else if (ThemeType == UIThemeObjectType.MicMute)
+            {
+                Color c = LocalPlayer.Instance.MicrophoneEnabled ? theme.PrimaryColorTheme : theme.MicMuteColor;
+                Image img = GetComponent<Image>();
+                if (img != null)
+                    img.color = c;
+                RawImage rawimg = GetComponent<RawImage>();
+                if (rawimg != null)
+                    rawimg.color = c;
             }
         }
 
@@ -308,16 +183,20 @@ namespace Hypernex.UI
 
     public enum UIThemeObjectType
     {
-        PrimaryVector,
-        SecondaryVector,
-        PrimaryText,
-        SecondaryText,
-        ButtonText,
-        InverseVector,
-        PrimaryInput,
-        SecondaryInput,
-        PrimaryColorVector,
-        BackgroundImage,
-        LineRenderer
+        BackgroundColor1 = 0,
+        BackgroundColor2 = 1,
+        BackgroundColor3 = 2,
+        BackgroundColor4 = 3,
+        BackgroundColor5 = 4,
+        BackgroundColor6 = 13,
+        FirstText = 5,
+        SecondText = 6,
+        ThirdText = 11,
+        LinkText = 12,
+        ButtonText = 7,
+        PrimaryColorVector = 8,
+        BackgroundImage = 9,
+        LineRenderer = 10,
+        MicMute = 14,
     }
 }

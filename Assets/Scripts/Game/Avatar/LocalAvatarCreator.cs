@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hypernex.CCK;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Assets;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Interaction;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Databasing;
@@ -13,7 +15,6 @@ using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
-using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -32,13 +33,13 @@ namespace Hypernex.Game.Avatar
         public bool IsCrouched { get; private set; }
         public bool IsCrawling { get; private set; }
 
-        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Avatar a, bool isVR, AvatarMeta avatarMeta)
+        public LocalAvatarCreator(LocalPlayer localPlayer, CCK.Unity.Assets.Avatar a, bool isVR, AvatarMeta avatarMeta)
         {
             AvatarConfiguration = ConfigManager.GetDatabase()
                 .Get<AvatarConfiguration>(AvatarConfiguration.TABLE, avatarMeta.Id);
             AvatarConfiguration ??= ConfigManager.GetDatabase()
                 .Insert(AvatarConfiguration.TABLE, new AvatarConfiguration(avatarMeta));
-            a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Avatar>();
+            a = Object.Instantiate(a.gameObject).GetComponent<CCK.Unity.Assets.Avatar>();
             Avatar = a;
             SceneManager.MoveGameObjectToScene(a.gameObject, localPlayer.gameObject.scene);
             MainAnimator = a.GetComponent<Animator>();
@@ -95,11 +96,6 @@ namespace Hypernex.Game.Avatar
                 SetupAnimators();
                 Calibrated = true;
             }
-            if (string.IsNullOrEmpty(LocalPlayer.Instance.avatarMeta.ImageURL))
-                CurrentAvatarBanner.Instance.Render(this, Array.Empty<byte>());
-            else
-                DownloadTools.DownloadBytes(LocalPlayer.Instance.avatarMeta.ImageURL,
-                    bytes => CurrentAvatarBanner.Instance.Render(this, bytes));
             SetupLipSyncLocalPlayer();
             VRCFTParameters.UpdateParameters(avatarMeta, this);
             GameInstance.OnGameInstanceLoaded += OnGameInstanceLoaded;
@@ -118,10 +114,8 @@ namespace Hypernex.Game.Avatar
             if (localAvatarScripts == null)
             {
                 localAvatarScripts = new List<(GameObject, NexboxScript)>();
-                foreach (NexboxScript localAvatarScript in Avatar.LocalAvatarScripts)
-                    localAvatarScripts.Add((Avatar.gameObject, localAvatarScript));
                 foreach (LocalScript ls in Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                    localAvatarScripts.Add((ls.gameObject, ls.NexboxScript));
+                    localAvatarScripts.Add((ls.gameObject, ls.Script));
             }
             foreach ((GameObject, NexboxScript) avatarScript in localAvatarScripts)
                 localAvatarSandboxes.Add(new Sandbox(avatarScript.Item2, LocalPlayer.Instance.transform, avatarScript.Item1));
@@ -136,11 +130,12 @@ namespace Hypernex.Game.Avatar
             lipSyncContext.enableTouchInput = false;
             lipSyncContext.skipAudioSource = true;
             morphTargets.Clear();
-            foreach (KeyValuePair<Viseme, BlendshapeDescriptor> avatarVisemeRenderer in Avatar.VisemesDict)
+            for (int i = 0; i < (int) Viseme.Max; i++)
             {
-                OVRLipSyncContextMorphTarget morphTarget =
-                    GetMorphTargetBySkinnedMeshRenderer(avatarVisemeRenderer.Value.SkinnedMeshRenderer);
-                SetVisemeAsBlendshape(ref morphTarget, avatarVisemeRenderer.Key, avatarVisemeRenderer.Value);
+                BlendshapeDescriptor descriptor = BlendshapeDescriptor.GetDescriptor(VisemeRenderers, Avatar.VisemesDict, i);
+                if (descriptor == null) continue;
+                var morphTarget = GetMorphTargetBySkinnedMeshRenderer(descriptor.SkinnedMeshRenderer);
+                SetVisemeAsBlendshape(ref morphTarget, (Viseme) i, descriptor);
             }
         }
 
@@ -387,24 +382,28 @@ namespace Hypernex.Game.Avatar
                     0 + eyeData.Right.Gaze.y >= 0f ? -eyeData.Right.Gaze.y : 0) / 2;
                 float upValue = (eyeData.Left.Gaze.y >= 0f ? eyeData.Left.Gaze.y :
                     0 + eyeData.Right.Gaze.y >= 0f ? eyeData.Right.Gaze.y : 0) / 2;
-                foreach (KeyValuePair<EyeBlendshapeAction,BlendshapeDescriptor> avatarEyeBlendshape in Avatar.EyeBlendshapes)
+                for (int i = 0; i < Avatar.EyeBlendshapes.Length; i++)
                 {
-                    switch (avatarEyeBlendshape.Key)
+                    EyeBlendshapeAction eyeBlendshapeAction = (EyeBlendshapeAction) i;
+                    BlendshapeDescriptor blendshapeDescriptor =
+                        BlendshapeDescriptor.GetDescriptor(EyeRenderers, Avatar.EyeBlendshapes, i);
+                    if(blendshapeDescriptor == null) continue;
+                    switch (eyeBlendshapeAction)
                     {
                         case EyeBlendshapeAction.Blink:
-                            avatarEyeBlendshape.Value.SetWeight(opennessValue * 100);
+                            blendshapeDescriptor.SetWeight(opennessValue * 100);
                             break;
                         case EyeBlendshapeAction.LookUp:
-                            avatarEyeBlendshape.Value.SetWeight(upValue * 100);
+                            blendshapeDescriptor.SetWeight(upValue * 100);
                             break;
                         case EyeBlendshapeAction.LookDown:
-                            avatarEyeBlendshape.Value.SetWeight(downValue * 100);
+                            blendshapeDescriptor.SetWeight(downValue * 100);
                             break;
                         case EyeBlendshapeAction.LookRight:
-                            avatarEyeBlendshape.Value.SetWeight(rightValue * 100);
+                            blendshapeDescriptor.SetWeight(rightValue * 100);
                             break;
                         case EyeBlendshapeAction.LookLeft:
-                            avatarEyeBlendshape.Value.SetWeight(leftValue * 100);
+                            blendshapeDescriptor.SetWeight(leftValue * 100);
                             break;
                     }
                 }
@@ -435,25 +434,32 @@ namespace Hypernex.Game.Avatar
                 }
                 else
                 {
-                    foreach (KeyValuePair<EyeBlendshapeAction, BlendshapeDescriptor> avatarEyeBlendshape in Avatar
-                                 .LeftEyeBlendshapes)
+                    for (int i = 0; i < Avatar.LeftEyeBlendshapes.Length; i++)
                     {
-                        switch (avatarEyeBlendshape.Key)
+                        EyeBlendshapeAction eyeBlendshapeAction = (EyeBlendshapeAction) i;
+                        BlendshapeDescriptor blendshapeDescriptor =
+                            BlendshapeDescriptor.GetDescriptor(EyeRenderers, Avatar.LeftEyeBlendshapes, i);
+                        if(blendshapeDescriptor == null)
+                        {
+                            Debug.Log("Problem for " + eyeBlendshapeAction + " with " + i + " (" + Avatar.LeftEyeBlendshapes[i] + ")");
+                            continue;
+                        }
+                        switch (eyeBlendshapeAction)
                         {
                             case EyeBlendshapeAction.Blink:
-                                avatarEyeBlendshape.Value.SetWeight(leftOpennessValue * 100);
+                                blendshapeDescriptor.SetWeight(leftOpennessValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookUp:
-                                avatarEyeBlendshape.Value.SetWeight(leftUpValue * 100);
+                                blendshapeDescriptor.SetWeight(leftUpValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookDown:
-                                avatarEyeBlendshape.Value.SetWeight(leftDownValue * 100);
+                                blendshapeDescriptor.SetWeight(leftDownValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookRight:
-                                avatarEyeBlendshape.Value.SetWeight(leftRightValue * 100);
+                                blendshapeDescriptor.SetWeight(leftRightValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookLeft:
-                                avatarEyeBlendshape.Value.SetWeight(leftLeftValue * 100);
+                                blendshapeDescriptor.SetWeight(leftLeftValue * 100);
                                 break;
                         }
                     }
@@ -477,25 +483,32 @@ namespace Hypernex.Game.Avatar
                 }
                 else
                 {
-                    foreach (KeyValuePair<EyeBlendshapeAction, BlendshapeDescriptor> avatarEyeBlendshape in Avatar
-                                 .RightEyeBlendshapes)
+                    for (int i = 0; i < Avatar.RightEyeBlendshapes.Length; i++)
                     {
-                        switch (avatarEyeBlendshape.Key)
+                        EyeBlendshapeAction eyeBlendshapeAction = (EyeBlendshapeAction) i;
+                        BlendshapeDescriptor blendshapeDescriptor =
+                            BlendshapeDescriptor.GetDescriptor(EyeRenderers, Avatar.RightEyeBlendshapes, i);
+                        if(blendshapeDescriptor == null)
+                        {
+                            Debug.Log("Problem for " + eyeBlendshapeAction + " with " + i + " (" + Avatar.RightEyeBlendshapes[i] + ")");
+                            continue;
+                        }
+                        switch (eyeBlendshapeAction)
                         {
                             case EyeBlendshapeAction.Blink:
-                                avatarEyeBlendshape.Value.SetWeight(rightOpennessValue * 100);
+                                blendshapeDescriptor.SetWeight(rightOpennessValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookUp:
-                                avatarEyeBlendshape.Value.SetWeight(rightUpValue * 100);
+                                blendshapeDescriptor.SetWeight(rightUpValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookDown:
-                                avatarEyeBlendshape.Value.SetWeight(rightDownValue * 100);
+                                blendshapeDescriptor.SetWeight(rightDownValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookRight:
-                                avatarEyeBlendshape.Value.SetWeight(rightRightValue * 100);
+                                blendshapeDescriptor.SetWeight(rightRightValue * 100);
                                 break;
                             case EyeBlendshapeAction.LookLeft:
-                                avatarEyeBlendshape.Value.SetWeight(rightLeftValue * 100);
+                                blendshapeDescriptor.SetWeight(rightLeftValue * 100);
                                 break;
                         }
                     }
@@ -507,25 +520,18 @@ namespace Hypernex.Game.Avatar
                 SetParameter("RightEyeLookDown", rightDownValue);
             }
             if(FaceTrackingDescriptor != null)
-                foreach (KeyValuePair<ExtraEyeExpressions,BlendshapeDescriptors> extraEyeValue in FaceTrackingDescriptor.ExtraEyeValues)
+            {
+                float v = (eyeData.Left.PupilDiameter_MM + eyeData.Right.PupilDiameter_MM) / 2;
+                for (int i = 0; i < FaceTrackingDescriptor.ExtraEyeValues.Length; i++)
                 {
-                    switch (extraEyeValue.Key)
-                    {
-                        case ExtraEyeExpressions.PupilDilation:
-                        {
-                            float v = (eyeData.Left.PupilDiameter_MM + eyeData.Right.PupilDiameter_MM) / 2;
-                            foreach (BlendshapeDescriptor blendshapeDescriptor in extraEyeValue.Value.Descriptors)
-                            {
-                                if (blendshapeDescriptor == null || blendshapeDescriptor.SkinnedMeshRenderer == null)
-                                    continue;
-                                SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,
-                                    blendshapeDescriptor.BlendshapeIndex, v);
-                            }
-                            SetParameter("PupilDilation", v);
-                            break;
-                        }
-                    }
+                    BlendshapeDescriptor blendshapeDescriptor =
+                        BlendshapeDescriptor.GetDescriptor(FaceTrackingRenders, FaceTrackingDescriptor.ExtraEyeValues,
+                            i);
+                    if(blendshapeDescriptor == null) continue;
+                    SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer, blendshapeDescriptor.BlendshapeIndex, v);
                 }
+                SetParameter("PupilDilation", v);
+            }
         }
 
         internal void UpdateFace(Dictionary<string, (float, ICustomFaceExpression)> weights)
@@ -542,8 +548,11 @@ namespace Hypernex.Game.Avatar
                 {
                     FaceExpressions faceExpressions =
                         (FaceExpressions) Enum.Parse(typeof(FaceExpressions), keyValuePair.Key);
-                    if (!FaceTrackingDescriptor.FaceValues.ContainsKey(faceExpressions)) continue;
-                    BlendshapeDescriptor blendshapeDescriptor = FaceTrackingDescriptor.FaceValues[faceExpressions];
+                    int i = (int) faceExpressions;
+                    if (FaceTrackingDescriptor.FaceValues[i] <= 0) continue;
+                    BlendshapeDescriptor blendshapeDescriptor =
+                        BlendshapeDescriptor.GetDescriptor(FaceTrackingRenders, FaceTrackingDescriptor.FaceValues, i);
+                    //BlendshapeDescriptor blendshapeDescriptor = FaceTrackingDescriptor.FaceValues[(int) faceExpressions];
                     if (blendshapeDescriptor != null && blendshapeDescriptor.SkinnedMeshRenderer != null)
                     {
                         SetBlendshapeWeight(blendshapeDescriptor.SkinnedMeshRenderer,

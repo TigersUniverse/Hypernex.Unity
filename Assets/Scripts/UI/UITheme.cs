@@ -4,6 +4,7 @@ using Hypernex.Game;
 using Hypernex.Tools;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Hypernex.UI
 {
@@ -28,22 +29,24 @@ namespace Hypernex.UI
 
         public Sprite BackgroundImage;
         
-        public Color PrimaryColor;
-        public Color SecondaryColor;
-        public Color PrimaryVectorColor;
-    
-        public Color PrimaryLabelColor;
-        public TMP_FontAsset PrimaryFont;
+        [FormerlySerializedAs("PrimaryColor")] public Color BackgroundColor1;
+        [FormerlySerializedAs("SecondaryColor")] public Color BackgroundColor2;
+        public Color BackgroundColor3;
+        public Color BackgroundColor4;
+        public Color BackgroundColor5;
+        public Color BackgroundColor6;
+        [FormerlySerializedAs("PrimaryVectorColor")] public Color PrimaryColorTheme;
 
-        public Color SecondaryLabelColor;
-        public TMP_FontAsset SecondaryFont;
+        [FormerlySerializedAs("PrimaryLabelColor")] public Color FirstLabelColor;
+        [FormerlySerializedAs("PrimaryFont")] public TMP_FontAsset FirstLabelFont;
+        [FormerlySerializedAs("SecondaryLabelColor")] public Color SecondLabelColor;
+        [FormerlySerializedAs("SecondaryFont")] public TMP_FontAsset SecondaryLabelFont;
+        public Color ThirdLabelColor;
+        public TMP_FontAsset ThirdLabelFont;
+        public Color LinkLabelColor;
+        public TMP_FontAsset LinkLabelFont;
 
-        public Color PrimaryInputColor;
-        public Color PrimaryInputTextColor;
-        public TMP_FontAsset PrimaryInputFont;
-        public Color SecondaryInputColor;
-        public Color SecondaryInputTextColor;
-        public TMP_FontAsset SecondaryInputFont;
+        public Color MicMuteColor;
 
         public Sprite InfoSprite;
         public Sprite WarningSprite;
@@ -51,15 +54,16 @@ namespace Hypernex.UI
 
         public List<UIButtonTheme> ButtonThemes;
 
-        public void ApplyThemeToUI()
+        public void ApplyThemeToUI(bool fromDebug = false)
         {
             SelectedTheme = this;
-            foreach (UIThemeObject UIThemeObject in FindObjectsOfType<UIThemeObject>(true))
+            foreach (UIThemeObject uiThemeObject in FindObjectsByType<UIThemeObject>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
-                UIThemeObject.ApplyTheme(this);
+                uiThemeObject.ApplyTheme(this);
             }
-            CursorTools.UpdateMouseIcon(!LocalPlayer.Instance.Dashboard.IsVisible, PrimaryVectorColor);
-            Init.Instance.OutlineMaterial.color = PrimaryVectorColor;
+            if (fromDebug) return;
+            CursorTools.UpdateMouseIcon(!LocalPlayer.Instance.Dashboard.IsVisible, PrimaryColorTheme);
+            Init.Instance.OutlineMaterial.color = PrimaryColorTheme;
         }
 
         public UIButtonTheme GetButtonThemeFromButtonType(ButtonType type) =>

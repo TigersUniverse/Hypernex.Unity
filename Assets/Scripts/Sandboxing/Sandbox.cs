@@ -2,7 +2,7 @@
 using Hypernex.CCK;
 using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
-using Hypernex.UI.Templates;
+using Hypernex.UI;
 using Nexbox;
 using Nexbox.Interpreters;
 using UnityEngine;
@@ -19,7 +19,7 @@ namespace Hypernex.Sandboxing
         {
             string h = avatar ? "AVATAR" : "WORLD";
             string t = $"[{h}] [{script.Name}{script.GetExtensionFromLanguage()}] {o}";
-            ConsoleTemplate.AddMessage(t);
+            Defaults.Instance.Console.AddMessage(t);
             Logger.CurrentLogger.Debug(t);
         }
         

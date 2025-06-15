@@ -11,7 +11,6 @@ using Hypernex.Networking.Messages.Data;
 using Hypernex.Player;
 using Hypernex.Tools;
 using Nexport;
-using NUnit.Framework;
 using UnityEngine;
 
 namespace Hypernex.Game.Networking
@@ -297,7 +296,7 @@ namespace Hypernex.Game.Networking
         {
             if (APIPlayer.APIUser == null || GameInstance.FocusedInstance == null) return;
             // These are going into a Bulk, so we shouldn't include any token
-            List<WeightedObjectUpdate> w = localPlayer.avatar?.GetAnimatorWeights();
+            List<WeightedObjectUpdate> w = localPlayer.avatar?.GetAnimatorWeights(includeNonNetworked:false);
             if(w == null) return;
             if (w.Count != weightedObjectUpdates.Count || lastAvatarId != localPlayer.avatarMeta?.Id)
             {

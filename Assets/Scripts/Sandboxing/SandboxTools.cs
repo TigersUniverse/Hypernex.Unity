@@ -1,6 +1,5 @@
-﻿using Hypernex.CCK.Unity;
+﻿using Hypernex.CCK.Unity.Assets;
 using Hypernex.Game;
-using Hypernex.Sandboxing.SandboxedTypes;
 using UnityEngine;
 
 namespace Hypernex.Sandboxing

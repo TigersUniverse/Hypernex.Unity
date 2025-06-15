@@ -4,7 +4,7 @@ using System.Linq;
 using Hypernex.CCK;
 using Hypernex.Game;
 using Hypernex.Tools;
-using Hypernex.UI.Templates;
+using Hypernex.UI.Abstraction;
 using HypernexSharp.APIObjects;
 using HypernexSharp.Socketing.SocketMessages;
 using HypernexSharp.Socketing.SocketResponses;
@@ -41,7 +41,7 @@ namespace Hypernex.Player
                 {
                     case "joinedinstance":
                         JoinedInstance joinedInstance = (JoinedInstance) response;
-                        WorldTemplate.GetWorldMeta(joinedInstance.worldId, meta =>
+                        WorldRender.GetWorldMeta(joinedInstance.worldId, meta =>
                         {
                             if(meta != null)
                                 QuickInvoke.InvokeActionOnMainThread(OnInstanceJoined, joinedInstance, meta);
@@ -51,7 +51,7 @@ namespace Hypernex.Player
                         break;
                     case "instanceopened":
                         InstanceOpened instanceOpened = (InstanceOpened) response;
-                        WorldTemplate.GetWorldMeta(instanceOpened.worldId, meta =>
+                        WorldRender.GetWorldMeta(instanceOpened.worldId, meta =>
                         {
                             if(meta != null)
                                 QuickInvoke.InvokeActionOnMainThread(OnInstanceOpened, instanceOpened, meta);
@@ -223,7 +223,7 @@ namespace Hypernex.Player
         
         public static void JoinInstance(SafeInstance instance)
         {
-            WorldTemplate.GetWorldMeta(instance.WorldId, worldMeta =>
+            WorldRender.GetWorldMeta(instance.WorldId, worldMeta =>
             {
                 if (worldMeta.Publicity == WorldPublicity.OwnerOnly)
                 {

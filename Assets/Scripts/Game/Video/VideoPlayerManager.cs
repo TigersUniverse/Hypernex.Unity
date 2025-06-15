@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Hypernex.CCK.Unity;
-using UnityEngine;
+using Hypernex.CCK.Unity.Internals;
 
 namespace Hypernex.Game.Video
 {

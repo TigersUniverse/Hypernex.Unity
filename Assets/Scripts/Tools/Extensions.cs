@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Descriptors;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace Hypernex.Tools
@@ -33,6 +35,14 @@ namespace Hypernex.Tools
                     0);
             networkedObject.Size = NetworkConversionTools.Vector3Tofloat3(transform.localScale);
             return networkedObject;
+        }
+
+        internal static int GetWorldPlayerCount(this List<SafeInstance> instances)
+        {
+            int i = 0;
+            foreach (SafeInstance safeInstance in instances)
+                i += safeInstance.ConnectedUsers.Count;
+            return i;
         }
 
         internal static void Apply(this NetworkedObject networkedObject, SmoothTransform transform, bool global = true)
@@ -65,11 +75,13 @@ namespace Hypernex.Tools
                 if(!immediate)
                 {
                     Object.Destroy(child);
-                    break;
+                    continue;
                 }
                 Object.DestroyImmediate(child);
             }
         }
+
+        internal static void AddChild(this Transform parent, Transform t) => t.SetParent(parent, false);
 
         internal static RotationOffsetDriver GetOffsetRotator(this Transform t, Transform root) => new (t, root);
 
@@ -171,6 +183,68 @@ namespace Hypernex.Tools
             lastVolumeProfiles.Clear();
             lastVolumeProfiles.AddRange(volumeProfilesArray);
             VolumeManager.instance.SetCustomDefaultProfiles(lastVolumeProfiles);
+        }
+
+        public static string GetUserDisplayName(this User user, int size = 24)
+        {
+            if (!string.IsNullOrEmpty(user.Bio.DisplayName))
+                return user.Bio.DisplayName + $" <size={size}>@" + user.Username + "</size>";
+            return "@" + user.Username;
+        }
+
+        public static void RenderNetImage(this RawImage rawImage, string url, Texture2D fallback = null)
+        {
+            if(ComponentTools.HasComponent<GifRenderer>(rawImage.gameObject))
+                Object.Destroy(rawImage.GetComponent<GifRenderer>());
+            if (!string.IsNullOrEmpty(url))
+                DownloadTools.DownloadBytes(url,
+                    bytes =>
+                    {
+                        if (GifRenderer.IsGif(bytes))
+                        {
+                            GifRenderer gifRenderer = rawImage.gameObject.AddComponent<GifRenderer>();
+                            gifRenderer.LoadGif(bytes);
+                        }
+                        else
+                            rawImage.texture = ImageTools.BytesToTexture2D(url, bytes);
+                    });
+            else
+                rawImage.texture = fallback;
+        }
+
+        public static int GetSelectedIndex(this ToggleButton[] toggleButtons)
+        {
+            for (int i = 0; i < toggleButtons.Length; i++)
+            {
+                ToggleButton t = toggleButtons[i];
+                if(!t.isOn) continue;
+                return i;
+            }
+            return -1;
+        }
+
+        public static bool ParameterToBool(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(float)) return (float) o > 0;
+            if (t == typeof(int)) return (int) o > 0;
+            return (bool) o;
+        }
+
+        public static float ParameterToFloat(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(int)) return Convert.ToSingle((int) o);
+            if (t == typeof(bool)) return (bool) o ? 1f : 0f;
+            return (float) o;
+        }
+
+        public static int ParameterToInt(this object o)
+        {
+            Type t = o.GetType();
+            if (t == typeof(float)) return Convert.ToInt32((float) o);
+            if (t == typeof(bool)) return (bool) o ? 1 : 0;
+            return (int) o;
         }
 
         internal class UserEqualityComparer : IEqualityComparer<User>

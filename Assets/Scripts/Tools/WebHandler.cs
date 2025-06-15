@@ -2,16 +2,15 @@
 using Hypernex.Configuration;
 using Hypernex.Game;
 using Hypernex.Player;
-using Hypernex.UI.Templates;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Abstraction;
+using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 
 namespace Hypernex.Tools
 {
     public static class WebHandler
     {
-        public static void HandleLaunchArgs(string[] args, CreateInstanceTemplate createInstanceTemplate)
+        public static void HandleLaunchArgs(string[] args, CreateInstanceWindow createInstanceTemplate)
         {
             bool didWorld = false;
             bool didAvatar = false;
@@ -29,17 +28,11 @@ namespace Hypernex.Tools
                         case "world":
                             didWorld = true;
                             // Go to Create Instance
-                            WorldTemplate.GetWorldMeta(s, meta =>
+                            WorldRender.GetWorldMeta(s, meta =>
                             {
                                 if (meta == null)
                                     return;
-                                APIPlayer.APIObject.GetUser(u =>
-                                {
-                                    if (!u.success)
-                                        return;
-                                    QuickInvoke.InvokeActionOnMainThread(new Action(() =>
-                                        createInstanceTemplate.Render(meta, u.result.UserData)));
-                                }, meta.OwnerId, null, true);
+                                createInstanceTemplate.Apply(meta);
                             });
                             break;
                         case "avatar" when didAvatar:
@@ -63,7 +56,7 @@ namespace Hypernex.Tools
                                     if(LocalPlayer.Instance != null)
                                     {
                                         LocalPlayer.Instance.LoadAvatar();
-                                        OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                                        OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                                         {
                                             Header = "Equipping Avatar",
                                             Description = $"Equipping Avatar {r.result.Meta.Name}, Please Wait."

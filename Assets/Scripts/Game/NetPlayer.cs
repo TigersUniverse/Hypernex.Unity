@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Hypernex.CCK;
-using Hypernex.CCK.Unity;
+using Hypernex.CCK.Unity.Assets;
+using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Databasing;
 using Hypernex.Databasing.Objects;
@@ -159,15 +160,12 @@ namespace Hypernex.Game
                         if ((ConfigManager.SelectedConfigUser?.GetAllowedAvatarComponents(UserId) ??
                              new AllowedAvatarComponent()).Scripting)
                         {
-                            foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
-                                Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform,
-                                    a.gameObject));
                             foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                                Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                                Avatar.localAvatarSandboxes.Add(new Sandbox(ls.Script, transform, ls.gameObject));
                         }
                         if (nameplateTemplate != null)
                             nameplateTemplate.transform.SetLocalPositionAndRotation(
-                                new Vector3(0, transform.localScale.y + 0.9f, 0),
+                                new Vector3(0, transform.localScale.y + 0.6f, 0),
                                 Quaternion.identity);
                     }));
                 }
@@ -185,10 +183,8 @@ namespace Hypernex.Game
                         return;
                     Avatar?.Dispose();
                     Avatar = new NetAvatarCreator(this, a, avatarMeta, lastPlayerUpdate.IsPlayerVR);
-                    foreach (NexboxScript localAvatarScript in Avatar.Avatar.LocalAvatarScripts)
-                        Avatar.localAvatarSandboxes.Add(new Sandbox(localAvatarScript, transform, a.gameObject));
                     foreach (LocalScript ls in Avatar.Avatar.gameObject.GetComponentsInChildren<LocalScript>())
-                        Avatar.localAvatarSandboxes.Add(new Sandbox(ls.NexboxScript, transform, ls.gameObject));
+                        Avatar.localAvatarSandboxes.Add(new Sandbox(ls.Script, transform, ls.gameObject));
                     if (nameplateTemplate != null)
                         nameplateTemplate.transform.SetLocalPositionAndRotation(
                             new Vector3(0, transform.localScale.y + 0.9f, 0),
@@ -474,7 +470,7 @@ namespace Hypernex.Game
                     c.Position = NetworkConversionTools.float3ToVector3(networkedObject.Position);
                     c.Rotation = Quaternion.Euler(new Vector3(networkedObject.Rotation.x,
                         networkedObject.Rotation.y, networkedObject.Rotation.z));
-                    c.Scale = new Vector3(0.01f, 0.01f, 0.01f);
+                    c.Scale = Vector3.one;
                 }
                 if (keyValuePair.Key > (int) CoreBone.Max) continue;
                 CoreBone coreBone = (CoreBone) keyValuePair.Key;

@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Hypernex.UI
 {
@@ -7,21 +8,20 @@ namespace Hypernex.UI
     {
         public ButtonType ButtonType;
     
-        public Color ButtonNormalColor;
-        public Color ButtonHighlightedColor;
-        public Color ButtonPressedColor;
-        public Color ButtonSelectedColor;
-        public Color ButtonDisabledColor;
+        [FormerlySerializedAs("ButtonNormalColor")] public Color ButtonColor;
         public Color ButtonLabelColor;
         public TMP_FontAsset ButtonFont;
     }
 
     public enum ButtonType
     {
-        Primary,
-        Secondary,
-        Success,
-        Warning,
-        Error
+        Blue,
+        Grey,
+        Green,
+        Yellow,
+        Red,
+        Orange,
+        SecondaryGray,
+        ThirdGray,
     }
 }

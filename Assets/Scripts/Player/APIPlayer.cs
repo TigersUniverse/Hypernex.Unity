@@ -4,12 +4,14 @@ using HypernexSharp;
 using HypernexSharp.API.APIResults;
 using HypernexSharp.APIObjects;
 using Hypernex.Tools;
-using Hypernex.UIActions;
-using Hypernex.UIActions.Data;
+using Hypernex.UI.Components;
 using HypernexSharp.Socketing;
 using UnityEngine;
 using Logger = Hypernex.CCK.Logger;
 using LoginResult = HypernexSharp.APIObjects.LoginResult;
+using MessageButtons = Hypernex.UI.Abstraction.MessageButtons;
+using MessageMeta = Hypernex.UI.Abstraction.MessageMeta;
+using MessageUrgency = Hypernex.UI.Abstraction.MessageUrgency;
 
 namespace Hypernex.Player
 {
@@ -59,7 +61,7 @@ namespace Hypernex.Player
                                 UserSocket = APIObject.OpenUserSocket(APIUser, CurrentToken, () =>
                                     QuickInvoke.InvokeActionOnMainThread(new Action(SocketManager.InitSocket)), false);
                                 QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, APIUser);
-                                OverlayManager.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
+                                OverlayNotification.AddMessageToQueue(new MessageMeta(MessageUrgency.Info, MessageButtons.None)
                                 {
                                     Header = "Signed-In!",
                                     Description = "Signed-In as " + getUserResult.result.UserData.Username + "!"
@@ -98,7 +100,7 @@ namespace Hypernex.Player
                 QuickInvoke.InvokeActionOnMainThreadObject(result, new object[]{false, null});
         }
 
-        public static void RefreshUser()
+        public static void RefreshUser(Action<User> additionalOnRefresh = null)
         {
             if (APISettings != null && APIObject != null)
                 APIObject.GetUser(CurrentToken, getUserResult =>
@@ -106,6 +108,8 @@ namespace Hypernex.Player
                     if (!getUserResult.success) return;
                     APIUser = getUserResult.result.UserData;
                     QuickInvoke.InvokeActionOnMainThread(OnUserRefresh, getUserResult.result.UserData);
+                    if(additionalOnRefresh != null)
+                        QuickInvoke.InvokeActionOnMainThread(additionalOnRefresh, getUserResult.result.UserData);
                 });
         }
 
@@ -116,7 +120,7 @@ namespace Hypernex.Player
                 Instances.Invoke(new List<SafeInstance>());
                 return;
             }
-            APIObject.GetInstances(result =>
+            APIObject.GetLiveInstances(result =>
             {
                 if (result.success)
                 {
@@ -130,7 +134,7 @@ namespace Hypernex.Player
                     QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         _sharedInstances = new List<SafeInstance>()));
                 }
-            }, APIUser, CurrentToken);
+            });
         }
 
         public static void Logout(Action<bool> result = null)

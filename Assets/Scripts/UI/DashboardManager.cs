@@ -1,18 +1,22 @@
 ﻿using Hypernex.Game;
 using Hypernex.Tools;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Hypernex.UI
 {
     [RequireComponent(typeof(DontDestroyMe))]
     public class DashboardManager : MonoBehaviour
     {
-        private const float SCALE = 0.001293102f;
+        private const float SCALE = 0.0006416243f;
         
         public bool IsVisible { get; private set; }
         public DontDestroyMe DontDestroyMe { get; private set; }
 
         public GameObject Dashboard;
+        public Image MicrophoneIcon;
+        public Sprite MicUnmute;
+        public Sprite MicMute;
 
         public Vector3 OpenedPosition { get; private set; }
         public Quaternion OpenedRotation { get; private set; }
@@ -36,13 +40,13 @@ namespace Hypernex.UI
                 if(t != null)
                     t.transform.localScale = new Vector3(s, s, s);
                 Dashboard.transform.localScale = new Vector3(SCALE * s, SCALE * s, SCALE * s);
-                Dashboard.transform.position = reference.position + reference.forward * (0.73f * s);
+                Dashboard.transform.position = reference.position + reference.forward * (0.83f * s);
             }
             else
             {
                 GameObject t = DontDestroyMe.GetNotDestroyedObject("UITemplates");
                 if(t != null)
-                    t.transform.localScale = new Vector3(1, 1, 1);
+                    t.transform.localScale = new Vector3(SCALE, SCALE, SCALE);
                 Dashboard.transform.localScale = new Vector3(SCALE, SCALE, SCALE);
                 Dashboard.transform.position = reference.position + reference.forward * 0.73f;
             }
@@ -67,5 +71,7 @@ namespace Hypernex.UI
             if(!LocalPlayer.IsVR)
                 CursorTools.UpdateMouseIcon(!IsVisible);
         }
+        
+        private void Update() => MicrophoneIcon.sprite = LocalPlayer.Instance.MicrophoneEnabled ? MicUnmute : MicMute;
     }
 }
