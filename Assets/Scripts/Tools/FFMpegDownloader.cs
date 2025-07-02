@@ -8,7 +8,7 @@ namespace Hypernex.Tools
     {
         // win64
         // This build is LGPL, see https://ffmpeg.org/legal.html
-        private const string URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-07-31-12-50/ffmpeg-n6.0-32-gd4a7a6e7fa-win64-lgpl-shared-6.0.zip";
+        private const string URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-10-31-13-06/ffmpeg-n6.0-162-g07e3223dd0-win64-lgpl-shared-6.0.zip";
         
         public static void Download(string outputDirectory, bool overwrite = false)
         {
@@ -21,7 +21,7 @@ namespace Hypernex.Tools
             }
             if (!Directory.Exists(outputDirectory)) Directory.CreateDirectory(outputDirectory);
             string outputArchive =
-                Path.Combine(outputDirectory, "ffmpeg-n6.0-32-gd4a7a6e7fa-win64-lgpl-shared-6.0.zip");
+                Path.Combine(outputDirectory, "ffmpeg-n6.0-162-g07e3223dd0-win64-lgpl-shared-6.0.zip");
             using WebClient webClient = new WebClient();
             webClient.DownloadFile(URL, outputArchive);
             ZipFile.ExtractToDirectory(outputArchive, outputDirectory);
