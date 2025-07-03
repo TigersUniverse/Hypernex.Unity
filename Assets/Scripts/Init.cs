@@ -180,9 +180,6 @@ public class Init : MonoBehaviour
         FFMpegDownloader.Download(ffmpegPath);
         FFmpegLoader.FFmpegPath = ffmpegPath;
         FFmpegLoader.LoadFFmpeg();
-#if VLC
-        VLCVideoPlayer.CreateLibVLC(false);
-#endif
 
         int pluginsLoaded;
         try
