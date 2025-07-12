@@ -132,6 +132,8 @@ namespace Hypernex.UI.Pages
             }
             ConfigManager.SelectedConfigUser = c;
             ConfigManager.SaveConfigToFile();
+            UITheme uiTheme = UITheme.GetUIThemeByName(c.Theme);
+            if(uiTheme != null) uiTheme.ApplyThemeToUI();
             GameMenuObject.SetActive(true);
             GetPage<HomePage>().Show();
         }

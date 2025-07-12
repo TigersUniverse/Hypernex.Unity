@@ -315,6 +315,7 @@ namespace Hypernex.UI.Pages
                 return;
             uiTheme.ApplyThemeToUI();
             ConfigManager.SelectedConfigUser.Theme = n;
+            ConfigManager.SaveConfigToFile();
         }
 
         public void OnEmojiTypeSelection(int i)

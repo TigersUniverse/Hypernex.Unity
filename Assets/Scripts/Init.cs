@@ -176,10 +176,17 @@ public class Init : MonoBehaviour
 #endif
         Streaming.ytdl.OutputFolder = Path.Combine(GetYTDLLocation(), "Downloads");
         YoutubeDLSharp.Utils.DownloadBinaries(true, GetYTDLLocation());
-        string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
-        FFMpegDownloader.Download(ffmpegPath);
-        FFmpegLoader.FFmpegPath = ffmpegPath;
-        FFmpegLoader.LoadFFmpeg();
+        try
+        {
+            string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
+            FFMpegDownloader.Download(ffmpegPath);
+            FFmpegLoader.FFmpegPath = ffmpegPath;
+            FFmpegLoader.LoadFFmpeg();
+        }
+        catch (Exception e)
+        {
+            Logger.CurrentLogger.Critical(e);
+        }
 
         int pluginsLoaded;
         try

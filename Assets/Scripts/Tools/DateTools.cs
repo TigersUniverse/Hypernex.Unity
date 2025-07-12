@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using IHateUnityTime;
 using UnityEngine;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Tools
 {
@@ -18,6 +20,24 @@ namespace Hypernex.Tools
         
         public static bool Is24H { get; private set; }
 
-        private void Update() => Is24H = UnityTimeHater.Is24HourClock();
+        private static bool didError;
+
+        private void Update()
+        {
+            if (didError)
+            {
+                Is24H = DateTimeFormatInfo.CurrentInfo.AMDesignator == "";
+                return;
+            }
+            try
+            {
+                Is24H = UnityTimeHater.Is24HourClock();
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Critical(e);
+                didError = true;
+            }
+        }
     }
 }
