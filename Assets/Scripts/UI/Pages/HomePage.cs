@@ -311,7 +311,7 @@ namespace Hypernex.UI.Pages
                 return;
             string n = ThemeSelection.options.ElementAt(i).text;
             UITheme uiTheme = UITheme.GetUIThemeByName(n);
-            if(uiTheme == null)
+            if(uiTheme == null || uiTheme == UITheme.SelectedTheme)
                 return;
             uiTheme.ApplyThemeToUI();
             ConfigManager.SelectedConfigUser.Theme = n;
