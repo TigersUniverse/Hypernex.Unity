@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Player;
 using Hypernex.Tools;
+using Hypernex.UI.Abstraction;
 using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
 using TMPro;
@@ -19,12 +20,9 @@ namespace Hypernex.UI.Pages
         public ToggleButton[] CategoryToggles;
         public Toggle ShowOfflineFriends;
         
-        private List<User> lastFriends = new();
-        
         private void RenderPage()
         {
             FriendsContainer.ClearChildren();
-            lastFriends.Clear();
             User user = APIPlayer.APIUser;
             switch (CategoryToggles.GetSelectedIndex())
             {
@@ -34,10 +32,10 @@ namespace Hypernex.UI.Pages
                     {
                         APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         {
+                            if(CategoryToggles.GetSelectedIndex() != 0) return;
                             if (result.success)
                             {
-                                if(lastFriends.Count(x => x.Id == result.result.UserData.Id) <= 0)
-                                    lastFriends.Add(result.result.UserData);
+                                if(UserCardExists(result.result.UserData)) return;
                                 if(result.result.UserData.Bio.Status != Status.Offline || ShowOfflineFriends.isOn)
                                     CreateFriendCardFromUser(result.result.UserData);
                             }
@@ -53,6 +51,7 @@ namespace Hypernex.UI.Pages
                     {
                         APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         {
+                            if(CategoryToggles.GetSelectedIndex() != 2) return;
                             if (result.success)
                                 CreateFriendRequestCardFromUser(result.result.UserData);
                             else
@@ -67,10 +66,10 @@ namespace Hypernex.UI.Pages
                     {
                         APIPlayer.APIObject.GetUser(result => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
                         {
+                            if(CategoryToggles.GetSelectedIndex() != 1) return;
                             if (result.success)
                             {
-                                if(lastFriends.Count(x => x.Id == result.result.UserData.Id) <= 0)
-                                    lastFriends.Add(result.result.UserData);
+                                if(UserCardExists(result.result.UserData)) return;
                                 if(result.result.UserData.Bio.Status != Status.Offline || ShowOfflineFriends.isOn)
                                     CreateFriendCardFromUser(result.result.UserData);
                             }
@@ -81,6 +80,18 @@ namespace Hypernex.UI.Pages
                     }
                     break;
             }
+        }
+
+        private bool UserCardExists(User user)
+        {
+            for (int i = 0; i < FriendsContainer.childCount; i++)
+            {
+                Transform t = FriendsContainer.GetChild(i);
+                UserRender userRender = t.GetComponent<UserRender>();
+                if(userRender == null) continue;
+                if (userRender.u.Id == user.Id) return true;
+            }
+            return false;
         }
         
         private void CreateFriendCardFromUser(User user)
@@ -102,7 +113,6 @@ namespace Hypernex.UI.Pages
         private void OnLogout()
         {
             FriendsContainer.ClearChildren();
-            lastFriends.Clear();
         }
 
         public override void Show(bool hideAll = true)
