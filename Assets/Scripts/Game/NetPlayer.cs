@@ -38,7 +38,7 @@ namespace Hypernex.Game
         public PlayerOverrides PlayerOverrides;
 
         private PlayerUpdate lastPlayerUpdate;
-        private bool lastVR;
+        internal bool lastVR;
         private string lastVRIKjson;
         private VRIKCalibrator.CalibrationData lastCalibrationData;
         private string CalibratedAvatarId;

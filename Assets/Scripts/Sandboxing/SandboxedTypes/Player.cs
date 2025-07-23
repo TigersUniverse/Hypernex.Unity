@@ -61,6 +61,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         public Pronouns Pronouns => user.Bio.Pronouns;
         public string Username => user.Username;
         public string DisplayName => string.IsNullOrEmpty(user.Bio.DisplayName) ? user.Username : user.Bio.DisplayName;
+        public bool IsVR => netPlayer != null ? netPlayer.lastVR : LocalPlayer.IsVR;
         
         public bool IsExtraneousObjectPresent(string key)
         {
