@@ -11,8 +11,8 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
     public class DropdownControl : UIRender, IRender<(AvatarControl, AvatarParameter)>, IParameterControl
     {
         public TMP_Text LabelText;
+        public ToggleButton ToggleButton;
         
-        internal ToggleButton ToggleButton;
         private AvatarParameter avatarParameter1;
         private int index;
         private int state;
@@ -36,12 +36,6 @@ namespace Hypernex.UI.Abstraction.AvatarControllers
         {
             state = index;
             LocalPlayer.Instance.AvatarCreator.SetParameter(avatarParameter1.ParameterName, state, null, true);
-        }
-
-        private void Start()
-        {
-            ToggleButton = GetComponent<ToggleButton>();
-            ToggleButton.OnChange.AddListener(OnSelect);
         }
     }
 }
