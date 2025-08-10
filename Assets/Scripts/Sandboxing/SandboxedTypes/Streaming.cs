@@ -4,6 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Mime;
 using Hypernex.Configuration;
+using Hypernex.Game.Video;
+using Hypernex.Game.Video.StreamProviders;
 using Hypernex.Networking.SandboxedClasses;
 using Hypernex.Tools;
 using Nexbox;
@@ -17,6 +19,29 @@ namespace Hypernex.Sandboxing.SandboxedTypes
         {
             try
             {
+                if (req.GetNeedsClientFetch())
+                {
+                    bool found = false;
+                    foreach (IStreamProvider provider in VideoPlayerManager.StreamProviders)
+                    {
+                        if(!provider.IsHostnameSupported(req)) continue;
+                        found = true;
+                        provider.DownloadVideo(req, s =>
+                        {
+                            if (File.Exists(s))
+                            {
+                                SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                                    new StreamDownload(s, false));
+                                return;
+                            }
+                            SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
+                        });
+                        break;
+                    }
+                    if(!found)
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
+                    return;
+                }
                 string url = req.GetDownloadUrl();
                 Uri uri = new Uri(url);
                 bool trusted = !ConfigManager.LoadedConfig.UseTrustedURLs;

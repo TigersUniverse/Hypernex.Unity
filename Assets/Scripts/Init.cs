@@ -66,6 +66,7 @@ public class Init : MonoBehaviour
     public VolumeProfile DefaultVolumeProfile;
 
     internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
+    internal string FFMpegExecutable;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
@@ -166,6 +167,13 @@ public class Init : MonoBehaviour
         try
         {
             string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
+            if (!Directory.Exists(ffmpegPath))
+                Directory.CreateDirectory(ffmpegPath);
+#if !UNITY_IOS && !UNITY_ANDROID
+            FFMpegExecutable = Path.Combine(ffmpegPath, YoutubeDLSharp.Utils.FfmpegBinaryName);
+            if(!File.Exists(FFMpegExecutable))
+                YoutubeDLSharp.Utils.DownloadFFmpeg(ffmpegPath);
+#endif
             FFMpegDownloader.Download(ffmpegPath);
             FFmpegLoader.FFmpegPath = ffmpegPath;
             FFmpegLoader.LoadFFmpeg();

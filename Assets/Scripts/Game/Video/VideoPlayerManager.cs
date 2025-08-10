@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Game.Video.StreamProviders;
 
 namespace Hypernex.Game.Video
 {
@@ -17,6 +18,11 @@ namespace Hypernex.Game.Video
                 defaultVideoPlayerType = value;
             }
         }
+
+        public static IReadOnlyList<IStreamProvider> StreamProviders = new[]
+        {
+            new YouTubeStreamProvider()
+        };
 
         private static Type defaultVideoPlayerType = typeof(UnityVideoPlayer);
         private static Dictionary<Type, Func<Uri, bool>> videoPlayerTypes = new();
