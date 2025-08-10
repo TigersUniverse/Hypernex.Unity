@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Hypernex.Networking.SandboxedClasses;
+using Hypernex.Tools;
 using YoutubeExplode;
 using YoutubeExplode.Converter;
 using YoutubeExplode.Videos.Streams;
@@ -39,32 +41,34 @@ namespace Hypernex.Game.Video.StreamProviders
             }
         }
 
-        public async void DownloadVideo(VideoRequest req, Action<string> callback)
+        public void DownloadVideo(VideoRequest req, Action<string> callback)
         {
             try
             {
-                string videoUrl = req.GetMediaUrl();
-                YoutubeExplode.Videos.Video v = await client.Videos.GetAsync(videoUrl);
-                string fileType = req.Options.AudioOnly ? AudioFormat : VideoFormat;
-                string f = v.Title;
-                SanitizePath(ref f);
-                string fileName = Path.Combine(Init.Instance.GetMediaLocation(), f + fileType);
-                StreamManifest streamManifest = await client.Videos.Streams.GetManifestAsync(videoUrl);
-                List<IStreamInfo> streamInfos = new List<IStreamInfo>();
-                MuxedStreamInfo[] muxed = streamManifest.GetMuxedStreams().ToArray();
+                new Thread(async () =>
+                {
+                    string videoUrl = req.GetMediaUrl();
+                    YoutubeExplode.Videos.Video v = await client.Videos.GetAsync(videoUrl);
+                    string fileType = req.Options.AudioOnly ? AudioFormat : VideoFormat;
+                    string f = v.Title;
+                    SanitizePath(ref f);
+                    string fileName = Path.Combine(Init.Instance.GetMediaLocation(), f + fileType);
+                    StreamManifest streamManifest = await client.Videos.Streams.GetManifestAsync(videoUrl);
+                    List<IStreamInfo> streamInfos = new List<IStreamInfo>();
+                    MuxedStreamInfo[] muxed = streamManifest.GetMuxedStreams().ToArray();
 #if !UNITY_IOS && !UNITY_ANDROID
-            if (muxed.Length > 0)
-            {
-                streamInfos.Add(PickConditionOrDefault(muxed,
-                    info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
-            }
-            else
-            {
-                IVideoStreamInfo[] videos = streamManifest.GetVideoStreams().ToArray();
-                streamInfos.Add(PickConditionOrDefault(videos,
-                    info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
-                streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
-            }
+                    if (muxed.Length > 0)
+                    {
+                        streamInfos.Add(PickConditionOrDefault(muxed,
+                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
+                    }
+                    else
+                    {
+                        IVideoStreamInfo[] videos = streamManifest.GetVideoStreams().ToArray();
+                        streamInfos.Add(PickConditionOrDefault(videos,
+                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
+                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
+                    }
 #else
                 if (muxed.Length > 0)
                     streamInfos.Add(PickConditionOrDefault(muxed,
@@ -72,19 +76,20 @@ namespace Hypernex.Game.Video.StreamProviders
                 else
                 {
                     // TODO: Combine streams on mobile platforms
-                    callback.Invoke(String.Empty);
+                    QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
                     return;
                 }
 #endif
-                ConversionRequest c = new ConversionRequestBuilder(fileName).SetPreset(ConversionPreset.UltraFast)
-                    .SetFFmpegPath(Init.Instance.FFMpegExecutable).Build();
-                await client.Videos.DownloadAsync(streamInfos, c);
-                callback.Invoke(fileName);
+                    ConversionRequest c = new ConversionRequestBuilder(fileName).SetPreset(ConversionPreset.UltraFast)
+                        .SetFFmpegPath(Init.Instance.FFMpegExecutable).Build();
+                    await client.Videos.DownloadAsync(streamInfos, c);
+                    QuickInvoke.InvokeActionOnMainThread(callback, fileName);
+                }).Start();
             }
             catch (Exception e)
             {
                 Logger.CurrentLogger.Critical(e);
-                callback.Invoke(String.Empty);
+                QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
             }
         }
         

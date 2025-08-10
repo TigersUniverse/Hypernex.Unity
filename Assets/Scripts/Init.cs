@@ -14,6 +14,7 @@ using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
+using Nexport.BuiltinMessages;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
@@ -109,6 +110,7 @@ public class Init : MonoBehaviour
         Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
+        DynamicNetworkObject.CacheDynamicTypes();
         Application.backgroundLoadingPriority = ThreadPriority.Low;
 #if UNITY_ANDROID
         //Caching.compressionEnabled = false;
