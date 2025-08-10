@@ -13,7 +13,6 @@ using Hypernex.Game;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Components;
-using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
 using TMPro;
 using UnityEngine;
@@ -70,7 +69,7 @@ public class Init : MonoBehaviour
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
-    public string GetYTDLLocation() => Path.Combine(Application.streamingAssetsPath, "ytdl");
+    public string GetMediaLocation() => Path.Combine(Application.streamingAssetsPath, "media");
 
     internal void StartVR()
     {
@@ -162,20 +161,8 @@ public class Init : MonoBehaviour
         audioMixers.Add(VoiceGroup, VoiceGroup.audioMixer);
         audioMixers.Add(WorldGroup, WorldGroup.audioMixer);
         audioMixers.Add(AvatarGroup, AvatarGroup.audioMixer);
-        if (!Directory.Exists(GetYTDLLocation()))
-            Directory.CreateDirectory(GetYTDLLocation());
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp.exe");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg.exe");
-#elif UNITY_MAC
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp_macos");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
-#else
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
-#endif
-        Streaming.ytdl.OutputFolder = Path.Combine(GetYTDLLocation(), "Downloads");
-        YoutubeDLSharp.Utils.DownloadBinaries(true, GetYTDLLocation());
+        if (!Directory.Exists(GetMediaLocation()))
+            Directory.CreateDirectory(GetMediaLocation());
         try
         {
             string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");

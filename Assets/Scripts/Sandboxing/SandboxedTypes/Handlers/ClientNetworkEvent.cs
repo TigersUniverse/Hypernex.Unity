@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Hypernex.Game;
 using Hypernex.Networking.Messages;
 using Hypernex.Player;
 using Nexport;
+using Nexport.BuiltinMessages;
 
 namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
 {
@@ -37,7 +37,11 @@ namespace Hypernex.Sandboxing.SandboxedTypes.Handlers
                     TempToken = gameInstance.userIdToken
                 },
                 EventName = eventName,
-                Data = new List<object> {data?.ToArray() ?? Array.Empty<object>()}
+                Data = data != null ? data.Select(x => new DynamicNetworkObject
+                {
+                    TypeFullName = x.GetType().FullName,
+                    Data = x
+                }).ToList() : Array.Empty<DynamicNetworkObject>().ToList()
             };
             gameInstance.SendMessage(typeof(NetworkedEvent).FullName, Msg.Serialize(networkedEvent), messageChannel);
         }
