@@ -57,7 +57,9 @@ namespace Hypernex.Game.Video.StreamProviders
                     List<IStreamInfo> streamInfos = new List<IStreamInfo>();
                     MuxedStreamInfo[] muxed = streamManifest.GetMuxedStreams().ToArray();
 #if !UNITY_IOS && !UNITY_ANDROID
-                    if (muxed.Length > 0)
+                    if (req.Options.AudioOnly)
+                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
+                    else if (muxed.Length > 0)
                     {
                         streamInfos.Add(PickConditionOrDefault(muxed,
                             info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
@@ -70,15 +72,17 @@ namespace Hypernex.Game.Video.StreamProviders
                         streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
                     }
 #else
-                if (muxed.Length > 0)
-                    streamInfos.Add(PickConditionOrDefault(muxed,
-                        info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
-                else
-                {
-                    // TODO: Combine streams on mobile platforms
-                    QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
-                    return;
-                }
+                    if (req.Options.AudioOnly)
+                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
+                    else if (muxed.Length > 0)
+                        streamInfos.Add(PickConditionOrDefault(muxed,
+                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
+                    else
+                    {
+                        // TODO: Combine streams on mobile platforms
+                        QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
+                        return;
+                    }
 #endif
                     ConversionRequest c = new ConversionRequestBuilder(fileName).SetPreset(ConversionPreset.UltraFast)
                         .SetFFmpegPath(Init.Instance.FFMpegExecutable).Build();

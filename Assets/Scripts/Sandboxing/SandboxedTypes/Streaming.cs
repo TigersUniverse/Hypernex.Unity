@@ -15,7 +15,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public static class Streaming
     {
-        public static void Download(VideoRequest req, object onDone, StreamDownloadOptions options)
+        public static void Download(VideoRequest req, object onDone)
         {
             try
             {
@@ -90,8 +90,6 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                 SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
             }
         }
-
-        public static void Download(VideoRequest req, object onDone) => Download(req, onDone, default);
 
         public class StreamDownload
         {
