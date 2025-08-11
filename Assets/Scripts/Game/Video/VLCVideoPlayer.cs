@@ -164,16 +164,19 @@ namespace Hypernex.Game.Video
 
         private void CreateAudio(MediaFile mediaFile = null)
         {
-	        if(vlcAudioSource != null)
+	        if(Init.Instance.UseVLC3D)
 	        {
-		        Object.Destroy(vlcAudioSource);
-		        vlcAudioSource = null;
+		        if (vlcAudioSource != null)
+		        {
+			        Object.Destroy(vlcAudioSource);
+			        vlcAudioSource = null;
+		        }
+		        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.GetComponent<VLCAudioSource>();
+		        if (vlcAudioSource == null)
+			        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
+		        vlcAudioSource.Create(mediaPlayer, mediaFile?.Audio.Info.SampleRate ?? 48000,
+			        mediaFile?.Audio.Info.NumChannels ?? 2);
 	        }
-	        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.GetComponent<VLCAudioSource>();
-	        if(vlcAudioSource == null)
-				vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
-	        vlcAudioSource.Create(mediaPlayer, mediaFile?.Audio.Info.SampleRate ?? 48000,
-		        mediaFile?.Audio.Info.NumChannels ?? 2);
         }
 
         public override void Update()
