@@ -58,7 +58,7 @@ namespace Hypernex.Game.Video
             if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.GetComponent<AudioSource>();
             if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.AddComponent<AudioSource>();
             if (libVLC == null)
-	            CreateLibVLC(false);
+	            CreateLibVLC(Init.Instance.DebugVLC);
             CreateMediaPlayer();
             descriptor.CurrentVideoPlayer = this;
         }
@@ -262,14 +262,27 @@ namespace Hypernex.Game.Video
 				libVLC.Dispose();
 				libVLC = null;
 			}
-			Core.Initialize(Application.dataPath);
 			libVLC = new LibVLC(enableDebugLogs: true);
 			libVLC.Log += (s, e) => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
 			{
 				if (!logToConsole) return;
 				try
 				{
-					Logger.CurrentLogger.Error(e.FormattedLog);
+					switch (e.Level)
+					{
+						case LogLevel.Debug:
+							Logger.CurrentLogger.Debug(e.FormattedLog);
+							break;
+						case LogLevel.Notice:
+							Logger.CurrentLogger.Log(e.FormattedLog);
+							break;
+						case LogLevel.Warning:
+							Logger.CurrentLogger.Warn(e.FormattedLog);
+							break;
+						case LogLevel.Error:
+							Logger.CurrentLogger.Error(e.FormattedLog);
+							break;
+					}
 				}
 				catch (Exception ex)
 				{

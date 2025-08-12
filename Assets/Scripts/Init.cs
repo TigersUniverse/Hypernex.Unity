@@ -66,6 +66,7 @@ public class Init : MonoBehaviour
     public bool NoVLC;
     public VolumeProfile DefaultVolumeProfile;
 
+    internal bool DebugVLC;
     internal bool UseVLC3D;
     internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
     internal string FFMpegExecutable;
@@ -138,6 +139,7 @@ public class Init : MonoBehaviour
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");
+        DebugVLC = args.Contains("--debug-vlc");
         UseVLC3D = args.Contains("--vlc-3d");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
@@ -215,6 +217,10 @@ public class Init : MonoBehaviour
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceWindow);
         };
+#if VLC
+        if(!NoVLC)
+            Core.Initialize(Application.dataPath);
+#endif
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.SafeSwitchScene(1, null,
                 s =>
