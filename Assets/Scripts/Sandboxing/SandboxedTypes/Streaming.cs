@@ -26,12 +26,18 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                     {
                         if(!provider.IsHostnameSupported(req)) continue;
                         found = true;
-                        provider.DownloadVideo(req, s =>
+                        provider.DownloadVideo(req, (url, isStream) =>
                         {
-                            if (File.Exists(s))
+                            if (isStream)
                             {
                                 SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
-                                    new StreamDownload(s, false));
+                                    new StreamDownload(url, true));
+                                return;
+                            }
+                            if (File.Exists(url))
+                            {
+                                SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                                    new StreamDownload(url, false));
                                 return;
                             }
                             SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));

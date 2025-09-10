@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using FFMediaToolkit;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.CCK.Unity.Internals;
@@ -10,6 +9,7 @@ using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
+using Hypernex.Game.Video.StreamProviders;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Components;
@@ -67,13 +67,13 @@ public class Init : MonoBehaviour
     public VolumeProfile DefaultVolumeProfile;
 
     internal bool DebugVLC;
-    internal bool UseVLC3D;
     internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
-    internal string FFMpegExecutable;
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
+    public string GetPrivateLocation() => Path.Combine(Application.persistentDataPath, "Private");
     public string GetMediaLocation() => Path.Combine(Application.streamingAssetsPath, "media");
+    public string GetYTLocation() => Path.Combine(GetMediaLocation(), "ytdlp");
 
     internal void StartVR()
     {
@@ -140,7 +140,6 @@ public class Init : MonoBehaviour
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");
         DebugVLC = args.Contains("--debug-vlc");
-        UseVLC3D = args.Contains("--vlc-3d");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;
@@ -168,21 +167,21 @@ public class Init : MonoBehaviour
         audioMixers.Add(VoiceGroup, VoiceGroup.audioMixer);
         audioMixers.Add(WorldGroup, WorldGroup.audioMixer);
         audioMixers.Add(AvatarGroup, AvatarGroup.audioMixer);
+        if (!Directory.Exists(GetPrivateLocation()))
+            Directory.CreateDirectory(GetPrivateLocation());
         if (!Directory.Exists(GetMediaLocation()))
             Directory.CreateDirectory(GetMediaLocation());
         try
         {
-            string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
-            if (!Directory.Exists(ffmpegPath))
-                Directory.CreateDirectory(ffmpegPath);
 #if !UNITY_IOS && !UNITY_ANDROID
-            FFMpegExecutable = Path.Combine(ffmpegPath, YoutubeDLSharp.Utils.FfmpegBinaryName);
-            if(!File.Exists(FFMpegExecutable))
-                YoutubeDLSharp.Utils.DownloadFFmpeg(ffmpegPath);
+            string ytPath = GetYTLocation();
+            if (!Directory.Exists(ytPath))
+                Directory.CreateDirectory(ytPath);
+            YoutubeDLSharp.Utils.DownloadBinaries(true, ytPath);
+            YouTubeStreamProvider.ytdl.OutputFolder = ytPath;
+            YouTubeStreamProvider.ytdl.FFmpegPath = Path.Combine(ytPath, YoutubeDLSharp.Utils.FfmpegBinaryName);
+            YouTubeStreamProvider.ytdl.YoutubeDLPath = Path.Combine(ytPath, YoutubeDLSharp.Utils.YtDlpBinaryName);
 #endif
-            FFMpegDownloader.Download(ffmpegPath);
-            FFmpegLoader.FFmpegPath = ffmpegPath;
-            FFmpegLoader.LoadFFmpeg();
         }
         catch (Exception e)
         {

@@ -1,24 +1,30 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using Hypernex.Networking.SandboxedClasses;
 using Hypernex.Tools;
-using YoutubeExplode;
-using YoutubeExplode.Converter;
-using YoutubeExplode.Videos.Streams;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
+using YoutubeDLSharp.Options;
 using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Game.Video.StreamProviders
 {
     public class YouTubeStreamProvider : IStreamProvider
     {
-        private YoutubeClient client = new YoutubeClient();
-
-        public static string VideoFormat { get; set; } = ".mp4";
-        public static string AudioFormat { get; set; } = ".mp3";
-        public static int VideoQuality { get; set; } = 720;
+        internal static YoutubeDL ytdl = new();
+        
+        private bool TryGetCookies(out string file)
+        {
+            string cookiesFile = Path.Combine(Init.Instance.GetPrivateLocation(), "cookies.txt");
+            if (!File.Exists(cookiesFile))
+            {
+                file = null;
+                return false;
+            }
+            file = cookiesFile;
+            return true;
+        }
         
         public bool IsHostnameSupported(VideoRequest req)
         {
@@ -41,98 +47,67 @@ namespace Hypernex.Game.Video.StreamProviders
             }
         }
 
-        public void DownloadVideo(VideoRequest req, Action<string> callback)
+        public async void DownloadVideo(VideoRequest req, Action<string, bool> callback)
         {
+            // ytdlp is not supported on mobile platforms
+#if UNITY_IOS || UNITY_ANDROID
+            callback.Invoke(String.Empty, false);
+            return;
+#endif
             try
             {
-                new Thread(async () =>
+                string url = req.GetMediaUrl();
+                RunResult<VideoData> metaResult = await ytdl.RunVideoDataFetch(url);
+                string liveUrl = String.Empty;
+                if (metaResult.Success)
                 {
-                    string videoUrl = req.GetMediaUrl();
-                    YoutubeExplode.Videos.Video v = await client.Videos.GetAsync(videoUrl);
-                    string fileType = req.Options.AudioOnly ? AudioFormat : VideoFormat;
-                    string f = v.Title;
-                    SanitizePath(ref f);
-                    string fileName = Path.Combine(Init.Instance.GetMediaLocation(), f + fileType);
-                    StreamManifest streamManifest = await client.Videos.Streams.GetManifestAsync(videoUrl);
-                    List<IStreamInfo> streamInfos = new List<IStreamInfo>();
-                    MuxedStreamInfo[] muxed = streamManifest.GetMuxedStreams().ToArray();
-#if !UNITY_IOS && !UNITY_ANDROID
-                    if (req.Options.AudioOnly)
-                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
-                    else if (muxed.Length > 0)
+                    switch (metaResult.Data.LiveStatus)
                     {
-                        streamInfos.Add(PickConditionOrDefault(muxed,
-                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
+                        case LiveStatus.IsLive:
+                            liveUrl = metaResult.Data.Url;
+                            break;
+                        case LiveStatus.IsUpcoming:
+                            throw new Exception("Invalid LiveStream!");
                     }
-                    else
-                    {
-                        IVideoStreamInfo[] videos = streamManifest.GetVideoStreams().ToArray();
-                        streamInfos.Add(PickConditionOrDefault(videos,
-                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
-                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
-                    }
+                }
+                if (!string.IsNullOrEmpty(liveUrl))
+                {
+                    callback.Invoke(liveUrl, true);
+                    return;
+                }
+                OptionSet optionSet = new OptionSet
+                {            
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_MAC
+                    Format = "bestvideo[vcodec=vp8]/bestvideo[vcodec=h264]/bestvideo[vcodec*=avc1]+bestaudio/best"
 #else
-                    if (req.Options.AudioOnly)
-                        streamInfos.Add(streamManifest.GetAudioStreams().GetWithHighestBitrate());
-                    else if (muxed.Length > 0)
-                        streamInfos.Add(PickConditionOrDefault(muxed,
-                            info => info.VideoQuality.Label.Contains(VideoQuality + "p"), GetClosestVideoQuality));
-                    else
-                    {
-                        // TODO: Combine streams on mobile platforms
-                        QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
-                        return;
-                    }
+                    Format = "bestvideo[vcodec=vp8]+bestaudio/best"
 #endif
-                    ConversionRequest c = new ConversionRequestBuilder(fileName).SetPreset(ConversionPreset.UltraFast)
-                        .SetFFmpegPath(Init.Instance.FFMpegExecutable).Build();
-                    await client.Videos.DownloadAsync(streamInfos, c);
-                    QuickInvoke.InvokeActionOnMainThread(callback, fileName);
-                }).Start();
+                };
+                if (!VideoPlayerManager.CanGetCodecs())
+                {
+                    // If we can't get codecs, we likely will fallback to Unity
+                    optionSet.RecodeVideo = VideoRecodeFormat.Mp4;
+                    optionSet.PostprocessorArgs = "ffmpeg:-preset ultrafast";
+                }
+                if (TryGetCookies(out string cookiesFile))
+                    optionSet.Cookies = cookiesFile;
+                RunResult<string> runResult;
+                runResult = req.Options.AudioOnly
+                    ? await ytdl.RunAudioDownload(url, overrideOptions: optionSet)
+                    : await ytdl.RunVideoDownload(url, overrideOptions: optionSet);
+                if (!runResult.Success)
+                {
+                    foreach (string s in runResult.ErrorOutput)
+                        Logger.CurrentLogger.Error(s);
+                    throw new Exception("Failed to get data!");
+                }
+                callback.Invoke(runResult.Data, false);
             }
             catch (Exception e)
             {
+                callback.Invoke(String.Empty, false);
                 Logger.CurrentLogger.Critical(e);
-                QuickInvoke.InvokeActionOnMainThread(callback, String.Empty);
             }
-        }
-        
-        private static void SanitizePath(ref string path)
-        {
-            path = path.Replace(".", "_");
-            path = path.Replace("/", "_");
-            path = path.Replace("\\", "_");
-            foreach (char invalid in Path.GetInvalidFileNameChars())
-            {
-                path = path.Replace(invalid, '_');
-            }
-        }
-
-        private static T PickConditionOrDefault<T>(T[] arr, Func<T, bool> match, Func<T[], T> def)
-        {
-            foreach (T t in arr)
-            {
-                if(!match.Invoke(t)) continue;
-                return t;
-            }
-            return def.Invoke(arr);
-        }
-
-        private static T GetClosestVideoQuality<T>(T[] vs) where T : IVideoStreamInfo
-        {
-            IVideoStreamInfo closest = vs[0];
-            int d = -1;
-            foreach (T v in vs)
-            {
-                int q = Convert.ToInt32(v.VideoQuality.Label.Split("p")[0]);
-                int diffTest = Math.Abs(q - VideoQuality);
-                if (diffTest < d || d < 0)
-                {
-                    d = diffTest;
-                    closest = v;
-                }
-            }
-            return (T) closest;
         }
     }
 }

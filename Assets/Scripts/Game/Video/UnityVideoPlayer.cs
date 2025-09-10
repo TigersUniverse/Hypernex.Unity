@@ -1,6 +1,6 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
-using FFMediaToolkit.Decoding;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.CCK.Unity.Internals;
 using UnityEngine;
@@ -12,13 +12,80 @@ namespace Hypernex.Game.Video
     public class UnityVideoPlayer : IVideoPlayer
     {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-        private static readonly string[] supportedCodecs = {"h263", "h264", "vp8", "mpeg", "mpg1", "mpg2", "mpg3"};
-#elif UNITY_STANDALONE_OSX || UNITY_STANDALONE_OSX
-        private static readonly string[] supportedCodecs = {"h264", "vp8", "mpeg", "mpg1", "mpg2", "mpg4", "avi"};
+        private static readonly string[] supportedFormats =
+        {
+            ".asf",
+            ".avi",
+            ".dv",
+            ".m4v",
+            ".mov",
+            ".mp4",
+            ".mpg",
+            ".mpeg",
+            ".ogv",
+            ".vp8",
+            ".webm",
+            ".wmv"
+        };
+        
+        private static readonly string[] supportedCodecs = {
+            "h263",
+            "h264", "avc1",
+            "vp80",
+            "mp1v", "mp2v", "mp4v"
+        };
+#elif UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+        private static readonly string[] supportedFormats =
+        {
+            ".dv",
+            ".m4v",
+            ".mov",
+            ".mp4",
+            ".mpg",
+            ".mpeg",
+            ".ogv",
+            ".vp8",
+            ".webm",
+            ".wmv"
+        };
+
+        private static readonly string[] supportedCodecs = {
+            "h264", "avc1",
+            "vp80",
+            "mp1v", "mp2v", "mp4v",
+            "divx", "xvid"
+        };
 #elif UNITY_ANDROID
-        private static readonly string[] supportedCodecs = {"h263", "h264", "h265", "hevc", "mpeg", "vp8", "vp9", "av1"};
+        private static readonly string[] supportedFormats =
+        {
+            ".3gp",
+            ".mp4",
+            ".mkv",
+            ".ts",
+            ".webm"
+        };
+
+        private static readonly string[] supportedCodecs = {
+            "h263",
+            "h264", "avc1",
+            "h265", "hevc", "hev1",
+            "mpeg4", "mp4v",
+            "vp80", "vp90",
+            "av01"
+        };
 #else
-        private static readonly string[] supportedCodecs = {"mpeg", "vp8", "vp9", "av1"};
+        private static readonly string[] supportedFormats =
+        {
+            ".ogv",
+            ".vp8",
+            ".webm"
+        };
+
+        private static readonly string[] supportedCodecs = {
+            "vp80", "vp90",
+            "av01",
+            "h264", "avc1"
+        };
 #endif
         
         private VideoPlayer videoPlayer;
@@ -67,9 +134,25 @@ namespace Hypernex.Game.Video
         public static bool CanBeUsed(Uri source)
         {
             if (source.Scheme != "file") return false;
-            using MediaFile mediaFile = MediaFile.Open(source.LocalPath);
-            bool compatible = supportedCodecs.Contains(mediaFile.Video.Info.CodecName);
-            return compatible;
+            string fileExtension = Path.GetExtension(source.AbsoluteUri);
+            // regardless of if it's encoded with something that's supported, the file extension has to be supported
+            if (!supportedFormats.Contains(fileExtension.ToLowerInvariant())) return false;
+            // Check if we can get the codec
+            if (VideoPlayerManager.CanGetCodecs())
+            {
+                // If we can, then get the codecs
+                string[] codecs = VideoPlayerManager.GetCodecs(source);
+                bool supportedCodecPresent = false;
+                foreach (string codec in codecs)
+                {
+                    if(!supportedCodecs.Contains(codec)) continue;
+                    supportedCodecPresent = true;
+                }
+                // We'll end it here, because now we know that we have a good video
+                return supportedCodecPresent;
+            }
+            // If we make it here, we'll assume ffmpeg already re-encode the file
+            return true;
         }
 
         public bool IsPlaying => videoPlayer.isPlaying;

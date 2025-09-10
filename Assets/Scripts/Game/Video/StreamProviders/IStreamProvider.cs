@@ -6,6 +6,6 @@ namespace Hypernex.Game.Video.StreamProviders
     public interface IStreamProvider
     {
         public bool IsHostnameSupported(VideoRequest req);
-        public void DownloadVideo(VideoRequest req, Action<string> callback);
+        public void DownloadVideo(VideoRequest req, Action<string, bool> callback);
     }
 }
