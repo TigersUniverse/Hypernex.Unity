@@ -88,7 +88,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                     }
                     SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
                         new StreamDownload(s, false));
-                });
+                }, forceNewHttp: true);
             }
             catch (Exception e)
             {

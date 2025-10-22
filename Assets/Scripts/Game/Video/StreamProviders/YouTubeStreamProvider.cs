@@ -82,6 +82,7 @@ namespace Hypernex.Game.Video.StreamProviders
 #else
                     Format = "bestvideo[vcodec=vp8]+bestaudio/best"
 #endif
+                    , ExtractorArgs = "youtube:player_client=default,web_safari;player_js_version=actual"
                 };
                 if (!VideoPlayerManager.CanGetCodecs())
                 {
@@ -99,9 +100,13 @@ namespace Hypernex.Game.Video.StreamProviders
                 {
                     foreach (string s in runResult.ErrorOutput)
                         Logger.CurrentLogger.Error(s);
-                    throw new Exception("Failed to get data!");
+                    if(string.IsNullOrEmpty(runResult.Data) || !File.Exists(runResult.Data))
+                        throw new Exception("Failed to get data!");
                 }
-                callback.Invoke(runResult.Data, false);
+                string newFileLocation =
+                    Path.Combine(Init.Instance.GetMediaLocation(), Path.GetFileName(runResult.Data));
+                File.Move(runResult.Data!, newFileLocation);
+                callback.Invoke(newFileLocation, false);
             }
             catch (Exception e)
             {
