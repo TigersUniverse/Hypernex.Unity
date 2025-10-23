@@ -210,6 +210,13 @@ namespace Hypernex.Game.Video
 
         private IEnumerator PauseEnum(float f = 0.5f)
         {
+	        // Wait for the media to load (necessary for YouTube m3u8s)
+	        while (Position < 1 || mediaPlayer.Length <= 0)
+	        {
+		        Play();
+		        yield return new WaitForSeconds(0.1f);
+	        }
+	        // Then reset it's position with a fixed time (helps reduce audio latency)
 	        Pause();
 	        yield return new WaitForSeconds(f);
 	        mediaPlayer.SetPosition(0);

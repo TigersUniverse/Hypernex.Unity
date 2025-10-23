@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Threading;
+using System.Threading.Tasks;
 using Hypernex.Networking.SandboxedClasses;
-using Hypernex.Tools;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
@@ -92,6 +91,17 @@ namespace Hypernex.Game.Video.StreamProviders
                 }
                 if (TryGetCookies(out string cookiesFile))
                     optionSet.Cookies = cookiesFile;
+#if VLC
+                if (!req.Options.AudioOnly && !Init.Instance.DownloadYoutube)
+                {
+                    (string, bool) ls = await PlayVideoFromVideoStream(url, optionSet.Cookies);
+                    if (ls.Item2)
+                    {
+                        callback.Invoke(ls.Item1, true);
+                        return;
+                    }
+                }
+#endif
                 RunResult<string> runResult;
                 runResult = req.Options.AudioOnly
                     ? await ytdl.RunAudioDownload(url, overrideOptions: optionSet)
@@ -102,9 +112,12 @@ namespace Hypernex.Game.Video.StreamProviders
                         Logger.CurrentLogger.Error(s);
                     if(string.IsNullOrEmpty(runResult.Data) || !File.Exists(runResult.Data))
                         throw new Exception("Failed to get data!");
+                    throw new Exception("Failed to get data!");
                 }
                 string newFileLocation =
                     Path.Combine(Init.Instance.GetMediaLocation(), Path.GetFileName(runResult.Data));
+                if(File.Exists(newFileLocation))
+                    File.Delete(newFileLocation);
                 File.Move(runResult.Data!, newFileLocation);
                 callback.Invoke(newFileLocation, false);
             }
@@ -112,6 +125,31 @@ namespace Hypernex.Game.Video.StreamProviders
             {
                 callback.Invoke(String.Empty, false);
                 Logger.CurrentLogger.Critical(e);
+            }
+        }
+
+        private async Task<(string, bool)> PlayVideoFromVideoStream(string url, string cookies = "")
+        {
+            OptionSet optionSet = new OptionSet
+            {
+                Format = "best",
+                GetUrl = true
+            };
+            if (!string.IsNullOrEmpty(cookies))
+                optionSet.Cookies = cookies;
+            string lastOutput = String.Empty;
+            RunResult<string> res =
+                await ytdl.RunWithOptions(url, optionSet, output: new Progress<string>(s => lastOutput = s));
+            if (!res.Success || string.IsNullOrEmpty(lastOutput)) return (String.Empty, false);
+            Logger.CurrentLogger.Log(lastOutput);
+            try
+            {
+                Uri _ = new Uri(lastOutput);
+                return (lastOutput, true);
+            }
+            catch (Exception)
+            {
+                return (String.Empty, false);
             }
         }
     }

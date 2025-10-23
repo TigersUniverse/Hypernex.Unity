@@ -64,6 +64,7 @@ public class Init : MonoBehaviour
     public float SmoothingFrames = 0.1f;
     public List<Object> BadgeRankAssets = new();
     public bool NoVLC;
+    public bool DownloadYoutube;
     public VolumeProfile DefaultVolumeProfile;
 
     internal bool DebugVLC;
@@ -140,6 +141,7 @@ public class Init : MonoBehaviour
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");
         DebugVLC = args.Contains("--debug-vlc");
+        DownloadYoutube = args.Contains("--download-youtube");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;
