@@ -92,7 +92,7 @@ namespace Hypernex.Game.Video.StreamProviders
                 if (TryGetCookies(out string cookiesFile))
                     optionSet.Cookies = cookiesFile;
 #if VLC
-                if (!req.Options.AudioOnly && !Init.Instance.DownloadYoutube)
+                if (!req.Options.AudioOnly && Init.Instance.StreamYoutube)
                 {
                     (string, bool) ls = await PlayVideoFromVideoStream(url, optionSet.Cookies);
                     if (ls.Item2)
