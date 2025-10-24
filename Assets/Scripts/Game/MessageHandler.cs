@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Tools;
@@ -103,7 +104,11 @@ namespace Hypernex.Game
                     NetworkedEvent networkedEvent =
                         (NetworkedEvent) Convert.ChangeType(msgMeta.Data, typeof(NetworkedEvent));
                     gameInstance.LocalScriptEvents.OnServerNetworkEvent.Invoke(networkedEvent.EventName,
-                        networkedEvent.Data.ToArray());
+                        networkedEvent.Data.Select(x =>
+                        {
+                            x.Fix();
+                            return x.Data;
+                        }).ToArray());
                     break;
                 }
                 case "Hypernex.Networking.Messages.ServerConsoleLog":

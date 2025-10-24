@@ -87,7 +87,8 @@ namespace Hypernex.Tools
         }
 
         public static void DownloadFile(string url, string output, Action<string> OnDownload,
-            string knownFileHash = null, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, bool ignoreDownloadsPath = false)
+            string knownFileHash = null, Action<DownloadProgressChangedEventArgs> DownloadProgress = null, 
+            bool ignoreDownloadsPath = false, bool forceNewHttp = false)
         {
             if (!Directory.Exists(DownloadsPath))
                 Directory.CreateDirectory(DownloadsPath);
@@ -119,7 +120,8 @@ namespace Hypernex.Tools
                         } catch(Exception e){Logger.CurrentLogger.Critical(e);}
                     },
                     progress = p => DownloadProgress?.Invoke(p),
-                    skipCache = true
+                    skipCache = true,
+                    forceNewHttp = forceNewHttp
                 };
                 Queue.Enqueue(meta);
                 Logger.CurrentLogger.Debug("Added " + url + " to download queue!");
@@ -141,7 +143,7 @@ namespace Hypernex.Tools
             {
                 try
                 {
-                    if(AssetBundleTools.Platform != BuildPlatform.Windows || forceHttpClient)
+                    if(AssetBundleTools.Platform != BuildPlatform.Windows || forceHttpClient || downloadMeta.forceNewHttp)
                     {
                         byte[] d = await httpClient.GetByteArrayAsync(new Uri(downloadMeta.url));
                         Logger.CurrentLogger.Debug("Finished download for " + downloadMeta.url);
@@ -204,5 +206,6 @@ namespace Hypernex.Tools
         public Action<DownloadProgressChangedEventArgs> progress;
         public Action<byte[]> done;
         public bool skipCache;
+        public bool forceNewHttp;
     }
 }

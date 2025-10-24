@@ -1,23 +1,54 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Mime;
 using Hypernex.Configuration;
 using Hypernex.Game.Video;
+using Hypernex.Game.Video.StreamProviders;
+using Hypernex.Networking.SandboxedClasses;
+using Hypernex.Tools;
 using Nexbox;
-using YoutubeDLSharp;
-using YoutubeDLSharp.Metadata;
-using YoutubeDLSharp.Options;
 using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Sandboxing.SandboxedTypes
 {
     public static class Streaming
     {
-        internal static YoutubeDL ytdl = new();
-
-        public static async void Download(string url, object onDone, StreamDownloadOptions options)
+        public static void Download(VideoRequest req, object onDone)
         {
             try
             {
+                if (req.GetNeedsClientFetch())
+                {
+                    bool found = false;
+                    foreach (IStreamProvider provider in VideoPlayerManager.StreamProviders)
+                    {
+                        if(!provider.IsHostnameSupported(req)) continue;
+                        found = true;
+                        provider.DownloadVideo(req, (url, isStream) =>
+                        {
+                            if (isStream)
+                            {
+                                SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                                    new StreamDownload(url, true));
+                                return;
+                            }
+                            if (File.Exists(url))
+                            {
+                                SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                                    new StreamDownload(url, false));
+                                return;
+                            }
+                            SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
+                        });
+                        break;
+                    }
+                    if(!found)
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
+                    return;
+                }
+                string url = req.GetDownloadUrl();
                 Uri uri = new Uri(url);
                 bool trusted = !ConfigManager.LoadedConfig.UseTrustedURLs;
                 if (!trusted)
@@ -35,68 +66,34 @@ namespace Hypernex.Sandboxing.SandboxedTypes
                     SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
                     return;
                 }
-                RunResult<VideoData> metaResult = await ytdl.RunVideoDataFetch(url);
-                string liveUrl = String.Empty;
-                if (metaResult.Success)
-                {
-                    switch (metaResult.Data.LiveStatus)
-                    {
-                        case LiveStatus.IsLive:
-                            liveUrl = metaResult.Data.Url;
-                            break;
-                        case LiveStatus.IsUpcoming:
-                            throw new Exception("Invalid LiveStream!");
-                    }
-                }
-                if (!string.IsNullOrEmpty(liveUrl))
-                {
-                    SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
-                        new StreamDownload(liveUrl, true));
-                    return;
-                }
-                if (VideoPlayerManager.IsStream(uri))
+                if (req.GetIsStream())
                 {
                     SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
                         new StreamDownload(url, true));
                     return;
                 }
-                OptionSet optionSet = new OptionSet
-                {            
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_MAC
-                    Format = "bestvideo[vcodec=vp8]/bestvideo[vcodec=h264]/bestvideo[vcodec*=avc1]+bestaudio/best"
-#else
-                    Format = "bestvideo[vcodec=vp8]+bestaudio/best"
-#endif
-                };
-                RunResult<string> runResult;
-                runResult = options.AudioOnly
-                    ? await ytdl.RunAudioDownload(url, overrideOptions: optionSet)
-                    : await ytdl.RunVideoDownload(url, overrideOptions: optionSet);
-                if (!runResult.Success)
+                using WebClient w = new WebClient();
+                w.OpenRead(uri);
+                string filename = Path.GetFileName(uri.LocalPath);
+                string headers = w.ResponseHeaders["content-disposition"];
+                if(!string.IsNullOrEmpty(headers))
+                    filename = new ContentDisposition(headers).FileName;
+                string p = Path.Combine(Init.Instance.GetMediaLocation(), filename);
+                DownloadTools.DownloadFile(url, p, s =>
                 {
-                    foreach (string s in runResult.ErrorOutput)
-                        Logger.CurrentLogger.Error(s);
-                    throw new Exception("Failed to get data!");
-                }
-                SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
-                    new StreamDownload(runResult.Data, false));
+                    if (!File.Exists(s))
+                    {
+                        SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
+                        return;
+                    }
+                    SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone),
+                        new StreamDownload(s, false));
+                }, forceNewHttp: true);
             }
             catch (Exception e)
             {
                 Logger.CurrentLogger.Critical(e);
                 SandboxFuncTools.InvokeSandboxFunc(SandboxFuncTools.TryConvert(onDone));
-            }
-        }
-
-        public static void Download(string url, object onDone) => Download(url, onDone, default);
-        
-        public struct StreamDownloadOptions
-        {
-            public bool AudioOnly;
-
-            public StreamDownloadOptions(bool audioOnly = false)
-            {
-                AudioOnly = audioOnly;
             }
         }
 

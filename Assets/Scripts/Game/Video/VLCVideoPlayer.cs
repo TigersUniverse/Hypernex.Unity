@@ -11,10 +11,9 @@
 #if VLC
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using FFMediaToolkit.Decoding;
+using System.Text;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Tools;
@@ -33,7 +32,7 @@ namespace Hypernex.Game.Video
 	//  TODO: Output to AudioSource instead of only Direct
     public class VLCVideoPlayer : VideoPlayerBehaviour, IVideoPlayer
     {
-	    private static LibVLC libVLC;
+	    internal static LibVLC libVLC;
         private MediaPlayer mediaPlayer;
         private VLCAudioSource vlcAudioSource;
         private bool flipTextureX = true;
@@ -44,6 +43,8 @@ namespace Hypernex.Game.Video
         private VideoPlayerDescriptor videoPlayerDescriptor;
         private Coroutine c;
         private Uri lastUri;
+
+        static VLCVideoPlayer() => CreateLibVLC(Init.Instance.DebugVLC);
 
         public VLCVideoPlayer(VideoPlayerDescriptor descriptor)
         {
@@ -57,8 +58,6 @@ namespace Hypernex.Game.Video
             }
             if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.GetComponent<AudioSource>();
             if (descriptor.AudioOutput == null) descriptor.AudioOutput = attachedObject.AddComponent<AudioSource>();
-            if (libVLC == null)
-	            CreateLibVLC(false);
             CreateMediaPlayer();
             descriptor.CurrentVideoPlayer = this;
         }
@@ -72,6 +71,12 @@ namespace Hypernex.Game.Video
         }
         // TODO: Find out what LibVLC isn't compatible with
         public static bool CanBeUsed(Uri source) => true;
+        
+        internal static string FourCCToString(ulong codec)
+        {
+	        byte[] bytes = BitConverter.GetBytes((uint) codec);
+	        return Encoding.ASCII.GetString(bytes).TrimEnd('\0');
+        }
 
         public bool IsPlaying { get; private set; }
 
@@ -150,30 +155,22 @@ namespace Hypernex.Game.Video
 		        lastUri = new Uri(trimmedPath);
 		        IsStream = VideoPlayerManager.IsStream(lastUri);
 		        mediaPlayer.Media = new Media(lastUri);
-		        if(lastUri.IsFile)
-		        {
-			        Debug.Log(lastUri.LocalPath);
-			        using MediaFile mediaFile = MediaFile.Open(lastUri.LocalPath);
-			        CreateAudio(mediaFile);
-		        }
-		        else
-					CreateAudio();
+		        CreateAudio();
 		        c = CoroutineRunner.Instance.StartCoroutine(PauseEnum());
 	        }
         }
 
-        private void CreateAudio(MediaFile mediaFile = null)
+        private void CreateAudio()
         {
-	        if(vlcAudioSource != null)
+	        if (vlcAudioSource != null)
 	        {
 		        Object.Destroy(vlcAudioSource);
 		        vlcAudioSource = null;
 	        }
 	        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.GetComponent<VLCAudioSource>();
-	        if(vlcAudioSource == null)
-				vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
-	        vlcAudioSource.Create(mediaPlayer, mediaFile?.Audio.Info.SampleRate ?? 48000,
-		        mediaFile?.Audio.Info.NumChannels ?? 2);
+	        if (vlcAudioSource == null)
+		        vlcAudioSource = videoPlayerDescriptor.AudioOutput.gameObject.AddComponent<VLCAudioSource>();
+	        vlcAudioSource.Attach(mediaPlayer);
         }
 
         public override void Update()
@@ -213,6 +210,13 @@ namespace Hypernex.Game.Video
 
         private IEnumerator PauseEnum(float f = 0.5f)
         {
+	        // Wait for the media to load (necessary for YouTube m3u8s)
+	        while (Position < 1 || mediaPlayer.Length <= 0)
+	        {
+		        Play();
+		        yield return new WaitForSeconds(0.1f);
+	        }
+	        // Then reset it's position with a fixed time (helps reduce audio latency)
 	        Pause();
 	        yield return new WaitForSeconds(f);
 	        mediaPlayer.SetPosition(0);
@@ -259,14 +263,27 @@ namespace Hypernex.Game.Video
 				libVLC.Dispose();
 				libVLC = null;
 			}
-			Core.Initialize(Application.dataPath);
 			libVLC = new LibVLC(enableDebugLogs: true);
 			libVLC.Log += (s, e) => QuickInvoke.InvokeActionOnMainThread(new Action(() =>
 			{
 				if (!logToConsole) return;
 				try
 				{
-					Logger.CurrentLogger.Error(e.FormattedLog);
+					switch (e.Level)
+					{
+						case LogLevel.Debug:
+							Logger.CurrentLogger.Debug(e.FormattedLog);
+							break;
+						case LogLevel.Notice:
+							Logger.CurrentLogger.Log(e.FormattedLog);
+							break;
+						case LogLevel.Warning:
+							Logger.CurrentLogger.Warn(e.FormattedLog);
+							break;
+						case LogLevel.Error:
+							Logger.CurrentLogger.Error(e.FormattedLog);
+							break;
+					}
 				}
 				catch (Exception ex)
 				{
@@ -344,105 +361,112 @@ namespace Hypernex.Game.Video
 		public void Dispose() => DestroyMediaPlayer();
     }
 
+	/// <summary>
+	/// Basic implementation for outputting VLC audio through a Unity Audio Source. 
+	/// With this implementation, you will gain ability to have 3D audio, AudioSource effects, and anything else that 
+	/// AudioSources support.
+	/// </summary>
 	[RequireComponent(typeof(AudioSource))]
 	public class VLCAudioSource : MonoBehaviour
 	{
-	    private const int BUFFER_SIZE_MULT = 1;
+	    // User desired Sample Rate and Channels
+	    public int SampleRate = 48000;
+	    public int Channels = 2;
+	    
+	    // The audio source attached to the GameObject
 	    internal AudioSource audioSource;
-	    private int sampleRate = 48000;
-	    private int _channels = 2;
+	    // The audio clip that will receive the converted VLC audio
 	    private AudioClip audioClip;
-	    private ConcurrentQueue<float> audioDataQueue = new();
-	    private readonly object bufferLock = new();
-	    private MediaPlayer mediaPlayer;
+	    // The samples from VLC
+	    private float[] samples;
+	    // The buffer size for Unity audio
+	    private int bufferSize;
+	    // The unity audio buffer
+	    private float[] buffer;
+	    // The writing position for the buffer
+	    private int writePosition;
+	    // The reading position for the buffer
+	    private int readPosition;
+	    // Lock object for the buffer
+	    private readonly object bufferLock = new object();
 
-	    public void Create(MediaPlayer m, int s = 48000, int c = 2)
+	    public void Attach(MediaPlayer mediaPlayer)
 	    {
-	        mediaPlayer = m;
-	        sampleRate = s;
-	        _channels = c;
+	        // Get the attached AudioSource (MUST be on this GameObject)
 	        audioSource = GetComponent<AudioSource>();
-	        audioClip = AudioClip.Create("VLCAudioClip", sampleRate * BUFFER_SIZE_MULT, _channels, sampleRate, true, OnAudioRead);
-	        audioSource.clip = audioClip;
+	        // Loop the audio source
 	        audioSource.loop = true;
+	        // Tell the media player to be in Unity's audio format and convert the media to the user specified
+	        mediaPlayer.SetAudioFormat("FL32", (uint) SampleRate, (uint) Channels);
+	        // Audio Callbacks for VLC to our functions
+	        mediaPlayer.SetAudioCallbacks(OnAudioCallback, null, null, OnFlush, null);
+	        // Create the buffer array
+	        bufferSize = SampleRate * Channels;
+	        buffer = new float[bufferSize];
+	        // Create the audio clip and initialize the AudioSource
+	        audioClip = AudioClip.Create("VLCAudio", bufferSize, Channels, SampleRate, true, OnAudioRead);
+	        audioSource.clip = audioClip;
 	        audioSource.Play();
-	        mediaPlayer.SetAudioFormatCallback(AudioSetup, AudioCleanup);
-	        mediaPlayer.SetAudioCallbacks(PlayAudio, PauseAudio, ResumeAudio, FlushAudio, DrainAudio);
+	    }
+
+	    private void OnAudioCallback(IntPtr data, IntPtr samplesPtr, uint count, long pts)
+	    {
+	        // Gets the number of floats in the samples
+	        int floatCount = (int) count * Channels;
+	        // Ensures the samples buffer has enough storage to hold them
+	        if (samples == null || samples.Length != floatCount)
+	            samples = new float[floatCount];
+	        // Copies VLC PCM data to the samples array
+	        Marshal.Copy(samplesPtr, samples, 0, floatCount);
+	        // Lock the buffer (thread safety)
+	        lock (bufferLock)
+	        {
+	            // Write each sample into the Unity buffer at the current position
+	            for (int i = 0; i < floatCount; i++)
+	            {
+	                buffer[writePosition] = samples[i];
+	                writePosition = (writePosition + 1) % buffer.Length;
+	                // If the write position catches up to the read position, move read position forward
+	                if (writePosition == readPosition)
+	                    readPosition = (readPosition + 1) % buffer.Length;
+	            }
+	        }
 	    }
 
 	    private void OnAudioRead(float[] data)
 	    {
+	        // Lock the buffer (thread safety again)
 	        lock (bufferLock)
 	        {
-	            if (audioDataQueue.Count < data.Length)
-	            {
-	                Array.Clear(data, 0, data.Length);
-	                return;
-	            }
+	            // For every sample Unity requests
 	            for (int i = 0; i < data.Length; i++)
 	            {
-	                if (audioDataQueue.TryDequeue(out float sample))
+	                // If there is data available
+	                if (readPosition != writePosition)
 	                {
-	                    data[i] = sample;
+	                    // Copy the data
+	                    data[i] = buffer[readPosition];
+	                    // Advance the read position
+	                    readPosition = (readPosition + 1) % buffer.Length;
 	                }
 	                else
 	                {
+	                    // Otherwise, fill with silence
 	                    data[i] = 0f;
 	                }
 	            }
 	        }
 	    }
-
-	    private void PlayAudio(IntPtr data, IntPtr samples, uint count, long pts)
+	    
+	    private void OnFlush(IntPtr data, long l)
 	    {
-	        int bytes = (int)count * 2 * _channels;
-	        byte[] buffer = new byte[bytes];
-	        Marshal.Copy(samples, buffer, 0, bytes);
-	        float[] pcmData = new float[bytes / 2];
-
-	        for (int i = 0; i < pcmData.Length; i++)
-	        {
-	            short sample = BitConverter.ToInt16(buffer, i * 2);
-	            pcmData[i] = sample / 32768.0f;
-	        }
-
+	        // Lock the buffer (more thread safety)
 	        lock (bufferLock)
 	        {
-	            foreach (float sample in pcmData)
-	            {
-	                audioDataQueue.Enqueue(sample);
-	            }
-	            while (audioDataQueue.Count > sampleRate * BUFFER_SIZE_MULT)
-	            {
-	                audioDataQueue.TryDequeue(out _);
-	            }
+	            // Set read and write position to 0 (clears buffer)
+	            readPosition = writePosition = 0;
 	        }
 	    }
-
-	    private int AudioSetup(ref IntPtr opaque, ref IntPtr format, ref uint rate, ref uint channels)
-	    {
-	        rate = (uint) sampleRate;
-	        channels = (uint) _channels;
-	        return 0;
-	    }
-
-	    private void AudioCleanup(IntPtr opaque) { }
-
-	    private void PauseAudio(IntPtr data, long pts) =>
-	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.Pause()));
-
-	    private void ResumeAudio(IntPtr data, long pts) =>
-	        QuickInvoke.InvokeActionOnMainThread(new Action(() => audioSource.UnPause()));
-
-	    private void FlushAudio(IntPtr data, long pts)
-	    {
-	        lock (bufferLock)
-	        {
-	            audioDataQueue.Clear();
-	        }
-	    }
-
-	    private void DrainAudio(IntPtr data) { }
 	}
 }
 #endif

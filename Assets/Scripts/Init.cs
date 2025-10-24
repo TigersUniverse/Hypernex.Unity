@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using FFMediaToolkit;
 using Hypernex.Player;
 using Hypernex.UI;
 using Hypernex.CCK.Unity.Internals;
@@ -10,11 +9,12 @@ using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
+using Hypernex.Game.Video.StreamProviders;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Components;
-using Hypernex.UI.Templates;
 using HypernexSharp.APIObjects;
+using Nexport.BuiltinMessages;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
@@ -64,13 +64,17 @@ public class Init : MonoBehaviour
     public float SmoothingFrames = 0.1f;
     public List<Object> BadgeRankAssets = new();
     public bool NoVLC;
+    public bool StreamYoutube;
     public VolumeProfile DefaultVolumeProfile;
 
+    internal bool DebugVLC;
     internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
 
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
-    public string GetYTDLLocation() => Path.Combine(Application.streamingAssetsPath, "ytdl");
+    public string GetPrivateLocation() => Path.Combine(Application.persistentDataPath, "Private");
+    public string GetMediaLocation() => Path.Combine(Application.streamingAssetsPath, "media");
+    public string GetYTLocation() => Path.Combine(GetMediaLocation(), "ytdlp");
 
     internal void StartVR()
     {
@@ -109,6 +113,7 @@ public class Init : MonoBehaviour
         Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
+        DynamicNetworkObject.CacheDynamicTypes();
         Application.backgroundLoadingPriority = ThreadPriority.Low;
 #if UNITY_ANDROID
         //Caching.compressionEnabled = false;
@@ -135,6 +140,8 @@ public class Init : MonoBehaviour
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");
+        DebugVLC = args.Contains("--debug-vlc");
+        StreamYoutube = args.Contains("--stream-youtube");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
         string targetStreamingPath;
@@ -162,26 +169,21 @@ public class Init : MonoBehaviour
         audioMixers.Add(VoiceGroup, VoiceGroup.audioMixer);
         audioMixers.Add(WorldGroup, WorldGroup.audioMixer);
         audioMixers.Add(AvatarGroup, AvatarGroup.audioMixer);
-        if (!Directory.Exists(GetYTDLLocation()))
-            Directory.CreateDirectory(GetYTDLLocation());
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp.exe");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg.exe");
-#elif UNITY_MAC
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp_macos");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
-#else
-        Streaming.ytdl.YoutubeDLPath = Path.Combine(GetYTDLLocation(), "yt-dlp");
-        Streaming.ytdl.FFmpegPath = Path.Combine(GetYTDLLocation(), "ffmpeg");
-#endif
-        Streaming.ytdl.OutputFolder = Path.Combine(GetYTDLLocation(), "Downloads");
-        YoutubeDLSharp.Utils.DownloadBinaries(true, GetYTDLLocation());
+        if (!Directory.Exists(GetPrivateLocation()))
+            Directory.CreateDirectory(GetPrivateLocation());
+        if (!Directory.Exists(GetMediaLocation()))
+            Directory.CreateDirectory(GetMediaLocation());
         try
         {
-            string ffmpegPath = Path.Combine(Application.streamingAssetsPath, "ffmpeg");
-            FFMpegDownloader.Download(ffmpegPath);
-            FFmpegLoader.FFmpegPath = ffmpegPath;
-            FFmpegLoader.LoadFFmpeg();
+#if !UNITY_IOS && !UNITY_ANDROID
+            string ytPath = GetYTLocation();
+            if (!Directory.Exists(ytPath))
+                Directory.CreateDirectory(ytPath);
+            YoutubeDLSharp.Utils.DownloadBinaries(true, ytPath);
+            YouTubeStreamProvider.ytdl.OutputFolder = ytPath;
+            YouTubeStreamProvider.ytdl.FFmpegPath = Path.Combine(ytPath, YoutubeDLSharp.Utils.FfmpegBinaryName);
+            YouTubeStreamProvider.ytdl.YoutubeDLPath = Path.Combine(ytPath, YoutubeDLSharp.Utils.YtDlpBinaryName);
+#endif
         }
         catch (Exception e)
         {
@@ -216,6 +218,10 @@ public class Init : MonoBehaviour
             }
             WebHandler.HandleLaunchArgs(args, CreateInstanceWindow);
         };
+#if VLC
+        if(!NoVLC)
+            Core.Initialize(Application.dataPath);
+#endif
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.SafeSwitchScene(1, null,
                 s =>

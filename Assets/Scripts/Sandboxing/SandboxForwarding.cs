@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Hypernex.Game;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Networking.SandboxedClasses;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Sandboxing.SandboxedTypes.Components;
 using Hypernex.Sandboxing.SandboxedTypes.Handlers;
@@ -100,7 +101,8 @@ namespace Hypernex.Sandboxing
         {
             ["ClientNetworkEvent"] = typeof(ClientNetworkEvent),
             ["Streaming"] = typeof(Streaming),
-            ["StreamDownloadOptions"] = typeof(Streaming.StreamDownloadOptions),
+            ["StreamDownloadOptions"] = typeof(StreamDownloadOptions),
+            ["VideoRequest"] = typeof(VideoRequest),
             ["StreamDownload"] = typeof(Streaming.StreamDownload),
             ["PhysicsBody"] = typeof(PhysicsBody),
             ["Mesh"] = typeof(Mesh),
