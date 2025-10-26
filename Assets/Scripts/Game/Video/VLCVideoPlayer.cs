@@ -44,8 +44,6 @@ namespace Hypernex.Game.Video
         private Coroutine c;
         private Uri lastUri;
 
-        static VLCVideoPlayer() => CreateLibVLC(Init.Instance.DebugVLC);
-
         public VLCVideoPlayer(VideoPlayerDescriptor descriptor)
         {
 	        GameObject attachedObject = descriptor.gameObject;

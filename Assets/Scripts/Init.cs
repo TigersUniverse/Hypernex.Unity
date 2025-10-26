@@ -220,7 +220,10 @@ public class Init : MonoBehaviour
         };
 #if VLC
         if(!NoVLC)
+        {
             Core.Initialize(Application.dataPath);
+            VLCVideoPlayer.CreateLibVLC(DebugVLC);
+        }
 #endif
         GetComponent<CoroutineRunner>()
             .Run(LocalPlayer.SafeSwitchScene(1, null,
