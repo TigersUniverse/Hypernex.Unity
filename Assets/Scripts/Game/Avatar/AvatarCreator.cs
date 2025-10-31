@@ -119,6 +119,9 @@ namespace Hypernex.Game.Avatar
             EyeRenderers = BlendshapeDescriptor.GetAllDescriptors(a.EyeRenderers.ToArray());
             VisemeRenderers = BlendshapeDescriptor.GetAllDescriptors(a.VisemeRenderers.ToArray());
             usedVisemes = BlendshapeDescriptor.GetUsedBlendshapes(VisemeRenderers, a.VisemesDict);
+#if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+            OSTools.ReplaceAllShaders(a.transform);
+#endif
         }
 
         protected void DriveCamera(Transform cam)

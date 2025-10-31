@@ -94,8 +94,18 @@ namespace Hypernex.Tools
 
         private static void HandleEmoji(Component component, bool isWorld)
         {
-            if(component.gameObject.GetComponent<TMP_Text>() == null) return;
+            TMP_Text t = component.gameObject.GetComponent<TMP_Text>();
+            if(t == null) return;
             if(component.gameObject.GetComponent<TMPEmojiSprite>() != null) return;
+#if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+            OSTools.ReplaceAllShaders(t.material);
+            OSTools.ReplaceAllShaders(t.materialForRendering);
+            OSTools.ReplaceAllShaders(t.fontMaterial);
+            OSTools.ReplaceAllShaders(t.fontSharedMaterial);
+            OSTools.ReplaceAllShaders(t.defaultMaterial);
+            t.SetAllDirty();
+            t.SetMaterialDirty();
+#endif
             component.gameObject.AddComponent<TMPEmojiSprite>();
         }
 

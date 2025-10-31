@@ -433,6 +433,9 @@ namespace Hypernex.Game
         private void LoadScene(bool open, string s) => CoroutineRunner.Instance.Run(
             LocalPlayer.Instance.SafeSwitchScene(s, currentScene =>
             {
+#if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+                OSTools.ReplaceAllShaders(currentScene);
+#endif
                 Security.RemoveOffendingItems(currentScene, SecurityTools.AdditionalAllowedWorldTypes.ToArray());
                 Security.ApplyComponentRestrictions(currentScene);
                 try
