@@ -76,8 +76,10 @@ namespace Hypernex.Game.Video.StreamProviders
                 }
                 OptionSet optionSet = new OptionSet
                 {            
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_MAC
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
                     Format = "bestvideo[vcodec=vp8]/bestvideo[vcodec=h264]/bestvideo[vcodec*=avc1]+bestaudio/best"
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+                    Format = "bestvideo[vcodec=h264]+bestaudio/best"
 #else
                     Format = "bestvideo[vcodec=vp8]+bestaudio/best"
 #endif
