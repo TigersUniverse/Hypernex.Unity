@@ -98,11 +98,11 @@ namespace Hypernex.Tools
             if(t == null) return;
             if(component.gameObject.GetComponent<TMPEmojiSprite>() != null) return;
 #if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-            OSTools.ReplaceAllShaders(t.material);
-            OSTools.ReplaceAllShaders(t.materialForRendering);
-            OSTools.ReplaceAllShaders(t.fontMaterial);
-            OSTools.ReplaceAllShaders(t.fontSharedMaterial);
-            OSTools.ReplaceAllShaders(t.defaultMaterial);
+            ShaderFixer.ReplaceAllShaders(t.material);
+            ShaderFixer.ReplaceAllShaders(t.materialForRendering);
+            ShaderFixer.ReplaceAllShaders(t.fontMaterial);
+            ShaderFixer.ReplaceAllShaders(t.fontSharedMaterial);
+            ShaderFixer.ReplaceAllShaders(t.defaultMaterial);
             t.SetAllDirty();
             t.SetMaterialDirty();
 #endif

@@ -120,7 +120,7 @@ namespace Hypernex.Game.Avatar
             VisemeRenderers = BlendshapeDescriptor.GetAllDescriptors(a.VisemeRenderers.ToArray());
             usedVisemes = BlendshapeDescriptor.GetUsedBlendshapes(VisemeRenderers, a.VisemesDict);
 #if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-            OSTools.ReplaceAllShaders(a.transform);
+            ShaderFixer.ReplaceAllShaders(a.transform);
 #endif
         }
 

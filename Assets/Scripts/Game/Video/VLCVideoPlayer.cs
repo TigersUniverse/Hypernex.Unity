@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Sandboxing.SandboxedTypes.Handlers;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using LibVLCSharp;
@@ -62,10 +63,23 @@ namespace Hypernex.Game.Video
 
 	    public static bool CanBeUsed()
         {
-            if (AssetBundleTools.Platform != BuildPlatform.Windows) return false;
-            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Direct3D11) return false;
-            if (Init.Instance.NoVLC) return false;
-            return true;
+	        if (Init.Instance.NoVLC) return false;
+	        switch (Application.platform)
+	        {
+		        case RuntimePlatform.WindowsEditor:
+			    case RuntimePlatform.WindowsPlayer:
+			        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Direct3D11) return true;
+			        return false;
+		        case RuntimePlatform.OSXEditor:
+			    case RuntimePlatform.OSXPlayer:
+			        return true;
+		        case RuntimePlatform.LinuxEditor:
+		        case RuntimePlatform.LinuxPlayer:
+			        return false;
+		        case RuntimePlatform.Android:
+			        return true;
+	        }
+            return false;
         }
         // TODO: Find out what LibVLC isn't compatible with
         public static bool CanBeUsed(Uri source) => true;
