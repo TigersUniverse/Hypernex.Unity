@@ -338,8 +338,8 @@ namespace Hypernex.Game
                     /*foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
                         Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);*/
                     Avatar.audioSource.volume = lastPlayerUpdate.IsSpeaking ? volume : 0f;
-                    if(Avatar != null && Avatar.lipSyncContext != null)
-                        Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
+                    if(Avatar != null && Avatar.VisemeProvider != null)
+                        Avatar.VisemeProvider.Enabled = !LastPlayerTags.Contains("*liptracking");
                 }
                 if (Avatar != null)
                 {

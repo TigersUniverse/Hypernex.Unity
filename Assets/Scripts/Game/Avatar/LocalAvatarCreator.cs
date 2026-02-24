@@ -124,19 +124,8 @@ namespace Hypernex.Game.Avatar
         private void SetupLipSyncLocalPlayer()
         {
             if (!Avatar.UseVisemes) return;
-            lipSyncContext = VoiceAlign.AddComponent<OVRLipSyncContext>();
-            lipSyncContext.audioSource = audioSource;
-            lipSyncContext.enableKeyboardInput = false;
-            lipSyncContext.enableTouchInput = false;
-            lipSyncContext.skipAudioSource = true;
-            morphTargets.Clear();
-            for (int i = 0; i < (int) Viseme.Max; i++)
-            {
-                BlendshapeDescriptor descriptor = BlendshapeDescriptor.GetDescriptor(VisemeRenderers, Avatar.VisemesDict, i);
-                if (descriptor == null) continue;
-                var morphTarget = GetMorphTargetBySkinnedMeshRenderer(descriptor.SkinnedMeshRenderer);
-                SetVisemeAsBlendshape(ref morphTarget, (Viseme) i, descriptor);
-            }
+            VisemeProvider = VisemeProviders.VisemeProvider.GetVisemeProvider();
+            VisemeProvider?.SetupLocal(this, VisemeRenderers);
         }
 
         /// <summary>

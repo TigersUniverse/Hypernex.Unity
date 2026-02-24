@@ -9,6 +9,7 @@ using Hypernex.Configuration;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game;
+using Hypernex.Game.Avatar.VisemeProviders;
 using Hypernex.Game.Video.StreamProviders;
 using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
@@ -189,6 +190,10 @@ public class Init : MonoBehaviour
         {
             Logger.CurrentLogger.Critical(e);
         }
+        ConfigManager.OnConfigLoaded += _ =>
+        {
+            OpenVisemeProvider.DownloadModel();
+        };
 
         int pluginsLoaded;
         try
