@@ -85,7 +85,10 @@ namespace Hypernex.Game.Avatar.VisemeProviders
             Logger.CurrentLogger.Debug("Started OpenVisemeProvider!");
         }
 
-        void IVisemeProvider.ApplyAudioClipToLipSync(float[] data)
+        void IVisemeProvider.ApplyLocal(float[] data) => Apply(data);
+        void IVisemeProvider.ApplyNet(float[] data) => Apply(data);
+
+        private void Apply(float[] data)
         {
             if (!Enabled)
             {

@@ -85,7 +85,7 @@ namespace Hypernex.Game.Audio
             return voicePackets.ToArray();
         }
 
-        public void Decode(PlayerVoice playerVoice, AudioSource audioSource)
+        public float[] Decode(PlayerVoice playerVoice, AudioSource audioSource)
         {
             decoders.RemoveAll(x => x.source == null);
             var playback = decoders.FirstOrDefault(x => x.source == audioSource);
@@ -109,6 +109,7 @@ namespace Hypernex.Game.Audio
             Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);
 
             AudioSourceDriver.AddQueue(audioSource, pcmBuffer, decoder.NumChannels, decoder.SampleRate);
+            return pcmBuffer;
         }
     }
 }

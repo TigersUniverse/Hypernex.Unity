@@ -456,7 +456,7 @@ namespace Hypernex.Game
                         GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice), MessageChannel.UnreliableSequenced);
                     }
                 }
-                if(!isEmpty) avatar?.VisemeProvider?.ApplyAudioClipToLipSync(samples);
+                if(!isEmpty) avatar?.VisemeProvider?.ApplyLocal(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta, _) =>
             {

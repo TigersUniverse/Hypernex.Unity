@@ -24,10 +24,11 @@ namespace Hypernex.Game.Audio
             return new[] { playerVoice };
         }
 
-        public void Decode(PlayerVoice playerVoice, AudioSource audioSource)
+        public float[] Decode(PlayerVoice playerVoice, AudioSource audioSource)
         {
             float[] d = DataConversion.ConvertByteToFloat(playerVoice.Bytes);
             AudioSourceDriver.AddQueue(audioSource, d, playerVoice.Channels, playerVoice.SampleRate);
+            return d;
         }
     }
 }

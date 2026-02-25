@@ -11,7 +11,8 @@ namespace Hypernex.Game.Avatar.VisemeProviders
         public virtual void SetupLocal(AvatarCreator avatarCreator, BlendshapeDescriptor[] blendshapes){}
         public virtual void SetupNet(AvatarCreator avatarCreator, BlendshapeDescriptor[] blendshapes){}
         
-        internal void ApplyAudioClipToLipSync(float[] data);
+        internal virtual void ApplyLocal(float[] data){}
+        internal virtual void ApplyNet(float[] data){}
         
         public int GetVisemeIndex();
         

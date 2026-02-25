@@ -60,7 +60,7 @@ namespace Hypernex.Game.Avatar.VisemeProviders
             }
         }
 
-        void IVisemeProvider.ApplyAudioClipToLipSync(float[] data)
+        void IVisemeProvider.ApplyLocal(float[] data)
         {
             if (lipSyncContext == null)
                 return;

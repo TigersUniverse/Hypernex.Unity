@@ -399,10 +399,12 @@ namespace Hypernex.Game
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
             IAudioCodec codec = AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder);
+            float[] d;
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
-                codec.Decode(playerVoice, Avatar.audioSource);
+                d = codec.Decode(playerVoice, Avatar.audioSource);
             else
-                codec.Decode(playerVoice, fallbackVoice);
+                d = codec.Decode(playerVoice, fallbackVoice);
+            Avatar?.VisemeProvider?.ApplyNet(d);
         }
 
         private Dictionary<int, NetHandleCameraLife> HandleCameras => new(handleCameras);
