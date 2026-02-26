@@ -31,6 +31,8 @@ namespace Hypernex.Game.Audio
         private int AudioThreadPosition = 0;
         private int MainThreadPosition = 0;
 
+        private int targetBufferSamples;
+        private int maxBufferSamples;
         private Queue<float> queue = new Queue<float>();
         private AudioPacket[] buffer = new AudioPacket[1024];
         private bool startedQueue = false;
@@ -281,6 +283,10 @@ namespace Hypernex.Game.Audio
                 {
                     queue.Enqueue(val);
                 }
+                while (queue.Count > maxBufferSamples)
+                {
+                    queue.Dequeue();
+                }
                 mutex.ReleaseMutex();
             }
             else
@@ -299,6 +305,8 @@ namespace Hypernex.Game.Audio
                 // Debug.Log("new clip");
                 startedQueue = false;
                 shouldStop = false;
+                targetBufferSamples = (int)(frequency * channels * 0.05f);
+                maxBufferSamples = targetBufferSamples * 2;
                 clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, false);
                 float[] temp = new float[CLIP_SAMPLE_SIZE];
                 Array.Fill(temp, 1f);
