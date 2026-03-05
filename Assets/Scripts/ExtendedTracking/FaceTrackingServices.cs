@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !UNITY_IOS && !PLATFORM_IOS
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -8,7 +9,6 @@ using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using UnityEngine;
 using VRCFaceTracking.Core.Contracts.Services;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Logger = Hypernex.CCK.Logger;
@@ -195,3 +195,4 @@ namespace Hypernex.ExtendedTracking
         }
     }
 }
+#endif

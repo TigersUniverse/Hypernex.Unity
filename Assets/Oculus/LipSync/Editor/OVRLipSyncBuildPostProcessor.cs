@@ -70,7 +70,9 @@ class OVRLipSyncBuildPostProcessor : MonoBehaviour
             return;
         }
 
-        var targetGUID = project.TargetGuidByName(PBXProject.GetUnityTargetName());
+        // Use the UnityFramework target in modern Unity
+        var targetGUID = project.GetUnityFrameworkTargetGuid();
+
         // Limit the target to ARM64
         project.SetBuildProperty(targetGUID, "ARCHS", "arm64");
 
@@ -83,14 +85,14 @@ class OVRLipSyncBuildPostProcessor : MonoBehaviour
         project.AddFileToBuildSection(targetGUID, embedPhaseGuid, dylibGUID);
         var content = project.WriteToString();
 
-        // Add CodeSignOnCopy attribute ot the library using an ugly regex
+        // Add CodeSignOnCopy attribute using regex
         content = Regex.Replace(content,
-            "(?<="+ buildPhaseName + ")(?:.*)(\\/\\* " + Regex.Escape(dylibName) + " \\*\\/)(?=; };)",
+            "(?<=" + buildPhaseName + ")(?:.*)(\\/\\* " + Regex.Escape(dylibName) + " \\*\\/)(?=; };)",
             m => m.Value.Replace(
-                    "/* " + dylibName + " */",
-                    "/* " + dylibName + " */; settings = {ATTRIBUTES = (CodeSignOnCopy, );}"
-                    )
-                    );
+                "/* " + dylibName + " */",
+                "/* " + dylibName + " */; settings = {ATTRIBUTES = (CodeSignOnCopy, );}"
+            )
+        );
         File.WriteAllText(projectPath, content);
     }
 
