@@ -420,7 +420,6 @@ namespace Hypernex.Game
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
-            CreateDesktopBindings();
             Mic.OnClipReady += (s, clip, isEmpty) =>
             {
                 float[] samples = s;
@@ -496,7 +495,14 @@ namespace Hypernex.Game
                 RefreshAvatar();
         }
 
-        private void CreateDesktopBindings()
+        public void CreateMobileBindings()
+        {
+            Bindings.Add(new Mobile(false));
+            Bindings.Add(new Mobile(true));
+            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+        }
+
+        public void CreateDesktopBindings()
         {
             Bindings.Add(new Bindings.Keyboard()
                 .RegisterCustomKeyDownEvent(KeyCode.V, () =>
@@ -716,7 +722,8 @@ namespace Hypernex.Game
             });
             DesktopInput.enabled = !vr;
             VRInput.enabled = vr;
-            CursorTools.ToggleMouseLock(vr || LockCamera);
+            if(!Init.Instance.IsMobile)
+                CursorTools.ToggleMouseLock(vr || LockCamera);
             CursorTools.ToggleMouseVisibility(!vr || LockCamera);
             groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)

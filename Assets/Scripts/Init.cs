@@ -49,6 +49,7 @@ public class Init : MonoBehaviour
     public static bool IsQuitting { get; private set; }
 
     public LocalPlayer LocalPlayer;
+    public bool IsMobile;
     public UITheme DefaultTheme;
     public bool UseHTTP;
     public RuntimeAnimatorController DefaultAvatarAnimatorController;
@@ -76,6 +77,15 @@ public class Init : MonoBehaviour
     public string GetPrivateLocation() => Path.Combine(Application.persistentDataPath, "Private");
     public string GetMediaLocation() => Path.Combine(Application.streamingAssetsPath, "media");
     public string GetYTLocation() => Path.Combine(GetMediaLocation(), "ytdlp");
+    
+    bool TryStartXR()
+    {
+        var manager = XRGeneralSettings.Instance.Manager;
+        manager.InitializeLoaderSync();
+        if (manager.activeLoader == null) return false;
+        manager.StartSubsystems();
+        return true;
+    }
 
     internal void StartVR()
     {
@@ -116,6 +126,10 @@ public class Init : MonoBehaviour
         Telepathy.Log.Error = s => unityLogger.Error(s);
         DynamicNetworkObject.CacheDynamicTypes();
         Application.backgroundLoadingPriority = ThreadPriority.Low;
+        if (!IsMobile)
+            LocalPlayer.CreateDesktopBindings();
+        else
+            LocalPlayer.CreateMobileBindings();
 #if UNITY_ANDROID
         //Caching.compressionEnabled = false;
         try
@@ -126,17 +140,16 @@ public class Init : MonoBehaviour
                 Permission.RequestUserPermission(Permission.ExternalStorageWrite);
         }
         catch(Exception){}
-        /*try
-        {
-            StartVR();
-            SystemHeadset systemHeadset = Utils.GetSystemHeadsetType();
-            bool isOculus = systemHeadset != SystemHeadset.None;
-            if (!isOculus)
-                StopVR();
-        } catch(Exception e){Logger.CurrentLogger.Critical(e);}*/
 #if !UNITY_EDITOR
-        StartVR();
+        LocalPlayer.IsVR = TryStartXR();
+        if (LocalPlayer.IsVR)
+            LocalPlayer.StartVR();
+        else
+            IsMobile = true;
 #endif
+#endif
+#if UNITY_IOS
+        IsMobile = true;
 #endif
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");

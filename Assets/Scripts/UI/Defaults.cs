@@ -41,6 +41,7 @@ namespace Hypernex.UI
         public GameObject GameMenuObject;
         public OverlayNotification OverlayNotification;
         public MessagesPage MessagesPage;
+        public GameObject VRDesktopButton;
         public Image VRDesktopIcon;
         public Sprite VRIcon;
         public Sprite DesktopIcon;
@@ -120,7 +121,15 @@ namespace Hypernex.UI
             Initialize();
         }
 
-        private void Update() => VRDesktopIcon.sprite = LocalPlayer.IsVR ? DesktopIcon : VRIcon;
+        private void Update()
+        {
+            if (Init.Instance.IsMobile)
+            {
+                VRDesktopButton.SetActive(false);
+                return;
+            }
+            VRDesktopIcon.sprite = LocalPlayer.IsVR ? DesktopIcon : VRIcon;
+        }
 
         public void Dispose()
         {
