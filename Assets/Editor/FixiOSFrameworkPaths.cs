@@ -1,3 +1,4 @@
+#if UNITY_IOS
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEditor.iOS.Xcode;
@@ -48,3 +49,4 @@ public class FixiOSFrameworkPaths
         Debug.Log($"Copied and linked {copied} native iOS plugins.");
     }
 }
+#endif
