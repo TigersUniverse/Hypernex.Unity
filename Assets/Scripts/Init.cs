@@ -15,10 +15,16 @@ using Hypernex.Sandboxing.SandboxedTypes;
 using Hypernex.Tools;
 using Hypernex.UI.Components;
 using HypernexSharp.APIObjects;
+using Libs.MessagePack;
+using MessagePack;
+using MessagePack.Resolvers;
+using MoonSharp.Interpreter;
+using Nexport;
 using Nexport.BuiltinMessages;
 using TMPro;
 using UnityEngine;
 #if UNITY_ANDROID
+using Unity.Mathematics;
 using UnityEngine.Android;
 #endif
 using UnityEngine.Audio;
@@ -68,6 +74,7 @@ public class Init : MonoBehaviour
     public bool NoVLC;
     public bool StreamYoutube;
     public VolumeProfile DefaultVolumeProfile;
+    public MobileControls MobileControls;
 
     internal bool DebugVLC;
     internal Dictionary<AudioMixerGroup, AudioMixer> audioMixers = new();
@@ -75,7 +82,7 @@ public class Init : MonoBehaviour
     public string GetPluginLocation() => Path.Combine(Application.persistentDataPath, "Plugins");
     public string GetDatabaseLocation() => Path.Combine(Application.persistentDataPath, "Databases");
     public string GetPrivateLocation() => Path.Combine(Application.persistentDataPath, "Private");
-    public string GetMediaLocation() => Path.Combine(Application.streamingAssetsPath, "media");
+    public string GetMediaLocation() => Path.Combine(AssetBundleTools.StreamingLocation, "media");
     public string GetYTLocation() => Path.Combine(GetMediaLocation(), "ytdlp");
     
     bool TryStartXR()
@@ -108,6 +115,10 @@ public class Init : MonoBehaviour
     private void Start()
     {
         Instance = this;
+#if UNITY_ANDROID
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = -1;
+#endif
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
         CursorTools.UpdateMouseIcon(true, DefaultTheme.PrimaryColorTheme);
@@ -124,12 +135,9 @@ public class Init : MonoBehaviour
         Telepathy.Log.Info = s => unityLogger.Debug(s);
         Telepathy.Log.Warning = s => unityLogger.Warn(s);
         Telepathy.Log.Error = s => unityLogger.Error(s);
+        Startup.Initialize();
         DynamicNetworkObject.CacheDynamicTypes();
         Application.backgroundLoadingPriority = ThreadPriority.Low;
-        if (!IsMobile)
-            LocalPlayer.CreateDesktopBindings();
-        else
-            LocalPlayer.CreateMobileBindings();
 #if UNITY_ANDROID
         //Caching.compressionEnabled = false;
         try
@@ -140,17 +148,23 @@ public class Init : MonoBehaviour
                 Permission.RequestUserPermission(Permission.ExternalStorageWrite);
         }
         catch(Exception){}
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && XR
         LocalPlayer.IsVR = TryStartXR();
         if (LocalPlayer.IsVR)
             LocalPlayer.StartVR();
         else
             IsMobile = true;
+#elif !XR
+        IsMobile = true;
 #endif
 #endif
 #if UNITY_IOS
         IsMobile = true;
 #endif
+        if (!IsMobile)
+            LocalPlayer.CreateDesktopBindings();
+        else
+            LocalPlayer.CreateMobileBindings(MobileControls);
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");
@@ -158,18 +172,8 @@ public class Init : MonoBehaviour
         StreamYoutube = args.Contains("--stream-youtube");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
-        string targetStreamingPath;
-        switch (AssetBundleTools.Platform)
-        {
-            case BuildPlatform.Android:
-                DownloadTools.DownloadsPath = Path.Combine(Application.persistentDataPath, "Downloads");
-                targetStreamingPath = Application.persistentDataPath;
-                break;
-            default:
-                DownloadTools.DownloadsPath = Path.Combine(Application.streamingAssetsPath, "Downloads");
-                targetStreamingPath = Application.streamingAssetsPath;
-                break;
-        }
+        DownloadTools.DownloadsPath = Path.Combine(AssetBundleTools.StreamingLocation, "Downloads");
+        string targetStreamingPath = AssetBundleTools.StreamingLocation;
         SecurityTools.AllowExtraTypes();
         ExtraSandboxTools.ImplementRestrictions();
         kTools.Mirrors.Mirror.OnMirrorCreation += mirror => mirror.CustomCameraControl = true;
@@ -203,6 +207,10 @@ public class Init : MonoBehaviour
         {
             Logger.CurrentLogger.Critical(e);
         }
+        Script.DefaultOptions.ScriptLoader = new MoonSharp.Interpreter.Loaders.UnityAssetsScriptLoader
+        {
+            ModulePaths = new string[] { }
+        };
         ConfigManager.OnConfigLoaded += _ =>
         {
             OpenVisemeProvider.DownloadModel();

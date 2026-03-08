@@ -495,10 +495,10 @@ namespace Hypernex.Game
                 RefreshAvatar();
         }
 
-        public void CreateMobileBindings()
+        public void CreateMobileBindings(MobileControls mobileControls)
         {
-            Bindings.Add(new Mobile(false));
-            Bindings.Add(new Mobile(true));
+            Bindings.Add(new Mobile(false, mobileControls));
+            Bindings.Add(new Mobile(true, mobileControls));
             Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
         }
 
@@ -640,10 +640,10 @@ namespace Hypernex.Game
 
         private (Vector3, bool, bool)? HandleRightBinding(IBinding binding, bool vr)
         {
-            if (!LockCamera && binding.Id == "Mouse" && !IsVR)
+            if (!LockCamera && binding is IBindingSensitivity && !IsVR)
             {
-                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Bindings.Mouse)binding).Sensitivity, 0);
-                rotx += -(binding.Up + binding.Down * -1) * ((Bindings.Mouse) binding).Sensitivity;
+                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((IBindingSensitivity)binding).Sensitivity, 0);
+                rotx += -(binding.Up + binding.Down * -1) * ((IBindingSensitivity) binding).Sensitivity;
                 rotx = Mathf.Clamp(rotx, -90f, 90f);
                 Camera.transform.localEulerAngles = new Vector3(rotx, 0, 0);
                 return (Vector3.zero, binding.Button, false);

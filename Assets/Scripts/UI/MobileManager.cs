@@ -9,13 +9,15 @@ namespace Hypernex.UI
         public DashboardManager Dashboard;
 
         public GameObject Controls;
+        public GameObject[] MainControls;
 
-        private void Start()
+        private void Update()
         {
-            if(Init.IsMobile) return;
-            gameObject.SetActive(false);
+            Controls.SetActive(!Dashboard.IsVisible && Init.MobileControls);
+            foreach (GameObject control in MainControls)
+            {
+                control.SetActive(Init.IsMobile);
+            }
         }
-
-        private void Update() => Controls.SetActive(!Dashboard.IsVisible);
     }
 }

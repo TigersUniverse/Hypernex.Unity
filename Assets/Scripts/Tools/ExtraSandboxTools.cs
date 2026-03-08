@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Reflection;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.Game;
@@ -9,6 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using Object = UnityEngine.Object;
 using Security = Hypernex.CCK.Unity.Internals.Security;
 
 namespace Hypernex.Tools
@@ -25,11 +27,14 @@ namespace Hypernex.Tools
             Security.RegisterForceDeleteObject<StandaloneInputModule>();
             Security.RegisterComponentRestriction<Camera>((component, _) =>
             {
-                Camera camera = (Camera) component;
-                Camera[] mirrorCameras = GetAllMirrorCameras();
-                if(mirrorCameras.Contains(camera)) return;
-                camera.gameObject.tag = "Untagged";
-                camera.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
+                QuickInvoke.InvokeActionOnMainThread((Action)(() =>
+                {
+                    Camera camera = (Camera) component;
+                    Camera[] mirrorCameras = GetAllMirrorCameras();
+                    if(mirrorCameras.Contains(camera)) return;
+                    camera.gameObject.tag = "Untagged";
+                    camera.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
+                }));
             });
             Security.RegisterComponentRestriction<Mirror>((component, _) =>
             {

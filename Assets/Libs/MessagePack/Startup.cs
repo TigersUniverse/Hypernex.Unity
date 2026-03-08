@@ -1,6 +1,6 @@
-﻿#if UNITY_ANDROID
-using MessagePack;
+﻿using MessagePack;
 using MessagePack.Resolvers;
+using Nexport;
 using UnityEngine;
 
 namespace Libs.MessagePack
@@ -10,31 +10,18 @@ namespace Libs.MessagePack
         static bool serializerRegistered = false;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void Initialize()
+        public static void Initialize()
         {
             if (!serializerRegistered)
             {
                 StaticCompositeResolver.Instance.Register(
-                    global::MessagePack.Resolvers.GeneratedResolver.Instance
+                    global::MessagePack.Resolvers.GeneratedResolver.Instance,
+                    global::MessagePack.Resolvers.StandardResolver.Instance
                 );
-
-                var option = MessagePackSerializerOptions.Standard.WithResolver(StaticCompositeResolver.Instance);
-
-                MessagePackSerializer.DefaultOptions = option;
-                serializerRegistered = true;
+                var options = MessagePackSerializerOptions.Standard.WithResolver(StaticCompositeResolver.Instance);
+                MessagePackSerializer.DefaultOptions = options;
+                Msg.SerializerOptions = options;
             }
         }
-
-#if UNITY_EDITOR
-
-
-        [UnityEditor.InitializeOnLoadMethod]
-        static void EditorInitialize()
-        {
-            Initialize();
-        }
-
-#endif
     }
 }
-#endif

@@ -47,43 +47,50 @@ namespace MessagePack.Resolvers
 
         static GeneratedResolverGetFormatterHelper()
         {
-            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(35)
+            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(42)
             {
                 { typeof(global::Hypernex.Networking.Messages.WeightedObjectUpdate[]), 0 },
-                { typeof(global::System.Collections.Generic.Dictionary<global::Nexport.ClientIdentifier, string>), 1 },
-                { typeof(global::System.Collections.Generic.Dictionary<int, global::Hypernex.Networking.Messages.Data.NetworkedObject>), 2 },
-                { typeof(global::System.Collections.Generic.Dictionary<string, object>), 3 },
-                { typeof(global::System.Collections.Generic.List<global::Nexport.BuiltinMessages.DynamicNetworkObject>), 4 },
-                { typeof(global::System.Collections.Generic.List<string>), 5 },
-                { typeof(global::Hypernex.CCK.NexboxLanguage), 6 },
-                { typeof(global::Hypernex.Networking.Messages.Data.WorldObjectAction), 7 },
-                { typeof(global::Hypernex.Networking.Messages.AddModerator), 8 },
-                { typeof(global::Hypernex.Networking.Messages.BanPlayer), 9 },
-                { typeof(global::Hypernex.Networking.Messages.Bulk.BulkWeightedObjectUpdate), 10 },
-                { typeof(global::Hypernex.Networking.Messages.Data.float2), 11 },
-                { typeof(global::Hypernex.Networking.Messages.Data.float3), 12 },
-                { typeof(global::Hypernex.Networking.Messages.Data.float4), 13 },
-                { typeof(global::Hypernex.Networking.Messages.Data.NetworkedObject), 14 },
-                { typeof(global::Hypernex.Networking.Messages.Data.SinCos), 15 },
-                { typeof(global::Hypernex.Networking.Messages.InstancePlayers), 16 },
-                { typeof(global::Hypernex.Networking.Messages.JoinAuth), 17 },
-                { typeof(global::Hypernex.Networking.Messages.KickPlayer), 18 },
-                { typeof(global::Hypernex.Networking.Messages.NetworkedEvent), 19 },
-                { typeof(global::Hypernex.Networking.Messages.PlayerDataUpdate), 20 },
-                { typeof(global::Hypernex.Networking.Messages.PlayerMessage), 21 },
-                { typeof(global::Hypernex.Networking.Messages.PlayerObjectUpdate), 22 },
-                { typeof(global::Hypernex.Networking.Messages.PlayerUpdate), 23 },
-                { typeof(global::Hypernex.Networking.Messages.PlayerVoice), 24 },
-                { typeof(global::Hypernex.Networking.Messages.RemoveModerator), 25 },
-                { typeof(global::Hypernex.Networking.Messages.RespondAuth), 26 },
-                { typeof(global::Hypernex.Networking.Messages.ServerConsoleExecute), 27 },
-                { typeof(global::Hypernex.Networking.Messages.ServerConsoleLog), 28 },
-                { typeof(global::Hypernex.Networking.Messages.UnbanPlayer), 29 },
-                { typeof(global::Hypernex.Networking.Messages.WarnPlayer), 30 },
-                { typeof(global::Hypernex.Networking.Messages.WeightedObjectUpdate), 31 },
-                { typeof(global::Hypernex.Networking.Messages.WorldObjectUpdate), 32 },
-                { typeof(global::Hypernex.Networking.SandboxedClasses.StreamDownloadOptions), 33 },
-                { typeof(global::Hypernex.Networking.SandboxedClasses.VideoRequest), 34 },
+                { typeof(global::Nexport.ClientIdentifier[]), 1 },
+                { typeof(global::System.Collections.Generic.Dictionary<global::Nexport.ClientIdentifier, string>), 2 },
+                { typeof(global::System.Collections.Generic.Dictionary<int, global::Hypernex.Networking.Messages.Data.NetworkedObject>), 3 },
+                { typeof(global::System.Collections.Generic.Dictionary<string, global::Hypernex.Networking.Messages.WeightedObjectUpdate[]>), 4 },
+                { typeof(global::System.Collections.Generic.Dictionary<string, object>), 5 },
+                { typeof(global::System.Collections.Generic.List<global::Nexport.BuiltinMessages.DynamicNetworkObject>), 6 },
+                { typeof(global::System.Collections.Generic.List<string>), 7 },
+                { typeof(global::Hypernex.CCK.NexboxLanguage), 8 },
+                { typeof(global::Hypernex.Networking.Messages.Data.WorldObjectAction), 9 },
+                { typeof(global::Hypernex.Networking.Messages.AddModerator), 10 },
+                { typeof(global::Hypernex.Networking.Messages.BanPlayer), 11 },
+                { typeof(global::Hypernex.Networking.Messages.Bulk.BulkWeightedObjectUpdate), 12 },
+                { typeof(global::Hypernex.Networking.Messages.Data.float2), 13 },
+                { typeof(global::Hypernex.Networking.Messages.Data.float3), 14 },
+                { typeof(global::Hypernex.Networking.Messages.Data.float4), 15 },
+                { typeof(global::Hypernex.Networking.Messages.Data.NetworkedObject), 16 },
+                { typeof(global::Hypernex.Networking.Messages.Data.SinCos), 17 },
+                { typeof(global::Hypernex.Networking.Messages.Databasing.AvatarConfiguration), 18 },
+                { typeof(global::Hypernex.Networking.Messages.Databasing.PlayerOverrides), 19 },
+                { typeof(global::Hypernex.Networking.Messages.InstancePlayers), 20 },
+                { typeof(global::Hypernex.Networking.Messages.JoinAuth), 21 },
+                { typeof(global::Hypernex.Networking.Messages.KickPlayer), 22 },
+                { typeof(global::Hypernex.Networking.Messages.NetworkedEvent), 23 },
+                { typeof(global::Hypernex.Networking.Messages.PlayerDataUpdate), 24 },
+                { typeof(global::Hypernex.Networking.Messages.PlayerMessage), 25 },
+                { typeof(global::Hypernex.Networking.Messages.PlayerObjectUpdate), 26 },
+                { typeof(global::Hypernex.Networking.Messages.PlayerUpdate), 27 },
+                { typeof(global::Hypernex.Networking.Messages.PlayerVoice), 28 },
+                { typeof(global::Hypernex.Networking.Messages.RemoveModerator), 29 },
+                { typeof(global::Hypernex.Networking.Messages.RespondAuth), 30 },
+                { typeof(global::Hypernex.Networking.Messages.ServerConsoleExecute), 31 },
+                { typeof(global::Hypernex.Networking.Messages.ServerConsoleLog), 32 },
+                { typeof(global::Hypernex.Networking.Messages.UnbanPlayer), 33 },
+                { typeof(global::Hypernex.Networking.Messages.WarnPlayer), 34 },
+                { typeof(global::Hypernex.Networking.Messages.WeightedObjectUpdate), 35 },
+                { typeof(global::Hypernex.Networking.Messages.WorldObjectUpdate), 36 },
+                { typeof(global::Hypernex.Networking.SandboxedClasses.StreamDownloadOptions), 37 },
+                { typeof(global::Hypernex.Networking.SandboxedClasses.VideoRequest), 38 },
+                { typeof(global::Nexport.BuiltinMessages.DynamicNetworkObject), 39 },
+                { typeof(global::Nexport.BuiltinMessages.ServerClientChange), 40 },
+                { typeof(global::Nexport.ClientIdentifier), 41 },
             };
         }
 
@@ -98,40 +105,47 @@ namespace MessagePack.Resolvers
             switch (key)
             {
                 case 0: return new global::MessagePack.Formatters.ArrayFormatter<global::Hypernex.Networking.Messages.WeightedObjectUpdate>();
-                case 1: return new global::MessagePack.Formatters.DictionaryFormatter<global::Nexport.ClientIdentifier, string>();
-                case 2: return new global::MessagePack.Formatters.DictionaryFormatter<int, global::Hypernex.Networking.Messages.Data.NetworkedObject>();
-                case 3: return new global::MessagePack.Formatters.DictionaryFormatter<string, object>();
-                case 4: return new global::MessagePack.Formatters.ListFormatter<global::Nexport.BuiltinMessages.DynamicNetworkObject>();
-                case 5: return new global::MessagePack.Formatters.ListFormatter<string>();
-                case 6: return new MessagePack.Formatters.Hypernex.CCK.NexboxLanguageFormatter();
-                case 7: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.WorldObjectActionFormatter();
-                case 8: return new MessagePack.Formatters.Hypernex.Networking.Messages.AddModeratorFormatter();
-                case 9: return new MessagePack.Formatters.Hypernex.Networking.Messages.BanPlayerFormatter();
-                case 10: return new MessagePack.Formatters.Hypernex.Networking.Messages.Bulk.BulkWeightedObjectUpdateFormatter();
-                case 11: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float2Formatter();
-                case 12: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float3Formatter();
-                case 13: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float4Formatter();
-                case 14: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.NetworkedObjectFormatter();
-                case 15: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.SinCosFormatter();
-                case 16: return new MessagePack.Formatters.Hypernex.Networking.Messages.InstancePlayersFormatter();
-                case 17: return new MessagePack.Formatters.Hypernex.Networking.Messages.JoinAuthFormatter();
-                case 18: return new MessagePack.Formatters.Hypernex.Networking.Messages.KickPlayerFormatter();
-                case 19: return new MessagePack.Formatters.Hypernex.Networking.Messages.NetworkedEventFormatter();
-                case 20: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerDataUpdateFormatter();
-                case 21: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerMessageFormatter();
-                case 22: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerObjectUpdateFormatter();
-                case 23: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerUpdateFormatter();
-                case 24: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerVoiceFormatter();
-                case 25: return new MessagePack.Formatters.Hypernex.Networking.Messages.RemoveModeratorFormatter();
-                case 26: return new MessagePack.Formatters.Hypernex.Networking.Messages.RespondAuthFormatter();
-                case 27: return new MessagePack.Formatters.Hypernex.Networking.Messages.ServerConsoleExecuteFormatter();
-                case 28: return new MessagePack.Formatters.Hypernex.Networking.Messages.ServerConsoleLogFormatter();
-                case 29: return new MessagePack.Formatters.Hypernex.Networking.Messages.UnbanPlayerFormatter();
-                case 30: return new MessagePack.Formatters.Hypernex.Networking.Messages.WarnPlayerFormatter();
-                case 31: return new MessagePack.Formatters.Hypernex.Networking.Messages.WeightedObjectUpdateFormatter();
-                case 32: return new MessagePack.Formatters.Hypernex.Networking.Messages.WorldObjectUpdateFormatter();
-                case 33: return new MessagePack.Formatters.Hypernex.Networking.SandboxedClasses.StreamDownloadOptionsFormatter();
-                case 34: return new MessagePack.Formatters.Hypernex.Networking.SandboxedClasses.VideoRequestFormatter();
+                case 1: return new global::MessagePack.Formatters.ArrayFormatter<global::Nexport.ClientIdentifier>();
+                case 2: return new global::MessagePack.Formatters.DictionaryFormatter<global::Nexport.ClientIdentifier, string>();
+                case 3: return new global::MessagePack.Formatters.DictionaryFormatter<int, global::Hypernex.Networking.Messages.Data.NetworkedObject>();
+                case 4: return new global::MessagePack.Formatters.DictionaryFormatter<string, global::Hypernex.Networking.Messages.WeightedObjectUpdate[]>();
+                case 5: return new global::MessagePack.Formatters.DictionaryFormatter<string, object>();
+                case 6: return new global::MessagePack.Formatters.ListFormatter<global::Nexport.BuiltinMessages.DynamicNetworkObject>();
+                case 7: return new global::MessagePack.Formatters.ListFormatter<string>();
+                case 8: return new MessagePack.Formatters.Hypernex.CCK.NexboxLanguageFormatter();
+                case 9: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.WorldObjectActionFormatter();
+                case 10: return new MessagePack.Formatters.Hypernex.Networking.Messages.AddModeratorFormatter();
+                case 11: return new MessagePack.Formatters.Hypernex.Networking.Messages.BanPlayerFormatter();
+                case 12: return new MessagePack.Formatters.Hypernex.Networking.Messages.Bulk.BulkWeightedObjectUpdateFormatter();
+                case 13: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float2Formatter();
+                case 14: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float3Formatter();
+                case 15: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.float4Formatter();
+                case 16: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.NetworkedObjectFormatter();
+                case 17: return new MessagePack.Formatters.Hypernex.Networking.Messages.Data.SinCosFormatter();
+                case 18: return new MessagePack.Formatters.Hypernex.Networking.Messages.Databasing.AvatarConfigurationFormatter();
+                case 19: return new MessagePack.Formatters.Hypernex.Networking.Messages.Databasing.PlayerOverridesFormatter();
+                case 20: return new MessagePack.Formatters.Hypernex.Networking.Messages.InstancePlayersFormatter();
+                case 21: return new MessagePack.Formatters.Hypernex.Networking.Messages.JoinAuthFormatter();
+                case 22: return new MessagePack.Formatters.Hypernex.Networking.Messages.KickPlayerFormatter();
+                case 23: return new MessagePack.Formatters.Hypernex.Networking.Messages.NetworkedEventFormatter();
+                case 24: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerDataUpdateFormatter();
+                case 25: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerMessageFormatter();
+                case 26: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerObjectUpdateFormatter();
+                case 27: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerUpdateFormatter();
+                case 28: return new MessagePack.Formatters.Hypernex.Networking.Messages.PlayerVoiceFormatter();
+                case 29: return new MessagePack.Formatters.Hypernex.Networking.Messages.RemoveModeratorFormatter();
+                case 30: return new MessagePack.Formatters.Hypernex.Networking.Messages.RespondAuthFormatter();
+                case 31: return new MessagePack.Formatters.Hypernex.Networking.Messages.ServerConsoleExecuteFormatter();
+                case 32: return new MessagePack.Formatters.Hypernex.Networking.Messages.ServerConsoleLogFormatter();
+                case 33: return new MessagePack.Formatters.Hypernex.Networking.Messages.UnbanPlayerFormatter();
+                case 34: return new MessagePack.Formatters.Hypernex.Networking.Messages.WarnPlayerFormatter();
+                case 35: return new MessagePack.Formatters.Hypernex.Networking.Messages.WeightedObjectUpdateFormatter();
+                case 36: return new MessagePack.Formatters.Hypernex.Networking.Messages.WorldObjectUpdateFormatter();
+                case 37: return new MessagePack.Formatters.Hypernex.Networking.SandboxedClasses.StreamDownloadOptionsFormatter();
+                case 38: return new MessagePack.Formatters.Hypernex.Networking.SandboxedClasses.VideoRequestFormatter();
+                case 39: return new MessagePack.Formatters.Nexport.BuiltinMessages.DynamicNetworkObjectFormatter();
+                case 40: return new MessagePack.Formatters.Nexport.BuiltinMessages.ServerClientChangeFormatter();
+                case 41: return new MessagePack.Formatters.Nexport.ClientIdentifierFormatter();
                 default: return null;
             }
         }

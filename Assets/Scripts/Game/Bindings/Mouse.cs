@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Hypernex.Game.Bindings
 {
-    public class Mouse : IBinding, IDisposable
+    public class Mouse : IBinding, IBindingSensitivity, IDisposable
     {
         public string Id => "Mouse";
         public Transform AttachedObject => LocalPlayer.Instance.Camera.transform;
@@ -21,8 +21,7 @@ namespace Hypernex.Game.Bindings
         public float Trigger { get; set; }
         public Action TriggerClick { get; set; } = () => { };
         public bool Grab { get; set; }
-
-        public float Sensitivity = 1;
+        public float Sensitivity { get; set; }
         
         private static Dictionary<int, List<Action>> customEvents = new();
 

@@ -17,16 +17,16 @@ namespace Hypernex.Game.Avatar.VisemeProviders
     {
         private const int SAMPLE_RATE = 48000;
 
-        private static string ModelDirectory => Path.Combine(Application.streamingAssetsPath, "model");
+        private static string ModelDirectory => Path.Combine(AssetBundleTools.StreamingLocation, "model");
 
         internal static void DownloadModel()
         {
             if(Directory.Exists(ModelDirectory)) return;
             const string url = "https://github.com/KyuubiYoru/OpenLipSync/releases/download/0.2.0/model.zip";
-            string outputFile = Path.Combine(Application.streamingAssetsPath, "model.zip");
+            string outputFile = Path.Combine(AssetBundleTools.StreamingLocation, "model.zip");
             DownloadTools.DownloadFile(url, outputFile, file =>
             {
-                ZipFile.ExtractToDirectory(file, Application.streamingAssetsPath);
+                ZipFile.ExtractToDirectory(file, AssetBundleTools.StreamingLocation);
                 File.Delete(file);
                 Logger.CurrentLogger.Log("Downloaded OpenLipSync Model!");
             });
