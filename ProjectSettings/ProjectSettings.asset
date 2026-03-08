@@ -138,9 +138,10 @@ PlayerSettings:
   vulkanEnableLateAcquireNextImage: 0
   vulkanEnableCommandBufferRecycling: 1
   loadStoreDebugModeEnabled: 0
-  bundleVersion: 2025.10.1b
+  bundleVersion: 2025101
   preloadedAssets:
   - {fileID: 0}
+  - {fileID: 2887187332752091027, guid: a08e1849d99fdcd4ea4a7ae8dfb275d4, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -164,6 +165,7 @@ PlayerSettings:
   applicationIdentifier:
     Android: dev.hypernex.unity
     Standalone: com.UnityTechnologies.com.unity.template-starter-kit
+    iPhone: dev.hypernex.unity
   buildNumber:
     Bratwurst: 0
     Standalone: 0
@@ -245,7 +247,7 @@ PlayerSettings:
   iOSManualSigningProvisioningProfileType: 0
   tvOSManualSigningProvisioningProfileType: 0
   bratwurstManualSigningProvisioningProfileType: 0
-  appleEnableAutomaticSigning: 0
+  appleEnableAutomaticSigning: 1
   iOSRequireARKit: 0
   iOSAutomaticallyDetectAndAddCapabilities: 1
   appleEnableProMotion: 0
@@ -825,7 +827,7 @@ PlayerSettings:
     Android: URP;UI;VLC;STEAMAUDIO_ENABLED;MAGICACLOTH2;USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS
     Standalone: STEAMAUDIO_ENABLED;USE_INPUT_SYSTEM_POSE_CONTROL;URP;UI;MAGICACLOTH2;VLC;HYPERNEX_CCK;XRPLUGIN;OPENXR;USE_STICK_CONTROL_THUMBSTICKS
     Windows Store Apps: USE_INPUT_SYSTEM_POSE_CONTROL;USE_STICK_CONTROL_THUMBSTICKS
-    iPhone: STEAMAUDIO_ENABLED
+    iPhone: STEAMAUDIO_ENABLED;MAGICACLOTH2;URP;UI
   additionalCompilerArguments:
     Standalone: []
   platformArchitecture: {}
