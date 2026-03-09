@@ -21,7 +21,7 @@ namespace Hypernex.Game.Bindings
         public float Trigger { get; set; }
         public Action TriggerClick { get; set; } = () => { };
         public bool Grab { get; set; }
-        public float Sensitivity { get; set; }
+        public float Sensitivity { get; set; } = 1;
         
         private static Dictionary<int, List<Action>> customEvents = new();
 

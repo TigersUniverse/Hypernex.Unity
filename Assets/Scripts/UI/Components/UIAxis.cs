@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Hypernex.Game;
+using Hypernex.Tools;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace Hypernex.UI.Components
         
         private Vector3 center;
         private Vector3 extents;
+        private int activeTouch = -1;
 
         protected virtual void AxisPositionChanged(Vector2 pos){}
         
@@ -99,13 +101,51 @@ namespace Hypernex.UI.Components
                 }
                 else
                 {
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                        (RectTransform)Dot.parent,
-                        Input.mousePosition,
-                        null,
-                        out Vector2 localPoint
-                    );
-                    OnEnter(localPoint);
+                    if (Init.Instance.IsMobile)
+                    {
+                        if (activeTouch >= 0)
+                        {
+                            Touch? currentTouch = MobileTouch.GetTouchFromFingerId(activeTouch);
+                            // check if the touch still exists
+                            if (currentTouch == null || currentTouch.Value.phase == TouchPhase.Ended)
+                            {
+                                activeTouch = -1;
+                                MoveDotToPosition(Vector2.zero);
+                            }
+                            else
+                            {
+                                RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                                    (RectTransform)Dot.parent,
+                                    currentTouch.Value.position,
+                                    null,
+                                    out Vector2 localPoint
+                                );
+                                OnEnter(localPoint);
+                            }
+                        }
+                        else
+                        {
+                            Touch? currentTouch = MobileTouch.GetTouchFromBounds(Dot, TopLeft.localPosition,
+                                BottomRight.localPosition, out Vector2? localPoint);
+                            if (currentTouch != null && localPoint != null)
+                            {
+                                activeTouch = currentTouch.Value.fingerId;
+                                OnEnter(localPoint.Value);
+                            }
+                            else
+                                activeTouch = -1;
+                        }
+                    }
+                    else
+                    {
+                        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                            (RectTransform)Dot.parent,
+                            Input.mousePosition,
+                            null,
+                            out Vector2 localPoint
+                        );
+                        OnEnter(localPoint);
+                    }
                 }
             }
             else

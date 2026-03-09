@@ -1,4 +1,5 @@
 ﻿using System;
+using Hypernex.Tools;
 using Hypernex.UI.Components;
 using Unity.Mathematics;
 using UnityEngine;
@@ -28,6 +29,7 @@ namespace Hypernex.Game.Bindings
         private MobileControls mobileControls;
         private Vector2 lastPos;
         private bool dragging;
+        private int activeTouch = -1;
 
         public Mobile(bool look, MobileControls mobileControls)
         {
@@ -71,17 +73,39 @@ namespace Hypernex.Game.Bindings
                 Up = Down = Left = Right = 0;
                 return;
             }
-            Touch t = Input.GetTouch(0);
-            if (t.phase == TouchPhase.Began)
+            Touch t;
+            if (activeTouch >= 0)
             {
-                if (!InLookZone(t.position))
+                Touch? currentTouch = MobileTouch.GetTouchFromFingerId(activeTouch);
+                if (currentTouch == null || currentTouch.Value.phase == TouchPhase.Ended)
+                {
+                    activeTouch = -1;
+                    dragging = false;
+                    Up = Down = Left = Right = 0;
+                    return;
+                }
+                /*if (!InLookZone(currentTouch.Value.position))
+                {
+                    activeTouch = -1;
+                    dragging = false;
+                    Up = Down = Left = Right = 0;
+                    return;
+                }*/
+                dragging = true;
+                t = currentTouch.Value;
+            }
+            else
+            {
+                Touch? beganTouch = MobileTouch.GetBeganTouch();
+                if (beganTouch == null || !InLookZone(beganTouch.Value.position))
                 {
                     dragging = false;
                     return;
                 }
+                activeTouch = beganTouch.Value.fingerId;
                 dragging = true;
-                lastPos = t.position;
-                return;
+                lastPos = beganTouch.Value.position;
+                t = beganTouch.Value;
             }
             if (!dragging) return;
             Vector2 delta = t.position - lastPos;

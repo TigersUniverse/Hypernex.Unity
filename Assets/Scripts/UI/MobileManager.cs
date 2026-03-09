@@ -13,7 +13,7 @@ namespace Hypernex.UI
 
         private void Update()
         {
-            Controls.SetActive(!Dashboard.IsVisible && Init.MobileControls);
+            Controls.SetActive(!Dashboard.IsVisible && Init.IsMobile);
             foreach (GameObject control in MainControls)
             {
                 control.SetActive(Init.IsMobile);

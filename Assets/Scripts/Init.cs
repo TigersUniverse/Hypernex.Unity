@@ -112,12 +112,22 @@ public class Init : MonoBehaviour
         LocalPlayer.StopVR();
     }
 
+    private void Awake()
+    {
+#if UNITY_ANDROID || UNITY_IOS
+        QualitySettings.SetQualityLevel(0, true);
+#else
+        QualitySettings.SetQualityLevel(2, true);
+#endif
+    }
+
     private void Start()
     {
         Instance = this;
 #if UNITY_ANDROID
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = -1;
+        // TODO: Change dynamically
+        Application.targetFrameRate = 120;
 #endif
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
