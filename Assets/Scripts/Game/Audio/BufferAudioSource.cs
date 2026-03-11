@@ -119,12 +119,14 @@ namespace Hypernex.Game.Audio
             if (TempRingBuffer.Length != data.Length / channels)
                 TempRingBuffer = new float[data.Length / channels];
             ReadCallback(TempRingBuffer);
-            for (int i = 0; i < data.Length / channels; i++)
+            int sampleCount = data.Length / channels;
+            for (int i = 0; i < sampleCount; i++)
             {
-                for (int j = 0; j < channels; j++)
-                {
-                    data[i * channels + j] *= TempRingBuffer[i];
-                }
+                float sample = TempRingBuffer[i];
+                int index = i * channels;
+
+                for (int c = 0; c < channels; c++)
+                    data[index + c] = sample;
             }
         }
 
@@ -307,7 +309,8 @@ namespace Hypernex.Game.Audio
                 shouldStop = false;
                 targetBufferSamples = (int)(frequency * channels * 0.05f);
                 maxBufferSamples = targetBufferSamples * 2;
-                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, false);
+                int outputRate = AudioSettings.outputSampleRate;
+                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, outputRate, false);
                 float[] temp = new float[CLIP_SAMPLE_SIZE];
                 Array.Fill(temp, 1f);
                 clip.SetData(temp, 0);

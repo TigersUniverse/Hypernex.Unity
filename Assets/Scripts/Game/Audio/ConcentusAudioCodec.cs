@@ -29,6 +29,29 @@ namespace Hypernex.Game.Audio
 
         private Queue<float> queue = new Queue<float>();
         private int PacketCounterSamples = 0;
+        
+        private float[] Resample(float[] input, int inputRate, int outputRate, int channels)
+        {
+            if (inputRate == outputRate)
+                return input;
+            float ratio = (float) outputRate / inputRate;
+            int inputSamples = input.Length / channels;
+            int outputSamples = Mathf.RoundToInt(inputSamples * ratio);
+            float[] output = new float[outputSamples * channels];
+            for (int i = 0; i < outputSamples; i++)
+            {
+                float srcIndex = i / ratio;
+                int index = (int)srcIndex;
+                float frac = srcIndex - index;
+                for (int c = 0; c < channels; c++)
+                {
+                    float a = input[Mathf.Min(index * channels + c, input.Length - 1)];
+                    float b = input[Mathf.Min((index + 1) * channels + c, input.Length - 1)];
+                    output[i * channels + c] = Mathf.Lerp(a, b, frac);
+                }
+            }
+            return output;
+        }
 
         public PlayerVoice[] Encode(float[] pcm, AudioClip clip, JoinAuth joinAuth)
         {
@@ -42,10 +65,16 @@ namespace Hypernex.Game.Audio
             if (encoder == null)
             {
                 PacketCounterSamples = 0;
-                encoder = new(clip.frequency, clip.channels, OpusApplication.OPUS_APPLICATION_VOIP);
+                encoder = new(Mic.REQUESTED_FREQUENCY, clip.channels, OpusApplication.OPUS_APPLICATION_VOIP);
                 encoder.Bitrate = 61440;
                 encoder.Complexity = 10;
                 encoder.SignalType = OpusSignal.OPUS_SIGNAL_AUTO;
+            }
+            
+            if (Mic.REQUESTED_FREQUENCY != Mic.Frequency)
+            {
+                // Resample to Requested
+                pcm = Resample(pcm, Mic.Frequency, Mic.REQUESTED_FREQUENCY, encoder.NumChannels);
             }
 
             for (int i = 0; i < pcm.Length; i++)
@@ -99,16 +128,18 @@ namespace Hypernex.Game.Audio
             OpusDecoder decoder = playback.decoder;
 
             byte[] compressedPacket = playerVoice.Bytes;
-            int packetIndexSamples = BitConverter.ToInt32(compressedPacket, 0);
-            int frameSize = playerVoice.EncodeLength;
-            int frameLength = Mathf.RoundToInt(MaxFrameSize / 1000f * decoder.SampleRate * decoder.NumChannels);
+            int frameLength = Mathf.RoundToInt(FrameSize / 1000f * decoder.SampleRate * decoder.NumChannels);
             float[] outputBuffer = new float[frameLength];
             int length = decoder.Decode(compressedPacket, sizeof(int), compressedPacket.Length - sizeof(int), outputBuffer, 0, outputBuffer.Length / decoder.NumChannels);
-            float[] pcmBuffer = new float[length];
+            float[] pcmBuffer = new float[length * decoder.NumChannels];
             // Debug.Assert(length == frameSize);
             Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);
-
-            AudioSourceDriver.AddQueue(audioSource, pcmBuffer, decoder.NumChannels, decoder.SampleRate);
+            int outputRate = AudioSettings.outputSampleRate;
+            if (decoder.SampleRate != outputRate)
+            {
+                pcmBuffer = Resample(pcmBuffer, decoder.SampleRate, outputRate, decoder.NumChannels);
+            }
+            AudioSourceDriver.AddQueue(audioSource, pcmBuffer, decoder.NumChannels, outputRate);
             return pcmBuffer;
         }
     }

@@ -126,8 +126,7 @@ public class Init : MonoBehaviour
         Instance = this;
 #if UNITY_ANDROID
         QualitySettings.vSyncCount = 0;
-        // TODO: Change dynamically
-        Application.targetFrameRate = 120;
+        Application.targetFrameRate = (int) Screen.currentResolution.refreshRateRatio.value + 1;
 #endif
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
