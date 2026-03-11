@@ -11,7 +11,19 @@ namespace Hypernex.Game.Video.StreamProviders
 {
     public class YouTubeStreamProvider : IStreamProvider
     {
-        internal static YoutubeDL ytdl = new();
+        internal static YoutubeDL ytdl;
+
+        static YouTubeStreamProvider()
+        {
+            try
+            {
+                ytdl = new();
+            }
+            catch (Exception e)
+            {
+                Logger.CurrentLogger.Critical(e);
+            }
+        }
         
         private bool TryGetCookies(out string file)
         {
