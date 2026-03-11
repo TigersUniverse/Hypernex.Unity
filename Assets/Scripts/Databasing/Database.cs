@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using DBreeze;
 using DBreeze.Objects;
 using DBreeze.Transactions;
 using DBreeze.Utils;
-using Hypernex.CCK;
 using Hypernex.Configuration.ConfigMeta;
 using Hypernex.Networking.Messages.Databasing;
 using Hypernex.Tools;
-using Nexport;
+using Logger = Hypernex.CCK.Logger;
 
 namespace Hypernex.Databasing
 {
@@ -18,6 +18,7 @@ namespace Hypernex.Databasing
         private string server;
         private string userid;
         private DBreezeEngine engine;
+        private readonly Type ignoreType = typeof(UTF8Encoding);
 
         public Database(ConfigUser configUser)
         {
@@ -26,8 +27,18 @@ namespace Hypernex.Databasing
             string pathToDatabase = Path.Combine(Init.Instance.GetDatabaseLocation(),
                 DownloadTools.GetStringHash(configUser.Server), configUser.UserId);
             engine = new DBreezeEngine(pathToDatabase);
-            CustomSerializator.ByteArraySerializator = Msg.Serialize;
-            CustomSerializator.ByteArrayDeSerializator = Msg.Deserialize;
+            CustomSerializator.ByteArraySerializator = o =>
+            {
+                if (o.GetType() == ignoreType) return Array.Empty<byte>();
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(o);
+                return System.Text.Encoding.UTF8.GetBytes(json);
+            };
+            CustomSerializator.ByteArrayDeSerializator = (bytes, type) =>
+            {
+                if (type == ignoreType) return new UTF8Encoding();
+                string json = System.Text.Encoding.UTF8.GetString(bytes);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
+            };
         }
 
         public bool IsSame(ConfigUser configUser)
