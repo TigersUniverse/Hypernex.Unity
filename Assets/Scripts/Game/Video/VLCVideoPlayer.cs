@@ -196,10 +196,8 @@ namespace Hypernex.Game.Video
             }
             if (_vlcTexture != null)
             {
-                var texptr = mediaPlayer.GetTexture(width, height, out bool updated);
-                if (updated)
-                {
-                    _vlcTexture.UpdateExternalTexture(texptr);
+	            if (TextureHelper.UpdateTexture(_vlcTexture, ref mediaPlayer))
+	            {
                     var flip = new Vector2(flipTextureX ? -1 : 1, flipTextureY ? -1 : 1);
                     Graphics.Blit(_vlcTexture, texture, flip, Vector2.zero);
                     screens.ForEach(x =>
@@ -350,8 +348,7 @@ namespace Hypernex.Game.Video
 
 		private void ResizeOutputTextures(uint px, uint py)
 		{
-			var texptr = mediaPlayer.GetTexture(px, py, out bool updated);
-			if (px != 0 && py != 0 && updated && texptr != IntPtr.Zero)
+			if (px != 0 && py != 0)
 			{
 				if(GetVideoOrientation() == VideoOrientation.BottomRight)
 				{
@@ -359,7 +356,7 @@ namespace Hypernex.Game.Video
 					px = py;
 					py = swap;
 				}
-				_vlcTexture = Texture2D.CreateExternalTexture((int)px, (int)py, TextureFormat.RGBA32, false, true, texptr);
+				_vlcTexture = TextureHelper.CreateNativeTexture(ref mediaPlayer, true);
 				if(texture == null || texture.width != _vlcTexture.width || texture.height != _vlcTexture.height)
 				{
 					if (texture != null) DestroyRenderTexture();
