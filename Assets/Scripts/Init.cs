@@ -112,22 +112,9 @@ public class Init : MonoBehaviour
         LocalPlayer.StopVR();
     }
 
-    private void Awake()
-    {
-#if UNITY_ANDROID || UNITY_IOS
-        QualitySettings.SetQualityLevel(0, true);
-#else
-        QualitySettings.SetQualityLevel(2, true);
-#endif
-    }
-
     private void Start()
     {
         Instance = this;
-#if UNITY_ANDROID
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = (int) Screen.currentResolution.refreshRateRatio.value + 1;
-#endif
         UnityLogger unityLogger = new UnityLogger();
         unityLogger.SetLogger();
         CursorTools.UpdateMouseIcon(true, DefaultTheme.PrimaryColorTheme);
@@ -174,6 +161,18 @@ public class Init : MonoBehaviour
             LocalPlayer.CreateDesktopBindings();
         else
             LocalPlayer.CreateMobileBindings(MobileControls);
+#if UNITY_ANDROID
+        if(!LocalPlayer.IsVR)
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = (int) Screen.currentResolution.refreshRateRatio.value + 1;
+#if UNITY_ANDROID || UNITY_IOS
+            QualitySettings.SetQualityLevel(0, true);
+#else
+            QualitySettings.SetQualityLevel(2, true);
+#endif
+        }
+#endif
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");

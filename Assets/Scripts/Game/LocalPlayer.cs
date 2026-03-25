@@ -188,6 +188,8 @@ namespace Hypernex.Game
         private bool didSnapTurn;
         private Scene? scene;
         internal float vrHeight;
+        private XRBinding leftXRBinding;
+        private XRBinding rightXRBinding;
 
         public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {
@@ -538,14 +540,14 @@ namespace Hypernex.Game
             Bindings.Clear();
             // Create Bindings
             vrPlayerInput.ActivateInput();
-            XRBinding leftBinding = new XRBinding(false, LeftHandGetter);
-            XRBinding rightBinding = new XRBinding(true, RightHandGetter);
-            leftBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
-            rightBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
-            Bindings.Add(leftBinding);
-            VRInputListener.AddXRBinding(leftBinding);
-            Bindings.Add(rightBinding);
-            VRInputListener.AddXRBinding(rightBinding);
+            leftXRBinding = new XRBinding(false, LeftHandGetter);
+            rightXRBinding = new XRBinding(true, RightHandGetter);
+            leftXRBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
+            rightXRBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
+            Bindings.Add(leftXRBinding);
+            VRInputListener.AddXRBinding(leftXRBinding);
+            Bindings.Add(rightXRBinding);
+            VRInputListener.AddXRBinding(rightXRBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
             CoroutineRunner.Run(PositionDashboardOnVRSwitch());
         }
@@ -772,17 +774,23 @@ namespace Hypernex.Game
             }
             left_m.valid = false;
             right_m.valid = false;
-            for (int i = 0; i < Bindings.Count; i++)
+            if (vr)
             {
-                IBinding binding = Bindings[i];
-                binding.Update();
-                bool g = !binding.IsLook;
-                if (vr)
-                    g = binding.IsLook;
-                if (g)
-                    HandleLeftBinding(binding, vr);
-                else
-                    HandleRightBinding(binding, vr);
+                HandleLeftBinding(leftXRBinding, true);
+                HandleRightBinding(rightXRBinding, false);
+            }
+            else
+            {
+                for (int i = 0; i < Bindings.Count; i++)
+                {
+                    IBinding binding = Bindings[i];
+                    binding.Update();
+                    bool g = !binding.IsLook;
+                    if (g)
+                        HandleLeftBinding(binding, false);
+                    else
+                        HandleRightBinding(binding, false);
+                }
             }
             Vector3 move = Vector3.zero;
             bool isJumping = false;
