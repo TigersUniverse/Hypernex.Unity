@@ -630,7 +630,7 @@ namespace Hypernex.Game
                 move = t.forward * (binding.Up + binding.Down * -1) +
                        t.right * (binding.Left * -1 + binding.Right);
             move = Vector3.ClampMagnitude(move, 1);
-            if(!vr)
+            if (!vr)
             {
                 isRunning = binding.Button2 && CanRun;
                 s_ = isRunning ? RunSpeed : WalkSpeed;
@@ -776,8 +776,8 @@ namespace Hypernex.Game
             right_m.valid = false;
             if (vr)
             {
-                HandleLeftBinding(leftXRBinding, true);
-                HandleRightBinding(rightXRBinding, false);
+                HandleRightBinding(leftXRBinding, true);
+                HandleLeftBinding(rightXRBinding, true);
             }
             else
             {

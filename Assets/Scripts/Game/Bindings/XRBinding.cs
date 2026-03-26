@@ -11,7 +11,7 @@ namespace Hypernex.Game.Bindings
 {
     public class XRBinding : IBinding
     {
-        public string Id => (IsLook ? "Left" : "Right") + " VRController";
+        public string Id => (IsLook ? "Right" : "Left") + " VRController";
         public Transform AttachedObject =>
             !IsLook ? LocalPlayer.Instance.RightHandReference : LocalPlayer.Instance.LeftHandReference;
         public bool IsLeftController => !IsLook;

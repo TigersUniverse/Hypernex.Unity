@@ -203,7 +203,12 @@ namespace Hypernex.Game
         {
             DateTime dateTime = DateTime.Now;
             string photosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+#if UNITY_ANDROID || UNITY_IOS
+            string folder = Path.Combine(Application.persistentDataPath, "Photos", dateTime.Year.ToString(),
+                dateTime.Month.ToString());
+#else
             string folder = Path.Combine(photosPath, "Hypernex", dateTime.Year.ToString(), dateTime.Month.ToString());
+#endif
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
             string fileName =
