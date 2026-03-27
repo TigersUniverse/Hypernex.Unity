@@ -188,8 +188,8 @@ namespace Hypernex.Game
         private bool didSnapTurn;
         private Scene? scene;
         internal float vrHeight;
-        private XRBinding leftXRBinding;
-        private XRBinding rightXRBinding;
+        internal XRBinding leftXRBinding;
+        internal XRBinding rightXRBinding;
 
         public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {

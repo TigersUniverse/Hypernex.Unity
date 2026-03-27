@@ -29,6 +29,7 @@ using UnityEngine.Android;
 #endif
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
+using UnityEngine.XR;
 using UnityEngine.XR.Management;
 #if VLC
 using Hypernex.Game.Video;
@@ -112,6 +113,18 @@ public class Init : MonoBehaviour
         LocalPlayer.StopVR();
     }
 
+    private void FoveateXR()
+    {
+        List<XRDisplaySubsystem> xrDisplays = new List<XRDisplaySubsystem>();
+        SubsystemManager.GetSubsystems(xrDisplays);
+        foreach (XRDisplaySubsystem xrDisplay in xrDisplays)
+        {
+            xrDisplay.foveatedRenderingLevel = 1;
+            xrDisplay.foveatedRenderingFlags = XRDisplaySubsystem.FoveatedRenderingFlags.None;
+            Debug.Log("Applied to " + xrDisplay.subsystemDescriptor.id);
+        }
+    }
+
     private void Start()
     {
         Instance = this;
@@ -172,9 +185,12 @@ public class Init : MonoBehaviour
         if (!NativeGallery.CheckPermission(NativeGallery.PermissionType.Write, NativeGallery.MediaType.Image))
             NativeGallery.RequestPermissionAsync(NativeGallery.PermissionType.Write, NativeGallery.MediaType.Image)
                 .Wait();
-        if (!LocalPlayer.IsVR)
-        {
+        if (IsMobile)
             QualitySettings.SetQualityLevel(0, true);
+        if(LocalPlayer.IsVR)
+        {
+            QualitySettings.SetQualityLevel(1, true);
+            FoveateXR();
         }
 #else
         QualitySettings.SetQualityLevel(2, true);

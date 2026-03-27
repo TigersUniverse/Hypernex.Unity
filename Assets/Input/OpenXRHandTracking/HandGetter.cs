@@ -1,5 +1,7 @@
 using System;
+using Hypernex.Game;
 using Hypernex.Game.Avatar.FingerInterfacing;
+using Hypernex.Game.Bindings;
 using UnityEngine;
 using UnityEngine.XR.OpenXR;
 
@@ -28,6 +30,8 @@ public class HandGetter : MonoBehaviour, IFingerCurler
             throw new Exception("Unknown HandIndex");
         }
     }
+    public XRBinding AttachedBinding =>
+        Hand == Hand.Left ? LocalPlayer.Instance.rightXRBinding : LocalPlayer.Instance.leftXRBinding;
     public float ThumbCurl => Curls[0];
     public float IndexCurl => Curls[1];
     public float MiddleCurl => Curls[2];
@@ -115,7 +119,11 @@ public class HandGetter : MonoBehaviour, IFingerCurler
         if(hf)
         {
             hf.GetHandJoints(HandIndex, out positions, out orientations, out radius);
-            if (positions.Length == 0) return;
+            if (positions.Length == 0)
+            {
+                Curls = AttachedBinding.GetCurlsFromBindings();
+                return;
+            }
             /*if (!initializedOrientations)
             {
                 if (HandIndex == HandTrackingFeature.Hand_Index.L)
@@ -262,6 +270,14 @@ public class HandGetter : MonoBehaviour, IFingerCurler
                 Curls[i] = RemapClamped(localCurls[i], _localCurlsOpen[i], _localCurlsClosed[i]);
             }
 
+            try
+            {
+                // dont include the thumbs
+                if (Curls[1] <= 0 && Curls[2] <= 0 && Curls[3] <= 0 && Curls[4] <= 0)
+                    Curls = AttachedBinding.GetCurlsFromBindings();
+            }
+            catch (Exception){}
+
             if (!EnableDebug)
                 return;
             //draw lines in game view
@@ -272,6 +288,11 @@ public class HandGetter : MonoBehaviour, IFingerCurler
                 bld.r.SetPositions(bld.vertices);
                 boneLines[i] = bld;
             }
+        }
+        else
+        {
+            // Fallback to controller binding
+            Curls = AttachedBinding.GetCurlsFromBindings();
         }
     }
 
