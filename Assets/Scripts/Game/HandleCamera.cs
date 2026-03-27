@@ -199,21 +199,21 @@ namespace Hypernex.Game
             }
         }
 
-        public static string GetPhotoPath()
+        public static (string, string) GetPhotoPath()
         {
             DateTime dateTime = DateTime.Now;
-            string photosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
 #if UNITY_ANDROID || UNITY_IOS
             string folder = Path.Combine(Application.persistentDataPath, "Photos", dateTime.Year.ToString(),
                 dateTime.Month.ToString());
 #else
+            string photosPath = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
             string folder = Path.Combine(photosPath, "Hypernex", dateTime.Year.ToString(), dateTime.Month.ToString());
 #endif
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
             string fileName =
                 $"Hypernex-{dateTime.Year}-{dateTime.Month}-{(int) dateTime.DayOfWeek}_{dateTime.Hour}-{dateTime.Minute}-{dateTime.Second}.{dateTime.Millisecond}.png";
-            return Path.Combine(folder, fileName);
+            return (Path.Combine(folder, fileName), fileName);
         }
 
         private XRTracker FindCameraTracker()
@@ -365,8 +365,11 @@ namespace Hypernex.Game
                     copiedRt.Apply();
                     RenderTexture.active = oldRT;
                     byte[] data = copiedRt.EncodeToPNG();
-                    string file = GetPhotoPath();
-                    FileStream fs = new FileStream(file, FileMode.OpenOrCreate, FileAccess.ReadWrite,
+                    (string, string) file = GetPhotoPath();
+#if UNITY_ANDROID || UNITY_IOS
+                    NativeGallery.SaveImageToGallery(data, "Hypernex", file.Item2);
+#endif
+                    FileStream fs = new FileStream(file.Item1, FileMode.OpenOrCreate, FileAccess.ReadWrite,
                         FileShare.ReadWrite | FileShare.Delete);
                     fs.Write(data, 0, data.Length);
                     fs.Dispose();

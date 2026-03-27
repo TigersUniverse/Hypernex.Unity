@@ -166,12 +166,18 @@ public class Init : MonoBehaviour
         {
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = (int) Screen.currentResolution.refreshRateRatio.value + 1;
-#if UNITY_ANDROID || UNITY_IOS
-            QualitySettings.SetQualityLevel(0, true);
-#else
-            QualitySettings.SetQualityLevel(2, true);
-#endif
         }
+#endif
+#if UNITY_ANDROID || UNITY_IOS
+        if (!NativeGallery.CheckPermission(NativeGallery.PermissionType.Write, NativeGallery.MediaType.Image))
+            NativeGallery.RequestPermissionAsync(NativeGallery.PermissionType.Write, NativeGallery.MediaType.Image)
+                .Wait();
+        if (!LocalPlayer.IsVR)
+        {
+            QualitySettings.SetQualityLevel(0, true);
+        }
+#else
+        QualitySettings.SetQualityLevel(2, true);
 #endif
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
