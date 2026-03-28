@@ -610,6 +610,17 @@ namespace Hypernex.Game.Avatar
                 SetParameter(weight);
         }
 
+        public bool IsReplicatedParameter(AnimatorControllerParameter avatarParameter)
+        {
+            switch (avatarParameter.name)
+            {
+                case FingerCalibration.LEFT_GESTURE_NAME:
+                case FingerCalibration.RIGHT_GESTURE_NAME:
+                    return true;
+            }
+            return false;
+        }
+
         private bool? IsNetworked(AnimatorControllerParameter playableParameter)
         {
             AvatarParameter avatarParameter = null;
@@ -620,7 +631,13 @@ namespace Hypernex.Game.Avatar
                 avatarParameter = parameter;
                 break;
             }
-            if (avatarParameter == null) return null;
+            if (avatarParameter == null)
+            {
+                // Check if the parameter should be replicated
+                // These are core parameters that should always network no matter the configuration
+                if (IsReplicatedParameter(playableParameter)) return true;
+                return null;
+            }
             return avatarParameter.IsNetworked;
         }
         
