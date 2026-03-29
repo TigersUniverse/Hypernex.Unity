@@ -17,6 +17,7 @@ namespace Hypernex.Tools
                 switch (Application.platform)
                 {
                     case RuntimePlatform.Android:
+                    case RuntimePlatform.IPhonePlayer:
                         return BuildPlatform.Android;
                     default:
                         return BuildPlatform.Windows;

@@ -116,6 +116,7 @@ namespace Hypernex.UI.Pages
                     if(!popularityResult.success) return;
                     GetWorldsInOrder(popularityResult.result.Popularity, new List<WorldMeta>(), result =>
                     {
+                        result.FilterBySupportedPlatform();
                         lastResultsLength = result.Count;
                         isRendering = false;
                         foreach (WorldMeta m in result)
@@ -170,7 +171,7 @@ namespace Hypernex.UI.Pages
             {
                 WorldRender.GetWorldMeta(id, worldMeta =>
                 {
-                    if(worldMeta == null)
+                    if(worldMeta == null || !worldMeta.IsSupportedOnActivePlatform())
                         return;
                     CreateWorldCardTemplate(worldMeta);
                 });
