@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Hands;
-using UnityEngine.XR.Management;
 
 // ReSharper disable Unity.NoNullPropagation
 

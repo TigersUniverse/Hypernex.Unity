@@ -31,7 +31,7 @@ public class HandGetter : MonoBehaviour, IFingerCurler
         }
     }
     public XRBinding AttachedBinding =>
-        Hand == Hand.Left ? LocalPlayer.Instance.rightXRBinding : LocalPlayer.Instance.leftXRBinding;
+        Hand == Hand.Left ? LocalPlayer.Instance.leftXRBinding : LocalPlayer.Instance.rightXRBinding;
     public float ThumbCurl => Curls[0];
     public float IndexCurl => Curls[1];
     public float MiddleCurl => Curls[2];
@@ -108,6 +108,8 @@ public class HandGetter : MonoBehaviour, IFingerCurler
     // Update is called once per frame
     void Update()
     {
+        // Don't do anything if we are not in VR
+        if(!LocalPlayer.IsVR) return;
         HandTrackingFeature hf=OpenXRSettings.Instance.GetFeature<HandTrackingFeature>();
         if(hf==null || hf.enabled==false)
         {
@@ -121,7 +123,7 @@ public class HandGetter : MonoBehaviour, IFingerCurler
             hf.GetHandJoints(HandIndex, out positions, out orientations, out radius);
             if (positions.Length == 0)
             {
-                Curls = AttachedBinding.GetCurlsFromBindings();
+                Curls = AttachedBinding?.GetCurlsFromBindings() ?? new float[5];
                 return;
             }
             /*if (!initializedOrientations)

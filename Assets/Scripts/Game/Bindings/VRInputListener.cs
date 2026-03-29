@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,8 +13,8 @@ namespace Hypernex.Game.Bindings
         internal void AddXRBinding(XRBinding x) => xrBindings.Add(x);
         internal void Clear() => xrBindings.Clear();
 
-        private XRBinding LeftController => XRBindings[1];
-        private XRBinding RightController => XRBindings[0];
+        private XRBinding LeftController => XRBindings.First(x => x.IsLeftController);
+        private XRBinding RightController => XRBindings.First(x => x.IsRightController);
 
         public void OnMove(InputAction.CallbackContext context)
         {

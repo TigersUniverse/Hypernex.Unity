@@ -121,7 +121,6 @@ public class Init : MonoBehaviour
         {
             xrDisplay.foveatedRenderingLevel = 1;
             xrDisplay.foveatedRenderingFlags = XRDisplaySubsystem.FoveatedRenderingFlags.None;
-            Debug.Log("Applied to " + xrDisplay.subsystemDescriptor.id);
         }
     }
 
@@ -170,10 +169,6 @@ public class Init : MonoBehaviour
 #if UNITY_IOS
         IsMobile = true;
 #endif
-        if (!IsMobile)
-            LocalPlayer.CreateDesktopBindings();
-        else
-            LocalPlayer.CreateMobileBindings(MobileControls);
 #if UNITY_ANDROID
         if(!LocalPlayer.IsVR)
         {
@@ -195,6 +190,13 @@ public class Init : MonoBehaviour
 #else
         QualitySettings.SetQualityLevel(2, true);
 #endif
+        if(!LocalPlayer.IsVR)
+        {
+            if (!IsMobile)
+                LocalPlayer.CreateDesktopBindings();
+            else
+                LocalPlayer.CreateMobileBindings(MobileControls);
+        }
         string[] args = Environment.GetCommandLineArgs();
         DownloadTools.forceHttpClient = args.Contains("--force-http-downloads");
         NoVLC = args.Contains("--no-vlc");

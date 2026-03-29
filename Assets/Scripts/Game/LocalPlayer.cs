@@ -542,11 +542,11 @@ namespace Hypernex.Game
             vrPlayerInput.ActivateInput();
             leftXRBinding = new XRBinding(false, LeftHandGetter);
             rightXRBinding = new XRBinding(true, RightHandGetter);
-            leftXRBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
-            rightXRBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
+            rightXRBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
+            leftXRBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
             Bindings.Add(leftXRBinding);
-            VRInputListener.AddXRBinding(leftXRBinding);
             Bindings.Add(rightXRBinding);
+            VRInputListener.AddXRBinding(leftXRBinding);
             VRInputListener.AddXRBinding(rightXRBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
             CoroutineRunner.Run(PositionDashboardOnVRSwitch());
@@ -776,8 +776,8 @@ namespace Hypernex.Game
             right_m.valid = false;
             if (vr)
             {
-                HandleRightBinding(leftXRBinding, true);
-                HandleLeftBinding(rightXRBinding, true);
+                HandleRightBinding(rightXRBinding, true);
+                HandleLeftBinding(leftXRBinding, true);
             }
             else
             {
