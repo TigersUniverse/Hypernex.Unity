@@ -29,18 +29,20 @@ namespace Hypernex.Game.Audio
 
         private Queue<float> queue = new Queue<float>();
         private int PacketCounterSamples = 0;
+        private float encodeResampleOffset = 0f;
+        private float decodeResampleOffset = 0f;
         
-        private float[] Resample(float[] input, int inputRate, int outputRate, int channels)
+        private float[] Resample(float[] input, int inputRate, int outputRate, int channels, ref float resampleOffset)
         {
             if (inputRate == outputRate)
                 return input;
             float ratio = (float) outputRate / inputRate;
             int inputSamples = input.Length / channels;
-            int outputSamples = Mathf.RoundToInt(inputSamples * ratio);
+            int outputSamples = (int)(inputSamples * ratio);
             float[] output = new float[outputSamples * channels];
             for (int i = 0; i < outputSamples; i++)
             {
-                float srcIndex = i / ratio;
+                float srcIndex = (i / ratio) + resampleOffset;
                 int index = (int)srcIndex;
                 float frac = srcIndex - index;
                 for (int c = 0; c < channels; c++)
@@ -50,6 +52,7 @@ namespace Hypernex.Game.Audio
                     output[i * channels + c] = Mathf.Lerp(a, b, frac);
                 }
             }
+            resampleOffset = (inputSamples / ratio + resampleOffset) - Mathf.Floor(inputSamples / ratio + resampleOffset);
             return output;
         }
 
@@ -74,7 +77,7 @@ namespace Hypernex.Game.Audio
             if (Mic.REQUESTED_FREQUENCY != Mic.Frequency)
             {
                 // Resample to Requested
-                pcm = Resample(pcm, Mic.Frequency, Mic.REQUESTED_FREQUENCY, encoder.NumChannels);
+                pcm = Resample(pcm, Mic.Frequency, Mic.REQUESTED_FREQUENCY, encoder.NumChannels, ref encodeResampleOffset);
             }
 
             for (int i = 0; i < pcm.Length; i++)
@@ -137,7 +140,7 @@ namespace Hypernex.Game.Audio
             int outputRate = AudioSettings.outputSampleRate;
             if (decoder.SampleRate != outputRate)
             {
-                pcmBuffer = Resample(pcmBuffer, decoder.SampleRate, outputRate, decoder.NumChannels);
+                pcmBuffer = Resample(pcmBuffer, decoder.SampleRate, outputRate, decoder.NumChannels, ref decodeResampleOffset);
             }
             AudioSourceDriver.AddQueue(audioSource, pcmBuffer, decoder.NumChannels, outputRate);
             return pcmBuffer;

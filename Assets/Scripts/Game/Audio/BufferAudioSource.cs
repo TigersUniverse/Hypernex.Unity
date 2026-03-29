@@ -309,8 +309,7 @@ namespace Hypernex.Game.Audio
                 shouldStop = false;
                 targetBufferSamples = (int)(frequency * channels * 0.05f);
                 maxBufferSamples = targetBufferSamples * 2;
-                int outputRate = AudioSettings.outputSampleRate;
-                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, outputRate, false);
+                clip = AudioClip.Create("Voice", CLIP_SAMPLE_SIZE, channels, frequency, false);
                 float[] temp = new float[CLIP_SAMPLE_SIZE];
                 Array.Fill(temp, 1f);
                 clip.SetData(temp, 0);
