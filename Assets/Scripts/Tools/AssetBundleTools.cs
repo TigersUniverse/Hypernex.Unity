@@ -17,10 +17,24 @@ namespace Hypernex.Tools
                 switch (Application.platform)
                 {
                     case RuntimePlatform.Android:
+                    case RuntimePlatform.IPhonePlayer:
                         return BuildPlatform.Android;
                     default:
                         return BuildPlatform.Windows;
                 }
+            }
+        }
+
+        public static string StreamingLocation
+        {
+            get
+            {
+#if UNITY_ANDROID || UNITY_IOS
+                // Cannot access streamingAssetsPath on mobile platforms (readonly directory)
+                return Application.persistentDataPath;
+#else
+                return Application.streamingAssetsPath;
+#endif
             }
         }
 

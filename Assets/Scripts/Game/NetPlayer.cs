@@ -7,12 +7,12 @@ using Hypernex.CCK.Unity.Assets;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Databasing;
-using Hypernex.Databasing.Objects;
 using Hypernex.Game.Audio;
 using Hypernex.Game.Avatar;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Bulk;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Networking.Messages.Databasing;
 using Hypernex.Player;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
@@ -338,8 +338,8 @@ namespace Hypernex.Game
                     /*foreach (KeyValuePair<string,float> weightedObject in playerUpdate.WeightedObjects)
                         Avatar.HandleNetParameter(weightedObject.Key, weightedObject.Value);*/
                     Avatar.audioSource.volume = lastPlayerUpdate.IsSpeaking ? volume : 0f;
-                    if(Avatar != null && Avatar.lipSyncContext != null)
-                        Avatar.lipSyncContext.enabled = !LastPlayerTags.Contains("*liptracking");
+                    if(Avatar != null && Avatar.VisemeProvider != null)
+                        Avatar.VisemeProvider.Enabled = !LastPlayerTags.Contains("*liptracking");
                 }
                 if (Avatar != null)
                 {
@@ -399,10 +399,12 @@ namespace Hypernex.Game
         public void VoiceUpdate(PlayerVoice playerVoice)
         {
             IAudioCodec codec = AudioSourceDriver.GetAudioCodecByName(playerVoice.Encoder);
+            float[] d;
             if (Avatar != null && Avatar.Avatar.gameObject.scene == scene)
-                codec.Decode(playerVoice, Avatar.audioSource);
+                d = codec.Decode(playerVoice, Avatar.audioSource);
             else
-                codec.Decode(playerVoice, fallbackVoice);
+                d = codec.Decode(playerVoice, fallbackVoice);
+            Avatar?.VisemeProvider?.ApplyNet(d);
         }
 
         private Dictionary<int, NetHandleCameraLife> HandleCameras => new(handleCameras);

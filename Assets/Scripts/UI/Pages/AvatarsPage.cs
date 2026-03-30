@@ -120,6 +120,7 @@ namespace Hypernex.UI.Pages
                     if(!popularityResult.success) return;
                     GetAvatarsInOrder(popularityResult.result.Popularity, new List<AvatarMeta>(), result =>
                     {
+                        result.FilterBySupportedPlatform();
                         lastResultsLength = result.Count;
                         isRendering = false;
                         foreach (AvatarMeta m in result)
@@ -174,7 +175,7 @@ namespace Hypernex.UI.Pages
             {
                 AvatarRender.GetAvatarMeta(id, avatarMeta =>
                 {
-                    if(avatarMeta == null)
+                    if(avatarMeta == null || !avatarMeta.IsSupportedOnActivePlatform())
                         return;
                     CreateAvatarCardTemplate(avatarMeta);
                 });

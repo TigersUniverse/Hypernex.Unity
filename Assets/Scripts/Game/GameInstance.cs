@@ -435,6 +435,9 @@ namespace Hypernex.Game
             {
                 Security.RemoveOffendingItems(currentScene, SecurityTools.AdditionalAllowedWorldTypes.ToArray());
                 Security.ApplyComponentRestrictions(currentScene);
+#if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+                ShaderFixer.ReplaceAllShaders(currentScene);
+#endif
                 try
                 {
                     World = Object.FindObjectsOfType<World>().First(x => x.gameObject.scene == currentScene);

@@ -1,25 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using HypernexSharp.APIObjects;
+using UnityEngine.UI;
+using VRCFaceTracking.Core.Models;
+using VRCFaceTracking.Core.Params.Data;
+#if !UNITY_IOS && !PLATFORM_IOS
+using System.IO;
 using Hypernex.CCK.Unity.Interaction;
 using Hypernex.Tools;
-using HypernexSharp.APIObjects;
 using Microsoft.Extensions.Logging;
 using UnityEngine;
-using UnityEngine.UI;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Contracts.Services;
 using VRCFaceTracking.Core.Library;
-using VRCFaceTracking.Core.Models;
-using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Services;
 using Image = VRCFaceTracking.Core.Types.Image;
 using Logger = Hypernex.CCK.Logger;
 using Utils = VRCFaceTracking.Core.Utils;
+#endif
 
 namespace Hypernex.ExtendedTracking
 {
+#if !UNITY_IOS && !PLATFORM_IOS
     public static class FaceTrackingManager
     {
         public static bool HasInitialized { get; private set; }
@@ -160,4 +163,38 @@ namespace Hypernex.ExtendedTracking
             }
         }
     }
+#else
+    public static class FaceTrackingManager
+    {
+        public static bool HasInitialized { get; private set; } = false;
+        public static bool EyeTracking => false;
+        public static bool LipTracking => false;
+
+        public static Action<UnifiedTrackingData> OnTrackingUpdated = data => { };
+
+        public static List<ICustomFaceExpression> CustomFaceExpressions = new();
+        
+        private static Dictionary<string, (float, ICustomFaceExpression)> weights = new();
+        
+        public static async void Init(string persistentData, User user) {}
+
+        public static List<InstallableTrackingModule> GetDownloadableDependencies() =>
+            Array.Empty<InstallableTrackingModule>().ToList();
+
+        public static void InstallDependency(InstallableTrackingModule trackingModule, Action callback = null){}
+
+        public static T GetSettings<T>(string key) => default;
+        public static void SetSettings<T>(string key, T value){}
+
+        public static UnifiedEyeData GetEyeWeights() => null;
+
+        public static Dictionary<string, (float, ICustomFaceExpression)> GetFaceWeights() => weights;
+        
+        public static void SetCameraTextures(ref RawImage eyes, ref RawImage lips) {}
+        
+        public static void Restart() {}
+
+        public static void Destroy() {}
+    }
+#endif
 }

@@ -16,6 +16,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Sandboxing.SandboxedTypes.Handlers;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
 using LibVLCSharp;
@@ -62,10 +63,23 @@ namespace Hypernex.Game.Video
 
 	    public static bool CanBeUsed()
         {
-            if (AssetBundleTools.Platform != BuildPlatform.Windows) return false;
-            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Direct3D11) return false;
-            if (Init.Instance.NoVLC) return false;
-            return true;
+	        if (Init.Instance.NoVLC) return false;
+	        switch (Application.platform)
+	        {
+		        case RuntimePlatform.WindowsEditor:
+			    case RuntimePlatform.WindowsPlayer:
+			        if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Direct3D11) return true;
+			        return false;
+		        case RuntimePlatform.OSXEditor:
+			    case RuntimePlatform.OSXPlayer:
+			        return true;
+		        case RuntimePlatform.LinuxEditor:
+		        case RuntimePlatform.LinuxPlayer:
+			        return false;
+		        case RuntimePlatform.Android:
+			        return true;
+	        }
+            return false;
         }
         // TODO: Find out what LibVLC isn't compatible with
         public static bool CanBeUsed(Uri source) => true;
@@ -182,10 +196,8 @@ namespace Hypernex.Game.Video
             }
             if (_vlcTexture != null)
             {
-                var texptr = mediaPlayer.GetTexture(width, height, out bool updated);
-                if (updated)
-                {
-                    _vlcTexture.UpdateExternalTexture(texptr);
+	            if (TextureHelper.UpdateTexture(_vlcTexture, ref mediaPlayer))
+	            {
                     var flip = new Vector2(flipTextureX ? -1 : 1, flipTextureY ? -1 : 1);
                     Graphics.Blit(_vlcTexture, texture, flip, Vector2.zero);
                     screens.ForEach(x =>
@@ -336,8 +348,7 @@ namespace Hypernex.Game.Video
 
 		private void ResizeOutputTextures(uint px, uint py)
 		{
-			var texptr = mediaPlayer.GetTexture(px, py, out bool updated);
-			if (px != 0 && py != 0 && updated && texptr != IntPtr.Zero)
+			if (px != 0 && py != 0)
 			{
 				if(GetVideoOrientation() == VideoOrientation.BottomRight)
 				{
@@ -345,7 +356,7 @@ namespace Hypernex.Game.Video
 					px = py;
 					py = swap;
 				}
-				_vlcTexture = Texture2D.CreateExternalTexture((int)px, (int)py, TextureFormat.RGBA32, false, true, texptr);
+				_vlcTexture = TextureHelper.CreateNativeTexture(ref mediaPlayer, true);
 				if(texture == null || texture.width != _vlcTexture.width || texture.height != _vlcTexture.height)
 				{
 					if (texture != null) DestroyRenderTexture();

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.XR.Hands;
-using UnityEngine.XR.Management;
 
 // ReSharper disable Unity.NoNullPropagation
 
@@ -11,7 +8,7 @@ namespace Hypernex.Game.Bindings
 {
     public class XRBinding : IBinding
     {
-        public string Id => (IsLook ? "Left" : "Right") + " VRController";
+        public string Id => (IsLook ? "Right" : "Left") + " VRController";
         public Transform AttachedObject =>
             !IsLook ? LocalPlayer.Instance.RightHandReference : LocalPlayer.Instance.LeftHandReference;
         public bool IsLeftController => !IsLook;
@@ -30,6 +27,8 @@ namespace Hypernex.Game.Bindings
         public bool Grab { get; set; }
 
         private HandGetter HandGetter;
+        private float rawGrab;
+        private float[] curls = new float[5];
 
         public static GameObject GetControllerModel(Transform handReference)
         {
@@ -46,6 +45,16 @@ namespace Hypernex.Game.Bindings
         {
             IsLook = isLook;
             HandGetter = handGetter;
+        }
+
+        public float[] GetCurlsFromBindings()
+        {
+            curls[0] = Up > 0 || Down > 0 || Left > 0 || Right > 0 ? 1 : 0;
+            curls[1] = Trigger;
+            curls[2] = rawGrab;
+            curls[3] = rawGrab;
+            curls[4] = rawGrab;
+            return curls;
         }
 
         private float maxAngleForFullCurl = 90f;
@@ -206,14 +215,16 @@ namespace Hypernex.Game.Bindings
         {
             //if (IsLeftController)
                 //return;
-            Grab = context.ReadValue<float>() >= 0.9f;
+            rawGrab = context.ReadValue<float>();
+            Grab = rawGrab >= 0.9f;
         }
 
         public void OnRightGrab(InputAction.CallbackContext context)
         {
             //if(IsRightController)
                 //return;
-            Grab = context.ReadValue<float>() >= 0.9f;
+            rawGrab = context.ReadValue<float>();
+            Grab = rawGrab >= 0.9f;
         }
     }
 }

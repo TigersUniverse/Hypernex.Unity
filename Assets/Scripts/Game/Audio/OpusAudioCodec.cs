@@ -63,7 +63,7 @@ namespace Hypernex.Game.Audio
             return voicePackets.ToArray();
         }
 
-        public void Decode(PlayerVoice playerVoice, AudioSource audioSource)
+        public float[] Decode(PlayerVoice playerVoice, AudioSource audioSource)
         {
             using Decoder decoder = new((SamplingFrequency)playerVoice.SampleRate, (NumChannels)playerVoice.Channels);
             byte[] compressedPacket = playerVoice.Bytes;
@@ -76,6 +76,7 @@ namespace Hypernex.Game.Audio
             Array.Copy(outputBuffer, pcmBuffer, pcmBuffer.Length);
 
             AudioSourceDriver.AddQueue(audioSource, pcmBuffer, playerVoice.Channels, playerVoice.SampleRate);
+            return pcmBuffer;
         }
     }
 }

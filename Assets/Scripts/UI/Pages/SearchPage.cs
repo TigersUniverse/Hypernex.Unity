@@ -151,7 +151,7 @@ namespace Hypernex.UI.Pages
                                 case "avatar":
                                     AvatarRender.GetAvatarMeta(id, avatarMeta =>
                                     {
-                                        if (avatarMeta == null)
+                                        if (avatarMeta == null || !avatarMeta.IsSupportedOnActivePlatform())
                                             return;
                                         CreateAvatarSearchCard(avatarMeta);
                                     });
@@ -159,7 +159,7 @@ namespace Hypernex.UI.Pages
                                 case "world":
                                     WorldRender.GetWorldMeta(id, worldMeta =>
                                     {
-                                        if(worldMeta == null)
+                                        if(worldMeta == null || !worldMeta.IsSupportedOnActivePlatform())
                                             return;
                                         CreateWorldSearchCard(worldMeta);
                                     });

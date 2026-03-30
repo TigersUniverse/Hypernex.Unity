@@ -7,12 +7,12 @@ using Hypernex.CCK.Unity.Interaction;
 using Hypernex.CCK.Unity.Internals;
 using Hypernex.Configuration;
 using Hypernex.Databasing;
-using Hypernex.Databasing.Objects;
 using Hypernex.ExtendedTracking;
 using Hypernex.Game.Bindings;
 using Hypernex.Game.Networking;
 using Hypernex.Networking.Messages;
 using Hypernex.Networking.Messages.Data;
+using Hypernex.Networking.Messages.Databasing;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
 using HypernexSharp.APIObjects;
@@ -124,19 +124,8 @@ namespace Hypernex.Game.Avatar
         private void SetupLipSyncLocalPlayer()
         {
             if (!Avatar.UseVisemes) return;
-            lipSyncContext = VoiceAlign.AddComponent<OVRLipSyncContext>();
-            lipSyncContext.audioSource = audioSource;
-            lipSyncContext.enableKeyboardInput = false;
-            lipSyncContext.enableTouchInput = false;
-            lipSyncContext.skipAudioSource = true;
-            morphTargets.Clear();
-            for (int i = 0; i < (int) Viseme.Max; i++)
-            {
-                BlendshapeDescriptor descriptor = BlendshapeDescriptor.GetDescriptor(VisemeRenderers, Avatar.VisemesDict, i);
-                if (descriptor == null) continue;
-                var morphTarget = GetMorphTargetBySkinnedMeshRenderer(descriptor.SkinnedMeshRenderer);
-                SetVisemeAsBlendshape(ref morphTarget, (Viseme) i, descriptor);
-            }
+            VisemeProvider = VisemeProviders.VisemeProvider.GetVisemeProvider();
+            VisemeProvider?.SetupLocal(this, VisemeRenderers);
         }
 
         /// <summary>

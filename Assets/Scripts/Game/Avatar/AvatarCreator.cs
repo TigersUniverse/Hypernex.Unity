@@ -5,6 +5,7 @@ using Hypernex.CCK.Unity.Assets;
 using Hypernex.CCK.Unity.Descriptors;
 using Hypernex.CCK.Unity.Interaction;
 using Hypernex.CCK.Unity.Internals;
+using Hypernex.Game.Avatar.VisemeProviders;
 using Hypernex.Networking.Messages;
 using Hypernex.Sandboxing;
 using Hypernex.Tools;
@@ -79,12 +80,11 @@ namespace Hypernex.Game.Avatar
         protected readonly RuntimeAnimatorController animatorController =
             Object.Instantiate(Init.Instance.DefaultAvatarAnimatorController);
         private List<SkinnedMeshRenderer> skinnedMeshRenderers = new();
-        protected List<OVRLipSyncContextMorphTarget> morphTargets = new();
-        internal OVRLipSyncContext lipSyncContext;
         internal AudioSource audioSource;
         internal List<Sandbox> localAvatarSandboxes = new();
         protected VRIK vrik;
         internal RotationOffsetDriver headRotator;
+        internal IVisemeProvider VisemeProvider;
         private Dictionary<SkinnedMeshRenderer, HashSet<int>> usedVisemes;
 
         protected void OnCreate(CCK.Unity.Assets.Avatar a, int layer, AllowedAvatarComponent allowedAvatarComponent, AvatarMeta meta)
@@ -119,6 +119,9 @@ namespace Hypernex.Game.Avatar
             EyeRenderers = BlendshapeDescriptor.GetAllDescriptors(a.EyeRenderers.ToArray());
             VisemeRenderers = BlendshapeDescriptor.GetAllDescriptors(a.VisemeRenderers.ToArray());
             usedVisemes = BlendshapeDescriptor.GetUsedBlendshapes(VisemeRenderers, a.VisemesDict);
+#if UNITY_MAC || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
+            ShaderFixer.ReplaceAllShaders(a.transform);
+#endif
         }
 
         protected void DriveCamera(Transform cam)
@@ -607,6 +610,17 @@ namespace Hypernex.Game.Avatar
                 SetParameter(weight);
         }
 
+        public bool IsReplicatedParameter(AnimatorControllerParameter avatarParameter)
+        {
+            switch (avatarParameter.name)
+            {
+                case FingerCalibration.LEFT_GESTURE_NAME:
+                case FingerCalibration.RIGHT_GESTURE_NAME:
+                    return true;
+            }
+            return false;
+        }
+
         private bool? IsNetworked(AnimatorControllerParameter playableParameter)
         {
             AvatarParameter avatarParameter = null;
@@ -617,7 +631,13 @@ namespace Hypernex.Game.Avatar
                 avatarParameter = parameter;
                 break;
             }
-            if (avatarParameter == null) return null;
+            if (avatarParameter == null)
+            {
+                // Check if the parameter should be replicated
+                // These are core parameters that should always network no matter the configuration
+                if (IsReplicatedParameter(playableParameter)) return true;
+                return null;
+            }
             return avatarParameter.IsNetworked;
         }
         
@@ -766,91 +786,6 @@ namespace Hypernex.Game.Avatar
             return rot;
         }
         
-        internal void ApplyAudioClipToLipSync(float[] data)
-        {
-            if (lipSyncContext == null)
-                return;
-            lipSyncContext.ProcessAudioSamples(data, (int) Mic.NumChannels);
-        }
-        
-        protected OVRLipSyncContextMorphTarget GetMorphTargetBySkinnedMeshRenderer(
-            SkinnedMeshRenderer skinnedMeshRenderer)
-        {
-            foreach (OVRLipSyncContextMorphTarget morphTarget in new List<OVRLipSyncContextMorphTarget>(morphTargets))
-            {
-                if (morphTarget == null)
-                    morphTargets.Remove(morphTarget);
-                else if (morphTarget.skinnedMeshRenderer == skinnedMeshRenderer)
-                    return morphTarget;
-            }
-            OVRLipSyncContextMorphTarget m = VoiceAlign.AddComponent<OVRLipSyncContextMorphTarget>();
-            m.skinnedMeshRenderer = skinnedMeshRenderer;
-            morphTargets.Add(m);
-            return m;
-        }
-
-        /// <summary>
-        /// Gets the current Index for the current Viseme using the Oculus Viseme Index
-        /// </summary>
-        /// <returns></returns>
-        public int GetVisemeIndex()
-        {
-            try
-            {
-                // This uses the Oculus Viseme Index
-                float[] visemes = lipSyncContext.GetCurrentPhonemeFrame()?.Visemes ?? Array.Empty<float>();
-                (int, float)? biggest = null;
-                for (int i = 0; i < visemes.Length; i++)
-                {
-                    float visemeWeight = visemes[i];
-                    if (biggest == null || visemeWeight > biggest.Value.Item2)
-                        biggest = (i, visemeWeight);
-                }
-
-                if (biggest == null) return -1;
-                if (biggest.Value.Item2 <= 0f) return -1;
-                return biggest.Value.Item1;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>
-        /// Gets all Visemes and their values
-        /// </summary>
-        /// <returns>Key: Name of Viseme, Value: Weight of Viseme</returns>
-        public Dictionary<string, float> GetVisemes()
-        {
-            try
-            {
-                Dictionary<string, float> allVisemes = new();
-                float[] visemes = lipSyncContext.GetCurrentPhonemeFrame()?.Visemes ?? Array.Empty<float>();
-                for (int i = 0; i < visemes.Length; i++)
-                {
-                    string name = Enum.GetNames(typeof(OVRLipSync.Viseme))[i];
-                    allVisemes.Add(name, visemes[i]);
-                }
-
-                return allVisemes;
-            }
-            catch (Exception)
-            {
-                return new Dictionary<string, float>();
-            }
-        }
-
-        protected void SetVisemeAsBlendshape(ref OVRLipSyncContextMorphTarget morphTarget, Viseme viseme,
-            BlendshapeDescriptor blendshapeDescriptor)
-        {
-            int indexToInsert = (int) viseme;
-            int[] currentBlendshapes = new int[15];
-            Array.Copy(morphTarget.visemeToBlendTargets, currentBlendshapes, 15);
-            currentBlendshapes[indexToInsert] = blendshapeDescriptor.BlendshapeIndex;
-            morphTarget.visemeToBlendTargets = currentBlendshapes;
-        }
-        
         protected void RelaxWrists(Transform leftLowerArm, Transform rightLowerArm, Transform leftHand,
             Transform rightHand)
         {
@@ -877,9 +812,12 @@ namespace Hypernex.Game.Avatar
 
         internal void Update()
         {
-            SetParameter("Viseme", GetVisemeIndex(), null, true);
-            foreach (KeyValuePair<string, float> viseme in GetVisemes())
-                SetParameter(viseme.Key, viseme.Value, null, true);
+            if(VisemeProvider != null)
+            {
+                SetParameter("Viseme", VisemeProvider.GetVisemeIndex(), null, true);
+                foreach (KeyValuePair<string, float> viseme in VisemeProvider.GetVisemes())
+                    SetParameter(viseme.Key, viseme.Value, null, true);
+            }
             localAvatarSandboxes.ForEach(x => x.InstanceContainer.Runtime.Update());
         }
         
@@ -905,6 +843,7 @@ namespace Hypernex.Game.Avatar
             DisposeScripts();
             cachedTransforms.Clear();
             cachedSkinnedMeshRenderers.Clear();
+            VisemeProvider?.Dispose();
             Object.Destroy(Avatar.gameObject);
         }
     }

@@ -188,6 +188,8 @@ namespace Hypernex.Game
         private bool didSnapTurn;
         private Scene? scene;
         internal float vrHeight;
+        internal XRBinding leftXRBinding;
+        internal XRBinding rightXRBinding;
 
         public IEnumerator SafeSwitchScene(string s, Action<Scene> onAsyncDone = null, Action<Scene> onDone = null)
         {
@@ -420,7 +422,6 @@ namespace Hypernex.Game
             CharacterController.minMoveDistance = 0;
             LockCamera = Dashboard.IsVisible;
             LockMovement = Dashboard.IsVisible;
-            CreateDesktopBindings();
             Mic.OnClipReady += (s, clip, isEmpty) =>
             {
                 float[] samples = s;
@@ -456,7 +457,7 @@ namespace Hypernex.Game
                         GameInstance.FocusedInstance.SendMessage(typeof(PlayerVoice).FullName, Msg.Serialize(playerVoice), MessageChannel.UnreliableSequenced);
                     }
                 }
-                if(!isEmpty) avatar?.ApplyAudioClipToLipSync(samples);
+                if(!isEmpty) avatar?.VisemeProvider?.ApplyLocal(samples);
             };
             GameInstance.OnGameInstanceLoaded += (instance, meta, _) =>
             {
@@ -496,7 +497,14 @@ namespace Hypernex.Game
                 RefreshAvatar();
         }
 
-        private void CreateDesktopBindings()
+        public void CreateMobileBindings(MobileControls mobileControls)
+        {
+            Bindings.Add(new Mobile(false, mobileControls));
+            Bindings.Add(new Mobile(true, mobileControls));
+            Bindings[1].Button2Click += () => Dashboard.ToggleDashboard(this);
+        }
+
+        public void CreateDesktopBindings()
         {
             Bindings.Add(new Bindings.Keyboard()
                 .RegisterCustomKeyDownEvent(KeyCode.V, () =>
@@ -532,14 +540,14 @@ namespace Hypernex.Game
             Bindings.Clear();
             // Create Bindings
             vrPlayerInput.ActivateInput();
-            XRBinding leftBinding = new XRBinding(false, LeftHandGetter);
-            XRBinding rightBinding = new XRBinding(true, RightHandGetter);
-            leftBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
-            rightBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
-            Bindings.Add(leftBinding);
-            VRInputListener.AddXRBinding(leftBinding);
-            Bindings.Add(rightBinding);
-            VRInputListener.AddXRBinding(rightBinding);
+            leftXRBinding = new XRBinding(false, LeftHandGetter);
+            rightXRBinding = new XRBinding(true, RightHandGetter);
+            rightXRBinding.Button2Click += () => Dashboard.ToggleDashboard(this);
+            leftXRBinding.Button2Click += () => Instance.MicrophoneEnabled = !Instance.MicrophoneEnabled;
+            Bindings.Add(leftXRBinding);
+            Bindings.Add(rightXRBinding);
+            VRInputListener.AddXRBinding(leftXRBinding);
+            VRInputListener.AddXRBinding(rightXRBinding);
             Logger.CurrentLogger.Log("Added VR Bindings");
             CoroutineRunner.Run(PositionDashboardOnVRSwitch());
         }
@@ -601,24 +609,28 @@ namespace Hypernex.Game
                 RefreshAvatar();
         }
 
+        private LeftMove left_m;
+        private RightMove right_m;
         private float rotx;
         private float s_;
         private bool isRunning;
         private bool groundedPlayer;
         private bool CanRun => (!avatar?.IsCrawling ?? true) && (!avatar?.IsCrouched ?? true);
 
-        private (Vector3, bool, bool, Vector2)? HandleLeftBinding(IBinding binding, bool vr)
+        private void HandleLeftBinding(IBinding binding, bool vr)
         {
             // Left-Hand
+            Transform cam = Camera.transform;
+            Transform t = transform;
             Vector3 move;
             if (vr)
-                move = Camera.transform.forward * (binding.Up + binding.Down * -1) +
-                       Camera.transform.right * (binding.Left * -1 + binding.Right);
+                move = cam.forward * (binding.Up + binding.Down * -1) +
+                       cam.right * (binding.Left * -1 + binding.Right);
             else
-                move = transform.forward * (binding.Up + binding.Down * -1) +
-                       transform.right * (binding.Left * -1 + binding.Right);
+                move = t.forward * (binding.Up + binding.Down * -1) +
+                       t.right * (binding.Left * -1 + binding.Right);
             move = Vector3.ClampMagnitude(move, 1);
-            if(!vr)
+            if (!vr)
             {
                 isRunning = binding.Button2 && CanRun;
                 s_ = isRunning ? RunSpeed : WalkSpeed;
@@ -627,20 +639,34 @@ namespace Hypernex.Game
                 if(GameInstance.FocusedInstance.World != null)
                     if (!GameInstance.FocusedInstance.World.AllowRunning)
                         s_ = WalkSpeed;
-            return (move * s_, binding.Button,
+            left_m.valid = true;
+            left_m.move = move * s_;
+            left_m.jump = binding.Button;
+            left_m.moving = binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f;
+            left_m.input = new(binding.Right - binding.Left, binding.Up - binding.Down);
+            /*return (move * s_, binding.Button,
                 binding.Up > 0.01f || binding.Down > 0.01f || binding.Left > 0.01f || binding.Right > 0.01f,
-                new(binding.Right - binding.Left, binding.Up - binding.Down));
+                new(binding.Right - binding.Left, binding.Up - binding.Down));*/
         }
 
-        private (Vector3, bool, bool)? HandleRightBinding(IBinding binding, bool vr)
+        private void HandleRightBinding(IBinding binding, bool vr)
         {
-            if (!LockCamera && binding.Id == "Mouse" && !IsVR)
+            if (!LockCamera && binding is IBindingSensitivity && !IsVR)
             {
-                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((Bindings.Mouse)binding).Sensitivity, 0);
-                rotx += -(binding.Up + binding.Down * -1) * ((Bindings.Mouse) binding).Sensitivity;
+                transform.Rotate(0, (binding.Left * -1 + binding.Right) * ((IBindingSensitivity)binding).Sensitivity, 0);
+                rotx += -(binding.Up + binding.Down * -1) * ((IBindingSensitivity) binding).Sensitivity;
                 rotx = Mathf.Clamp(rotx, -90f, 90f);
                 Camera.transform.localEulerAngles = new Vector3(rotx, 0, 0);
-                return (Vector3.zero, binding.Button, false);
+                right_m.valid = true;
+                right_m.move = Vector3.zero;
+                right_m.jump = binding.Button;
+                right_m.moving = false;
+                if ((binding.Left != 0 || binding.Right != 0) && (binding.Up != 0 || binding.Down != 0))
+                {
+                    return;
+                }
+                return;
+                //return (Vector3.zero, binding.Button, false);
             }
             if (!LockCamera)
             {
@@ -676,20 +702,36 @@ namespace Hypernex.Game
                     s_ = isRunning ? RunSpeed : WalkSpeed;
                 }
                 if (LockMovement)
-                    return null;
-                return (Vector3.zero, binding.Button, false);
+                {
+                    right_m.valid = false;
+                    return;
+                }
+                right_m.valid = true;
+                right_m.move = Vector3.zero;
+                right_m.jump = binding.Button;
+                right_m.moving = false;
+                return;
+                //return (Vector3.zero, binding.Button, false);
             }
             if (LockMovement)
-                return null;
-            return (Vector3.zero, binding.Button, false);
+            {
+                right_m.valid = false;
+                return;
+            }
+            right_m.valid = true;
+            right_m.move = Vector3.zero;
+            right_m.jump = binding.Button;
+            right_m.moving = false;
+            //return (Vector3.zero, binding.Button, false);
         }
 
         private bool areTwoTriggersClicked()
         {
             bool left = false;
             bool right = false;
-            foreach (IBinding binding in Bindings)
+            for (int i = 0; i < Bindings.Count; i++)
             {
+                var binding = Bindings[i];
                 if (binding.IsLook && binding.Trigger >= 0.8f)
                     left = true;
                 if (!binding.IsLook && binding.Trigger >= 0.8f)
@@ -702,21 +744,22 @@ namespace Hypernex.Game
 
         private void Update()
         {
-            // TODO: Reduce GC
             bool vr = IsVR;
             XROrigin.enabled = vr;
-            TrackedPoseDriver.ForEach(trackedPoseDriver => trackedPoseDriver.enabled = vr);
+            for (int i = 0; i < TrackedPoseDriver.Count; i++)
+                TrackedPoseDriver[i].enabled = vr;
             XRBinding.GetControllerModel(LeftHandReference)?.SetActive(vr && avatar == null);
             XRBinding.GetControllerModel(RightHandReference)?.SetActive(vr && avatar == null);
-            XRRays.ForEach(x =>
+            for (int i = 0; i < XRRays.Count; i++)
             {
-                if(vr)
-                    x.lineWidth = 0.01f;
-                x.enabled = vr;
-            });
+                if (vr)
+                    XRRays[i].lineWidth = 0.01f;
+                XRRays[i].enabled = vr;
+            }
             DesktopInput.enabled = !vr;
             VRInput.enabled = vr;
-            CursorTools.ToggleMouseLock(vr || LockCamera);
+            if(!Init.Instance.IsMobile)
+                CursorTools.ToggleMouseLock(vr || LockCamera);
             CursorTools.ToggleMouseVisibility(!vr || LockCamera);
             groundedPlayer = CharacterController.isGrounded;
             if (!LockMovement)
@@ -729,50 +772,49 @@ namespace Hypernex.Game
                     verticalVelocity = 0f;
                 verticalVelocity += Gravity * Time.deltaTime;
             }
-            (Vector3, bool, bool, Vector2)? left_m = null;
-            (Vector3, bool, bool)? right_m = null;
-            foreach (IBinding binding in Bindings)
+            left_m.valid = false;
+            right_m.valid = false;
+            if (vr)
             {
-                binding.Update();
-                bool g = !binding.IsLook;
-                if (vr)
-                    g = binding.IsLook;
-                if (g)
+                HandleRightBinding(rightXRBinding, true);
+                HandleLeftBinding(leftXRBinding, true);
+            }
+            else
+            {
+                for (int i = 0; i < Bindings.Count; i++)
                 {
-                    (Vector3, bool, bool, Vector2)? r = HandleLeftBinding(binding, vr);
-                    if (r != null)
-                        left_m = r.Value;
-                }
-                else
-                {
-                    (Vector3, bool, bool)? r = HandleRightBinding(binding, vr);
-                    if (r != null)
-                        right_m = r.Value;
+                    IBinding binding = Bindings[i];
+                    binding.Update();
+                    bool g = !binding.IsLook;
+                    if (g)
+                        HandleLeftBinding(binding, false);
+                    else
+                        HandleRightBinding(binding, false);
                 }
             }
-            Vector3 move = new Vector3();
+            Vector3 move = Vector3.zero;
             bool isJumping = false;
-            if (right_m != null)
+            if (right_m.valid)
             {
-                isJumping = right_m.Value.Item2 && (!avatar?.IsCrouched ?? true) && (!avatar?.IsCrawling ?? true);
+                isJumping = right_m.jump && (!avatar?.IsCrouched ?? true) && (!avatar?.IsCrawling ?? true);
                 if (isJumping && groundedTimer > 0)
                 {
                     groundedTimer = 0;
                     verticalVelocity += Mathf.Sqrt(JumpHeight * 2 * -Gravity);
                 }
             }
-            if (left_m != null && !LockMovement)
+            if (left_m.valid && !LockMovement)
             {
-                if(left_m.Value.Item3)
+                if(left_m.moving)
                 {
-                    move = left_m.Value.Item1;
+                    move = left_m.move;
                 }
             }
             if (!LockMovement)
             {
                 move.y = verticalVelocity;
                 CharacterController.Move(move * Time.deltaTime);
-                avatar?.SetMove(left_m?.Item4 ?? Vector2.zero, isRunning);
+                avatar?.SetMove(left_m.input, isRunning);
                 avatar?.SetIsGrounded(groundedPlayer);
                 avatar?.SetRun(isRunning);
                 avatar?.Jump(isJumping && !groundedPlayer);
@@ -784,9 +826,10 @@ namespace Hypernex.Game
                 avatar?.SetRun(false);
                 avatar?.Jump(false);
             }
-            bool isMoving = left_m?.Item3 ?? false;
+            bool isMoving = left_m.moving;
             if (!vr) DesktopFingerCurler.Update(ref LeftDesktopCurler, ref RightDesktopCurler, GestureIdentifier);
-            avatar?.Update(areTwoTriggersClicked(), FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
+            bool twoTriggers = areTwoTriggersClicked();
+            avatar?.Update(twoTriggers, FakeVRHead, LeftHandVRIKTarget, RightHandVRIKTarget,
                 isMoving, this);
             // TODO: Non-Eye Tracking Eye Movement
             if(GameInstance.FocusedInstance != null && !GameInstance.FocusedInstance.authed)

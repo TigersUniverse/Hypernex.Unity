@@ -11,6 +11,8 @@ namespace Hypernex.Tools
     [RequireComponent(typeof(DontDestroyMe))]
     public class Mic : MonoBehaviour
     {
+        public const int REQUESTED_FREQUENCY = 48000;
+        
         public static Mic Instance;
 
         public List<string> Devices => new(devices);
@@ -20,9 +22,9 @@ namespace Hypernex.Tools
         public static bool IsRecording { get; private set; }
         public static AudioClip Clip { get; private set; }
         public static Action<float[], AudioClip, bool> OnClipReady { get; set; } = (data, clip, isEmpty) => { };
-        public static int Frequency { get; private set; }
+        public static int Frequency => Clip.frequency;
         public static int NumChannels => Clip.channels;
-        public static int FrameSizeMs { get; set; } = 40;
+        public static int FrameSizeMs { get; set; } = 20;
         public static int SampleBufferSize => Mathf.RoundToInt(FrameSizeMs / 1000f * Frequency * NumChannels);
 
         private int lastPosition;
@@ -38,14 +40,7 @@ namespace Hypernex.Tools
             if (IsRecording || string.IsNullOrEmpty(SelectedDevice))
                 return;
             IsRecording = true;
-            int minFrequency;
-            int maxFrequency;
-            Microphone.GetDeviceCaps(SelectedDevice, out minFrequency, out maxFrequency);
-            // UnityEngine.Debug.Log($"Min {minFrequency} Max {maxFrequency}");
-            Frequency = Mathf.Clamp(48000, minFrequency, maxFrequency);
-            Frequency = 48000;
-            // Frequency = 24000;
-            Clip = Microphone.Start(SelectedDevice, true, 10, Frequency);
+            Clip = Microphone.Start(SelectedDevice, true, 10, REQUESTED_FREQUENCY);
         }
 
         private void Update()
