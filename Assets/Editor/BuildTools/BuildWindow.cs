@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
-using UnityEditor.Build.Reporting;
 using UnityEditor.XR.Management;
 using UnityEditor.XR.Management.Metadata;
 using UnityEngine;
@@ -14,16 +14,6 @@ namespace Hypernex.Editor.BuildTools
     public class BuildWindow : EditorWindow
     {
         private static BuildWindow Instance { get; set; }
-
-        private readonly string[] PlatformOptions =
-        {
-            "Windows",
-            "macOS",
-            "Linux",
-            "iOS",
-            "Android"
-        };
-        private int selectedBuildPlatform;
         
         [MenuItem("Hypernex/BuildTools")]
         private static void Show()
@@ -55,22 +45,49 @@ namespace Hypernex.Editor.BuildTools
                     break;
             }
         }
+        
+        private readonly Dictionary<string, (BuildTargetGroup, BuildTarget)> PlatformOptions = new()
+        {
+            ["Windows"] = (BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64),
+            ["macOS"] = (BuildTargetGroup.Standalone, BuildTarget.StandaloneOSX),
+            ["Linux"] = (BuildTargetGroup.Standalone, BuildTarget.EmbeddedLinux),
+            ["iOS"] = (BuildTargetGroup.iOS, BuildTarget.iOS),
+            ["Android"] = (BuildTargetGroup.Android, BuildTarget.Android)
+        };
+        private int selectedBuildPlatform;
+        
+        private void UpdatePlatform(string platform)
+        {
+            AssetDatabase.SaveAssets();
+            (BuildTargetGroup, BuildTarget) sel = PlatformOptions[platform];
+            EditorUserBuildSettings.SwitchActiveBuildTarget(sel.Item1, sel.Item2);
+        }
 
         private void RenderBuildPlatform()
         {
             GUILayout.Label("Build Target", EditorStyles.largeLabel);
             int previousSelectedPlatform = selectedBuildPlatform;
-            if(selectedBuildPlatform > -1)
-                selectedBuildPlatform = EditorGUILayout.Popup("Platform", selectedBuildPlatform, PlatformOptions, new GUIStyle(EditorStyles.popup));
+            if (selectedBuildPlatform > -1)
+                selectedBuildPlatform = EditorGUILayout.Popup("Platform", selectedBuildPlatform,
+                    PlatformOptions.Keys.ToArray(), new GUIStyle(EditorStyles.popup));
             else
             {
-                // TODO: prompt switching of build targets
                 GUILayout.Label($"Unknown build target {EditorUserBuildSettings.activeBuildTarget}. Please switch to a valid build target to continue");
+                GUILayout.BeginHorizontal();
+                foreach (string platform in PlatformOptions.Keys)
+                {
+                    if (GUILayout.Button(platform))
+                    {
+                        UpdatePlatform(platform);
+                    }
+                }
+                GUILayout.EndHorizontal();
                 return;
             }
             if (previousSelectedPlatform != selectedBuildPlatform)
             {
-                // TODO: Update build platform
+                string p = PlatformOptions.ElementAt(selectedBuildPlatform).Key;
+                UpdatePlatform(p);
             }
         }
 
