@@ -187,21 +187,27 @@ namespace Hypernex.Editor.BuildTools
             if (GUILayout.Button("Disable XR"))
                 ToggleOpenXR(false);
             GUILayout.EndHorizontal();
-#elif UNITY_IOS
-            if (openXRLoaded.Value)
-            {
-                GUILayout.Label("OpenXR Configuration", EditorStyles.largeLabel);
-                GUILayout.Label("OpenXR is not supported on iOS. Would you like to disable it?");
-                if(GUILayout.Button("Disable XR"))
-                    ToggleOpenXR(false);
-            }
 #else
-            if (!openXRLoaded.Value)
+            bool isWindows = EditorUserBuildSettings.activeBuildTarget == BuildTarget.StandaloneWindows64;
+            if (isWindows)
             {
-                GUILayout.Label("OpenXR Configuration", EditorStyles.largeLabel);
-                GUILayout.Label("It looks like XR was not loaded. Would you like to enable it?");
-                if(GUILayout.Button("Enable XR"))
-                    ToggleOpenXR(true);
+                if (!openXRLoaded.Value)
+                {
+                    GUILayout.Label("OpenXR Configuration", EditorStyles.largeLabel);
+                    GUILayout.Label("It looks like XR was not loaded. Would you like to enable it?");
+                    if(GUILayout.Button("Enable XR"))
+                        ToggleOpenXR(true);
+                }
+            }
+            else
+            {
+                if (openXRLoaded.Value)
+                {
+                    GUILayout.Label("OpenXR Configuration", EditorStyles.largeLabel);
+                    GUILayout.Label("OpenXR is not supported on this platform. Would you like to disable it?");
+                    if(GUILayout.Button("Disable XR"))
+                        ToggleOpenXR(false);
+                }
             }
 #endif
         }
