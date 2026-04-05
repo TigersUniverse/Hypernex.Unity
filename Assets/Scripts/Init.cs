@@ -88,11 +88,18 @@ public class Init : MonoBehaviour
     
     bool TryStartXR()
     {
-        var manager = XRGeneralSettings.Instance.Manager;
-        manager.InitializeLoaderSync();
-        if (manager.activeLoader == null) return false;
-        manager.StartSubsystems();
-        return true;
+        try
+        {
+            var manager = XRGeneralSettings.Instance.Manager;
+            manager.InitializeLoaderSync();
+            if (manager.activeLoader == null) return false;
+            manager.StartSubsystems();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     internal void StartVR()
