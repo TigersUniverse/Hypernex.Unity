@@ -41,6 +41,7 @@ namespace Hypernex.Sandboxing.SandboxedTypes
             Handlers.Add("Players", new Players(gameInstance, sandboxRestriction, avatarPlayer));
             Handlers.Add("Runtime", Runtime);
             Handlers.Add("Bindings", bindings);
+            Handlers.Add("Translator", new Translator(gameInstance, sandboxRestriction));
             if (sandboxRestriction == SandboxRestriction.Local)
                 Handlers.Add("NavMesh", new NavMesh(gameInstance));
         }

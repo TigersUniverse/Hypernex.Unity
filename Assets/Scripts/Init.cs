@@ -85,6 +85,7 @@ public class Init : MonoBehaviour
     public string GetPrivateLocation() => Path.Combine(Application.persistentDataPath, "Private");
     public string GetMediaLocation() => Path.Combine(AssetBundleTools.StreamingLocation, "media");
     public string GetYTLocation() => Path.Combine(GetMediaLocation(), "ytdlp");
+    public string GetTranslateFileLocation(string lang) => Path.Combine(Application.persistentDataPath, "locales", lang, "translation.json");
     
     bool TryStartXR()
     {
@@ -211,6 +212,10 @@ public class Init : MonoBehaviour
         StreamYoutube = args.Contains("--stream-youtube");
         if(args.Contains("-xr") && !LocalPlayer.IsVR)
             StartVR();
+        string langFile = GetTranslateFileLocation(TranslateCore.ClientLanguage);
+        string langFileDir = Path.GetDirectoryName(Path.GetFullPath(langFile));
+        if (!Directory.Exists(langFileDir)) Directory.CreateDirectory(langFileDir);
+        TranslateCore.Init(langFile, Application.persistentDataPath);
         DownloadTools.DownloadsPath = Path.Combine(AssetBundleTools.StreamingLocation, "Downloads");
         string targetStreamingPath = AssetBundleTools.StreamingLocation;
         SecurityTools.AllowExtraTypes();

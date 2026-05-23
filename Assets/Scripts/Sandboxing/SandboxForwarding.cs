@@ -104,6 +104,7 @@ namespace Hypernex.Sandboxing
             ["StreamDownloadOptions"] = typeof(StreamDownloadOptions),
             ["VideoRequest"] = typeof(VideoRequest),
             ["StreamDownload"] = typeof(Streaming.StreamDownload),
+            ["Translator"] = typeof(Translator),
             ["PhysicsBody"] = typeof(PhysicsBody),
             ["Mesh"] = typeof(Mesh),
             ["Renderer"] = typeof(Renderer),
